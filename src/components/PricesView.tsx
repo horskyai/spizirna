@@ -1,0 +1,88 @@
+"use client";
+
+import { useState } from "react";
+import { TrendingDown, Store, BarChart2 } from "lucide-react";
+import { usePriceStore } from "@/store/priceStore";
+import { formatDateShort } from "@/lib/dateUtils";
+
+export function PricesView() {
+  const { records } = usePriceStore();
+
+  // Group by EAN
+  const grouped = records.reduce<Record<string, typeof records>>((acc, r) => {
+    acc[r.ean_code] = acc[r.ean_code] || [];
+    acc[r.ean_code].push(r);
+    return acc;
+  }, {});
+
+  const eans = Object.keys(grouped);
+
+  if (eans.length === 0) {
+    return (
+      <div className="flex-1 flex flex-col items-center justify-center gap-5 p-8">
+        <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
+          <BarChart2 size={32} strokeWidth={1.5} style={{ color: "var(--green-primary)" }} />
+        </div>
+        <div className="text-center">
+          <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>Žádná cenová data</p>
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Při skenování produktů zadejte cenu pro sledování vývoje.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <div className="px-5 pt-2 pb-24 space-y-4">
+        {eans.map((ean) => {
+          const history = grouped[ean].sort((a, b) => b.date.localeCompare(a.date));
+          const latest = history[0];
+          const best = history.reduce((b, r) => r.price < b.price ? r : b, history[0]);
+          const savings = latest.price - best.price;
+
+          return (
+            <div key={ean} className="card p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <p className="font-bold" style={{ color: "var(--text-primary)" }}>EAN: {ean}</p>
+                  <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                    {history.length} záznam{history.length > 1 ? "ů" : ""}
+                  </p>
+                </div>
+                {savings > 0 && (
+                  <div className="flex items-center gap-1 px-2 py-1 rounded-full" style={{ background: "#E8F0E4" }}>
+                    <TrendingDown size={12} style={{ color: "var(--green-dark)" }} />
+                    <span className="text-xs font-semibold" style={{ color: "var(--green-dark)" }}>
+                      Ušetřit {savings.toFixed(0)} CZK
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              {/* Price history */}
+              <div className="space-y-2">
+                {history.slice(0, 5).map((r, i) => (
+                  <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl" style={{ background: r === best ? "var(--green-light)" : "var(--bg-primary)" }}>
+                    <Store size={14} style={{ color: "var(--text-tertiary)" }} />
+                    <span className="text-sm flex-1 font-medium" style={{ color: "var(--text-primary)" }}>{r.store}</span>
+                    <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>{formatDateShort(r.date)}</span>
+                    <span className="text-sm font-bold" style={{ color: r === best ? "var(--green-dark)" : "var(--text-primary)" }}>
+                      {r.price} CZK
+                      {r === best && <span className="text-xs font-normal ml-1" style={{ color: "var(--green-dark)" }}>nejlevnější</span>}
+                    </span>
+                  </div>
+                ))}
+              </div>
+
+              {best.price_per_kg && (
+                <p className="text-xs mt-3 pt-3" style={{ borderTop: "1px solid var(--border)", color: "var(--text-secondary)" }}>
+                  Nejlepší cena: <b>{best.price_per_kg.toFixed(0)} CZK/kg</b> v {best.store}
+                </p>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
