@@ -141,29 +141,27 @@ export function PantryView() {
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-0 pb-4">
         {/* Hero card */}
-        <div className="hero-card px-5 py-5 mb-5" style={{ textAlign: "center" }}>
-          <p className="text-xs font-semibold mb-1" style={{ color: "rgba(255,255,255,0.65)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+        <div className="hero-card mb-5" style={{ textAlign: "center", padding: "20px 16px 16px" }}>
+          <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.65)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
             Celkem v spižírně
           </p>
-          <p style={{ fontSize: 56, fontWeight: 700, lineHeight: 1, color: "white", letterSpacing: "-2px" }}>
+          <p style={{ fontSize: 40, fontWeight: 700, lineHeight: 1, color: "white", letterSpacing: "-1px", marginBottom: 4 }}>
             {items.length}
           </p>
-          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.7)" }}>
+          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 16 }}>
             {expiring.length > 0 ? `${expiring.length} brzy vyprší` : "Vše v pořádku ✓"}
           </p>
           {/* Quick actions row */}
-          <div className="flex gap-3 mt-4">
+          <div style={{ display: "flex", gap: 10 }}>
             <button
               onClick={() => setTab("skenovat")}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-semibold transition-all"
-              style={{ background: "rgba(255,255,255,0.18)", color: "white", border: "1px solid rgba(255,255,255,0.25)" }}
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 14, fontSize: 13, fontWeight: 600, color: "white", background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.25)" }}
             >
               <ScanLine size={14} /> Skenovat
             </button>
             <button
               onClick={() => setShowManual(true)}
-              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-semibold transition-all"
-              style={{ background: "rgba(255,255,255,0.18)", color: "white", border: "1px solid rgba(255,255,255,0.25)" }}
+              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 14, fontSize: 13, fontWeight: 600, color: "white", background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.25)" }}
             >
               <Plus size={14} /> Přidat ručně
             </button>
