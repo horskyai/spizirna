@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, Trash2, ChevronRight, Bell, RefrigeratorIcon } from "lucide-react";
 import { usePantryStore } from "@/store/pantryStore";
 import { useUIStore } from "@/store/uiStore";
@@ -97,12 +97,16 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
 }
 
 export function PantryView() {
-  const { items, removeItem, getExpiringItems } = usePantryStore();
+  const { items, removeItem } = usePantryStore();
   const { setTab } = useUIStore();
   const [filter, setFilter] = useState<StorageLocation | "vse">("vse");
   const [showManual, setShowManual] = useState(false);
 
-  const expiring = getExpiringItems(3);
+  const expiring = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() + 3);
+    return items.filter((i) => i.expires_at && new Date(i.expires_at) <= cutoff);
+  }, [items]);
   const filtered = filter === "vse" ? items : items.filter(i => i.location === filter);
 
   const filters: { id: StorageLocation | "vse"; label: string; emoji: string }[] = [

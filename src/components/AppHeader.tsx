@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { Plus, Bell, ScanLine, PenLine, AlertTriangle } from "lucide-react";
@@ -18,7 +18,12 @@ const TITLES: Record<string, string> = {
 
 export function AppHeader() {
   const { activeTab, setTab } = useUIStore();
-  const expiringItems = usePantryStore((s) => s.getExpiringItems(3));
+  const pantryItems = usePantryStore((s) => s.items);
+  const expiringItems = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() + 3);
+    return pantryItems.filter((i) => i.expires_at && new Date(i.expires_at) <= cutoff);
+  }, [pantryItems]);
   const expiringCount = expiringItems.length;
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showManual, setShowManual] = useState(false);
