@@ -3,6 +3,9 @@
 import { useState, useMemo } from "react";
 import { Plus, Check, ShoppingCart, X, Share2 } from "lucide-react";
 import { useShoppingStore } from "@/store/shoppingStore";
+import { usePantryStore } from "@/store/pantryStore";
+import { ShoppingItem } from "@/store/shoppingStore";
+import { ProductInfo } from "@/types";
 
 const CATEGORIES = [
   { id: "ovoce-zelenina", label: "Ovoce a zelenina", emoji: "🥦" },
@@ -109,9 +112,36 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
   );
 }
 
+function shoppingItemToProduct(item: ShoppingItem): ProductInfo {
+  return {
+    ean_code: item.ean_code || "",
+    product_name: item.name,
+    brand: "",
+    category: item.category || "ostatni",
+    subcategory: "",
+    image_url: "",
+    unit: (["g", "ml", "ks"].includes(item.unit) ? item.unit : "ks") as "g" | "ml" | "ks",
+    allergens: [],
+    source: "user_added",
+    verified: false,
+  };
+}
+
 export function ShoppingView() {
   const { items, toggleItem, removeItem, removeChecked, clearAll } = useShoppingStore();
+  const addToPantry = usePantryStore((s) => s.addItem);
   const [showAdd, setShowAdd] = useState(false);
+  const [toast, setToast] = useState<string | null>(null);
+
+  const handleCheck = (item: ShoppingItem) => {
+    const wasChecked = item.checked;
+    toggleItem(item.id);
+    if (!wasChecked) {
+      addToPantry(shoppingItemToProduct(item), item.quantity, "spiz");
+      setToast(item.name);
+      setTimeout(() => setToast(null), 3000);
+    }
+  };
 
   const unchecked = useMemo(() => items.filter((i) => !i.checked), [items]);
   const checked = useMemo(() => items.filter((i) => i.checked), [items]);
@@ -197,7 +227,7 @@ export function ShoppingView() {
                     style={{ borderBottom: idx < groupItems.length - 1 ? "1px solid var(--border)" : "none" }}
                   >
                     <button
-                      onClick={() => toggleItem(item.id)}
+                      onClick={() => handleCheck(item)}
                       className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
                       style={{ borderColor: "var(--green-primary)", background: "transparent" }}
                     />
@@ -232,7 +262,7 @@ export function ShoppingView() {
                   style={{ borderBottom: idx < checked.length - 1 ? "1px solid var(--border)" : "none", opacity: 0.5 }}
                 >
                   <button
-                    onClick={() => toggleItem(item.id)}
+                    onClick={() => handleCheck(item)}
                     className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
                     style={{ background: "var(--green-primary)", border: "2px solid var(--green-primary)" }}
                   >
@@ -280,6 +310,31 @@ export function ShoppingView() {
       </div>
 
       {showAdd && <AddItemModal onClose={() => setShowAdd(false)} />}
+
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "calc(80px + env(safe-area-inset-bottom, 0px))",
+            left: "50%",
+            transform: "translateX(-50%)",
+            background: "var(--green-primary)",
+            color: "white",
+            borderRadius: 16,
+            padding: "10px 18px",
+            fontSize: 13,
+            fontWeight: 600,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            zIndex: 200,
+            boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
+            whiteSpace: "nowrap",
+          }}
+        >
+          <Check size={15} strokeWidth={3} /> {toast} přidáno do špizírny
+        </div>
+      )}
     </div>
   );
 }
