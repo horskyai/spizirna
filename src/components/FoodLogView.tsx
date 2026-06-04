@@ -170,15 +170,14 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
             <>
               {!selectedProduct ? (
                 <>
-                  <div className="relative">
-                    <Search size={15} className="absolute left-3.5 top-1/2 -translate-y-1/2" style={{ color: "var(--text-tertiary)" }} />
+                  <div style={{ position: "relative" }}>
+                    <Search size={15} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)", pointerEvents: "none" }} />
                     <input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Hledat ve spižírně..."
                       autoFocus
-                      className="w-full pl-10 pr-4 py-3 rounded-2xl text-sm outline-none"
-                      style={{ background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+                      style={{ width: "100%", paddingLeft: 38, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 14, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
                     />
                   </div>
 
