@@ -190,7 +190,7 @@ export function AddRecipeModal({ onClose }: Props) {
   const handleSave = () => {
     const cleanIngredients = ingredients.filter((i) => i.name.trim());
     const cleanInstructions = instructions.filter((i) => i.trim());
-    if (!name.trim() || cleanIngredients.length === 0 || cleanInstructions.length === 0) return;
+    if (!name.trim() || cleanIngredients.length === 0) return;
 
     addRecipe({
       name: name.trim(),
@@ -499,7 +499,10 @@ export function AddRecipeModal({ onClose }: Props) {
                 <button onClick={() => setStep("instructions")} className="btn-primary" disabled={!canProceedIngredients}>
                   Dál — Postup vaření
                 </button>
-                <button onClick={() => setStep("basic")} className="btn-secondary" style={{ marginTop: 8 }}>Zpět</button>
+                <button onClick={handleSave} className="btn-secondary" disabled={!canProceedIngredients} style={{ marginTop: 8 }}>
+                  Uložit bez postupu
+                </button>
+                <button onClick={() => setStep("basic")} style={{ marginTop: 4, color: "var(--text-tertiary)", fontSize: 14, fontWeight: 500, padding: "8px 0" }}>Zpět</button>
               </div>
             )}
 
@@ -548,7 +551,7 @@ export function AddRecipeModal({ onClose }: Props) {
                 <button
                   onClick={handleSave}
                   className="btn-primary"
-                  disabled={!canProceedBasic || !canProceedIngredients || !instructions.some((i) => i.trim())}
+                  disabled={!canProceedBasic || !canProceedIngredients}
                 >
                   Uložit recept
                 </button>
