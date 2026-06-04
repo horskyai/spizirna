@@ -3,10 +3,14 @@ import "./globals.css";
 import { Providers } from "@/components/Providers";
 
 export const metadata: Metadata = {
-  title: "Spizirna",
-  description: "Produktova databaze — EAN sken, spizirna, kalorie, recepty",
+  title: "Spižírna",
+  description: "Produktová databáze — EAN sken, spižírna, kalorie, recepty",
   manifest: "/manifest.json",
-  appleWebApp: { capable: true, statusBarStyle: "default", title: "Spizirna" },
+  appleWebApp: { capable: true, statusBarStyle: "default", title: "Spižírna" },
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg",
+  },
 };
 
 export const viewport: Viewport = {
