@@ -97,12 +97,19 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
       {/* Sheet */}
       <div
         className="animate-slide-up flex flex-col"
-        style={{
+        style={fromScanner ? {
+          position: "fixed",
+          inset: 0,
+          zIndex: 1,
+          background: "var(--bg-primary)",
+          paddingTop: "env(safe-area-inset-top, 0px)",
+          paddingBottom: "env(safe-area-inset-bottom, 16px)",
+        } : {
           position: "relative",
           zIndex: 1,
           background: "var(--bg-primary)",
-          maxHeight: fromScanner ? "100dvh" : "85dvh",
-          borderRadius: fromScanner ? "28px 28px 0 0" : "28px 28px 0 0",
+          maxHeight: "85dvh",
+          borderRadius: "28px 28px 0 0",
           paddingBottom: "env(safe-area-inset-bottom, 16px)",
         }}
         onClick={(e) => e.stopPropagation()}
