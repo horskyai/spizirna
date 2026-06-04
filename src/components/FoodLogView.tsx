@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Plus, X, Search, Package } from "lucide-react";
 import { useFoodLogStore } from "@/store/foodLogStore";
 import { usePantryStore } from "@/store/pantryStore";
@@ -347,11 +347,15 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
 }
 
 export function FoodLogView() {
-  const { getTodayEntries, getTodayTotals, addEntry, removeEntry, goal } = useFoodLogStore();
+  const { entries, addEntry, removeEntry, goal } = useFoodLogStore();
   const [showModal, setShowModal] = useState(false);
 
-  const todayEntries = getTodayEntries();
-  const totals = getTodayTotals();
+  const today = new Date().toISOString().split("T")[0];
+  const todayEntries = useMemo(() => entries.filter((e) => e.date === today), [entries, today]);
+  const totals = useMemo(() => todayEntries.reduce(
+    (acc, e) => ({ kcal: acc.kcal + e.total_kcal, protein: acc.protein + e.total_protein_g, fat: acc.fat + e.total_fat_g, carbs: acc.carbs + e.total_carbs_g }),
+    { kcal: 0, protein: 0, fat: 0, carbs: 0 }
+  ), [todayEntries]);
   const kcalPct = Math.min(100, (totals.kcal / goal.calories_kcal) * 100);
 
   return (

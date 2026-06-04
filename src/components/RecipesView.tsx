@@ -394,14 +394,13 @@ export function RecipesView() {
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-2 pb-24">
         {/* Search */}
-        <div className="relative mb-4">
-          <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-sm">🔍</span>
+        <div style={{ position: "relative", marginBottom: 16 }}>
+          <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--text-tertiary)" }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Hledat recepty..."
-            className="w-full pl-10 pr-4 py-3 rounded-2xl text-sm outline-none"
-            style={{ background: "white", color: "var(--text-primary)", border: "1.5px solid var(--border)" }}
+            style={{ width: "100%", paddingLeft: 38, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 14, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
           />
         </div>
 
