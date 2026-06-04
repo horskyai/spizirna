@@ -5,6 +5,7 @@ import { X, Plus, AlertCircle, Pencil, ChevronLeft } from "lucide-react";
 import { ProductInfo, StorageLocation } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
 import { usePriceStore } from "@/store/priceStore";
+import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG } from "@/components/LocationIcons";
 
 interface Props {
   product: ProductInfo;
@@ -12,11 +13,11 @@ interface Props {
   fromScanner?: boolean;
 }
 
-const LOCATIONS: { id: StorageLocation; label: string; emoji: string }[] = [
-  { id: "lednice", label: "Lednice", emoji: "🧊" },
-  { id: "mrazak", label: "Mrazák", emoji: "❄️" },
-  { id: "spiz", label: "Spíž", emoji: "🏠" },
-  { id: "linka", label: "Skříňka", emoji: "🗄️" },
+const LOCATIONS: { id: StorageLocation; label: string; Icon: React.FC<{ size?: number }> }[] = [
+  { id: "lednice", label: "Lednice", Icon: LedniceSVG },
+  { id: "mrazak", label: "Mrazák", Icon: MrazakSVG },
+  { id: "spiz", label: "Spíž", Icon: SpizSVG },
+  { id: "linka", label: "Skříňka", Icon: SkrinskaSVG },
 ];
 
 const STORES = ["Lidl", "Albert", "Billa", "Kaufland", "Tesco", "Penny", "Rohlik", "Košík", "Jiný"];
@@ -385,7 +386,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
                         border: `1.5px solid ${location === loc.id ? "var(--green-primary)" : "transparent"}`,
                       }}
                     >
-                      <span>{loc.emoji}</span>
+                      <loc.Icon size={22} />
                       <span className="text-sm font-medium" style={{ color: location === loc.id ? "var(--green-dark)" : "var(--text-primary)" }}>
                         {loc.label}
                       </span>

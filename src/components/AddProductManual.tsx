@@ -4,16 +4,17 @@ import { useState } from "react";
 import { X, Plus, ChevronDown } from "lucide-react";
 import { ProductInfo, StorageLocation } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
+import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG } from "@/components/LocationIcons";
 
 interface Props {
   onClose: () => void;
 }
 
-const LOCATIONS: { id: StorageLocation; label: string; emoji: string }[] = [
-  { id: "lednice", label: "Lednice", emoji: "🧊" },
-  { id: "mrazak", label: "Mrazák", emoji: "❄️" },
-  { id: "spiz", label: "Spíž", emoji: "🏠" },
-  { id: "linka", label: "Skříňka", emoji: "🗄️" },
+const LOCATIONS: { id: StorageLocation; label: string; Icon: React.FC<{ size?: number }> }[] = [
+  { id: "lednice", label: "Lednice", Icon: LedniceSVG },
+  { id: "mrazak", label: "Mrazák", Icon: MrazakSVG },
+  { id: "spiz", label: "Spíž", Icon: SpizSVG },
+  { id: "linka", label: "Skříňka", Icon: SkrinskaSVG },
 ];
 
 const CATEGORIES = [
@@ -313,7 +314,7 @@ export function AddProductManual({ onClose }: Props) {
                         border: `1.5px solid ${location === loc.id ? "var(--green-primary)" : "transparent"}`,
                       }}
                     >
-                      <span>{loc.emoji}</span>
+                      <loc.Icon size={22} />
                       <span className="text-sm font-medium" style={{ color: location === loc.id ? "var(--green-dark)" : "var(--text-primary)" }}>
                         {loc.label}
                       </span>

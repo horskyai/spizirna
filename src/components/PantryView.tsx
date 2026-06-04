@@ -8,12 +8,13 @@ import { PantryItem, StorageLocation } from "@/types";
 import { daysUntil, formatDateShort } from "@/lib/dateUtils";
 import { cn } from "@/lib/cn";
 import { AddProductManual } from "@/components/AddProductManual";
+import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG, VseSVG } from "@/components/LocationIcons";
 
-const LOCATION_LABELS: Record<StorageLocation, { label: string; emoji: string }> = {
-  lednice: { label: "Lednice", emoji: "🧊" },
-  mrazak: { label: "Mrazák", emoji: "❄️" },
-  spiz: { label: "Spíž", emoji: "🏠" },
-  linka: { label: "Skříňka", emoji: "🗄️" },
+const LOCATION_LABELS: Record<StorageLocation, { label: string; Icon: React.FC<{ size?: number }> }> = {
+  lednice: { label: "Lednice", Icon: LedniceSVG },
+  mrazak: { label: "Mrazák", Icon: MrazakSVG },
+  spiz: { label: "Spíž", Icon: SpizSVG },
+  linka: { label: "Skříňka", Icon: SkrinskaSVG },
 };
 
 function ExpiryBadge({ expiresAt }: { expiresAt?: string }) {
@@ -38,10 +39,10 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
       >
         {/* Icon */}
         <div
-          className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 text-lg"
+          className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
           style={{ background: "var(--green-light)" }}
         >
-          {loc.emoji}
+          <loc.Icon size={26} />
         </div>
 
         {/* Info */}
@@ -111,9 +112,9 @@ export function PantryView() {
   }, [items]);
   const filtered = filter === "vse" ? items : items.filter(i => i.location === filter);
 
-  const filters: { id: StorageLocation | "vse"; label: string; emoji: string }[] = [
-    { id: "vse", label: "Vše", emoji: "📦" },
-    ...Object.entries(LOCATION_LABELS).map(([id, v]) => ({ id: id as StorageLocation, label: v.label, emoji: v.emoji })),
+  const filters: { id: StorageLocation | "vse"; label: string; Icon: React.FC<{ size?: number }> }[] = [
+    { id: "vse", label: "Vše", Icon: VseSVG },
+    ...Object.entries(LOCATION_LABELS).map(([id, v]) => ({ id: id as StorageLocation, label: v.label, Icon: v.Icon })),
   ];
 
   if (items.length === 0) {
@@ -199,7 +200,7 @@ export function PantryView() {
                   boxShadow: "var(--shadow)",
                 }}
               >
-                <span>{f.emoji}</span>
+                <f.Icon size={18} />
                 <span>{f.label}</span>
                 <span
                   className="text-xs px-1.5 py-0.5 rounded-full font-bold"
