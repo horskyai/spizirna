@@ -55,26 +55,30 @@ export function TabBar() {
             >
               <div
                 style={{
-                  width: 40, height: 32, borderRadius: 12,
+                  width: 44, height: 44, borderRadius: "50%",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  background: active ? "var(--green-light)" : "transparent",
+                  background: active
+                    ? "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)"
+                    : "var(--border)",
+                  boxShadow: active ? "0 4px 14px rgba(76,175,130,0.4)" : "none",
                   position: "relative",
-                  transition: "all 0.15s ease",
+                  transition: "all 0.2s ease",
                 }}
               >
                 <Icon
                   size={19}
-                  strokeWidth={active ? 2.3 : 1.6}
-                  style={{ color: active ? "var(--green-primary)" : "var(--text-tertiary)" }}
+                  strokeWidth={active ? 2.2 : 1.7}
+                  style={{ color: active ? "white" : "var(--text-tertiary)" }}
                 />
                 {badge && (
                   <span
                     style={{
-                      position: "absolute", top: 0, right: 2,
+                      position: "absolute", top: 0, right: 0,
                       width: 16, height: 16, borderRadius: "50%",
-                      background: "var(--green-primary)", color: "white",
+                      background: "var(--red)", color: "white",
                       fontSize: 9, fontWeight: 700,
                       display: "flex", alignItems: "center", justifyContent: "center",
+                      border: "2px solid white",
                     }}
                   >
                     {badge > 9 ? "9+" : badge}
