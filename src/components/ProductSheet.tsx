@@ -22,14 +22,21 @@ const STORES = ["Lidl", "Albert", "Billa", "Kaufland", "Tesco", "Penny", "Rohlik
 
 export function ProductSheet({ product, onClose }: Props) {
   const addItem = usePantryStore((s) => s.addItem);
+  const updateItem = usePantryStore((s) => s.updateItem);
+  const pantryItems = usePantryStore((s) => s.items);
   const addRecord = usePriceStore((s) => s.addRecord);
+
+  // Najdi existující položky ve spižírně podle EAN
+  const existingItems = pantryItems.filter((i) => i.product.ean_code === product.ean_code);
+  const totalExisting = existingItems.reduce((sum, i) => sum + i.quantity, 0);
 
   const [tab, setTab] = useState<"info" | "add">("info");
   const [qty, setQty] = useState(1);
-  const [location, setLocation] = useState<StorageLocation>("lednice");
+  const [location, setLocation] = useState<StorageLocation>(existingItems[0]?.location ?? "lednice");
   const [price, setPrice] = useState("");
   const [store, setStore] = useState("Lidl");
   const [added, setAdded] = useState(false);
+  const [addedToExisting, setAddedToExisting] = useState(false);
 
   const displayWeight = product.weight_g
     ? product.weight_g >= 1000 ? `${(product.weight_g / 1000).toFixed(product.weight_g % 1000 === 0 ? 0 : 1)}kg` : `${product.weight_g}g`
@@ -38,6 +45,14 @@ export function ProductSheet({ product, onClose }: Props) {
     : product.pieces_count
     ? `${product.pieces_count} ks`
     : "";
+
+  // Přidá qty k množství první existující položky
+  const handleAddToExisting = () => {
+    const first = existingItems[0];
+    updateItem(first.id, { quantity: first.quantity + qty });
+    setAddedToExisting(true);
+    setTimeout(onClose, 1200);
+  };
 
   const handleAdd = () => {
     addItem(product, qty, location, price ? parseFloat(price) : undefined, store);
@@ -291,14 +306,35 @@ export function ProductSheet({ product, onClose }: Props) {
                 </div>
               </div>
 
+              {/* Existující položka ve spižírně */}
+              {existingItems.length > 0 && !added && !addedToExisting && (
+                <div className="rounded-2xl p-4" style={{ background: "var(--green-light)", border: "1.5px solid var(--green-primary)" }}>
+                  <p className="text-sm font-semibold mb-1" style={{ color: "var(--green-dark)" }}>
+                    Už máš ve spižírně
+                  </p>
+                  <p className="text-xs mb-3" style={{ color: "var(--green-dark)" }}>
+                    {existingItems.map((i) => `${i.quantity}× v ${LOCATIONS.find(l => l.id === i.location)?.label ?? i.location}`).join(", ")}
+                  </p>
+                  <button
+                    onClick={handleAddToExisting}
+                    className="btn-primary"
+                    style={{ background: "var(--green-primary)", fontSize: 14, padding: "10px 16px" }}
+                  >
+                    <Plus size={16} /> Přičíst {qty}× k existujícímu
+                  </button>
+                </div>
+              )}
+
               {/* Add button */}
               <button
                 onClick={handleAdd}
                 className="btn-primary w-full"
-                style={added ? { background: "#4A6B3F" } : {}}
+                style={added || addedToExisting ? { background: "#4A6B3F" } : existingItems.length > 0 ? { background: "var(--border)", color: "var(--text-secondary)" } : {}}
               >
-                {added ? (
-                  <>✓ Přidáno do spižírny</>
+                {added || addedToExisting ? (
+                  <>✓ Hotovo</>
+                ) : existingItems.length > 0 ? (
+                  <><Plus size={18} /> Přidat jako nový záznam</>
                 ) : (
                   <><Plus size={18} /> Přidat do spižírny</>
                 )}
