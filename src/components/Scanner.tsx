@@ -35,12 +35,9 @@ export function Scanner() {
       try {
         const zxingModule = await import("zxing-wasm").catch(() => null);
         if (!zxingModule) return;
-        const { readBarcodes, setZXingModuleOverrides } = zxingModule;
-        // Point to CDN so WASM file is found on Vercel
-        setZXingModuleOverrides({
-          locateFile: (path: string) =>
-            `https://cdn.jsdelivr.net/npm/zxing-wasm@3.1.0/dist/reader/${path}`,
-        });
+        const { readBarcodes, prepareZXingModule } = zxingModule;
+        // Default locateFile loads WASM from jsDelivr CDN automatically
+        prepareZXingModule({ fireImmediately: true });
         if (!active) return;
         zxingRef.current = readBarcodes;
         setZxingReady(true);
