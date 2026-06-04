@@ -63,23 +63,30 @@ export function ProductSheet({ product, onClose }: Props) {
   ];
 
   return (
-    <div className="absolute inset-0 flex flex-col justify-end animate-fade-in" style={{ zIndex: 50 }}>
+    <div
+      className="flex flex-col justify-end animate-fade-in"
+      style={{ position: "fixed", inset: 0, zIndex: 200 }}
+    >
       {/* Backdrop */}
       <div className="absolute inset-0 sheet-overlay" onClick={onClose} />
 
       {/* Sheet */}
       <div
-        className="relative animate-slide-up rounded-t-3xl overflow-hidden"
-        style={{ background: "var(--bg-primary)", maxHeight: "85vh" }}
+        className="relative animate-slide-up rounded-t-3xl flex flex-col"
+        style={{
+          background: "var(--bg-primary)",
+          maxHeight: "92dvh",
+          paddingBottom: "env(safe-area-inset-bottom, 16px)",
+        }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle */}
-        <div className="flex justify-center pt-3 pb-1">
+        <div className="flex justify-center pt-3 pb-1 flex-shrink-0">
           <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
         </div>
 
         {/* Header */}
-        <div className="flex items-start justify-between px-5 pt-2 pb-3">
+        <div className="flex items-start justify-between px-5 pt-2 pb-3 flex-shrink-0">
           <div className="flex-1 pr-4">
             <p className="text-xs font-medium mb-0.5" style={{ color: "var(--text-tertiary)" }}>
               {product.brand} · EAN {product.ean_code}
@@ -87,20 +94,22 @@ export function ProductSheet({ product, onClose }: Props) {
             <h2 className="text-xl font-bold leading-tight" style={{ color: "var(--text-primary)" }}>
               {product.product_name}
             </h2>
-            <div className="flex items-center gap-2 mt-1">
+            <div className="flex items-center gap-2 mt-1" style={{ flexWrap: "wrap" }}>
               {displayWeight && (
                 <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "var(--green-light)", color: "var(--green-dark)" }}>
                   {displayWeight}
                 </span>
               )}
-              <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "var(--border)", color: "var(--text-secondary)" }}>
-                {product.category}
-              </span>
+              {product.category && (
+                <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "var(--border)", color: "var(--text-secondary)" }}>
+                  {product.category}
+                </span>
+              )}
             </div>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center"
+            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
             style={{ background: "var(--border)" }}
           >
             <X size={16} style={{ color: "var(--text-secondary)" }} />
@@ -108,7 +117,7 @@ export function ProductSheet({ product, onClose }: Props) {
         </div>
 
         {/* Tabs */}
-        <div className="flex px-5 gap-2 mb-3">
+        <div className="flex px-5 gap-2 mb-3 flex-shrink-0">
           {(["info", "add"] as const).map((t) => (
             <button
               key={t}
@@ -125,7 +134,7 @@ export function ProductSheet({ product, onClose }: Props) {
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto px-5 pb-8" style={{ maxHeight: "55vh" }}>
+        <div className="overflow-y-auto px-5 pb-6" style={{ flex: "1 1 0", minHeight: 0 }}>
           {tab === "info" ? (
             <div className="space-y-4">
               {/* Calories big */}

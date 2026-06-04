@@ -8,9 +8,10 @@ import { Scanner } from "@/components/Scanner";
 import { FoodLogView } from "@/components/FoodLogView";
 import { RecipesView } from "@/components/RecipesView";
 import { ShoppingView } from "@/components/ShoppingView";
+import { ProductSheet } from "@/components/ProductSheet";
 
 export default function Home() {
-  const { activeTab } = useUIStore();
+  const { activeTab, activeSheet, scannedProduct, closeSheet } = useUIStore();
 
   return (
     <div className="relative flex-1 flex flex-col overflow-hidden" style={{ background: "var(--bg-primary)" }}>
@@ -25,6 +26,11 @@ export default function Home() {
       </main>
 
       <TabBar />
+
+      {/* Product sheet rendered at root level so it covers full screen incl. tab bar */}
+      {activeSheet === "product" && scannedProduct && (
+        <ProductSheet product={scannedProduct} onClose={() => closeSheet()} />
+      )}
     </div>
   );
 }

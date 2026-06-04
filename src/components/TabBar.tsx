@@ -18,7 +18,7 @@ export function TabBar() {
 
   return (
     <nav className="tab-bar flex-shrink-0" style={{ paddingBottom: "env(safe-area-inset-bottom, 8px)" }}>
-      <div className="flex items-center justify-around px-2 pt-2 pb-1">
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", alignItems: "flex-end", paddingTop: 8, paddingBottom: 4, paddingLeft: 4, paddingRight: 4 }}>
         {TABS.map(({ id, label, Icon }) => {
           const active = activeTab === id;
           const isCenter = id === "skenovat";
@@ -29,7 +29,7 @@ export function TabBar() {
               <button
                 key={id}
                 onClick={() => setTab(id)}
-                className="flex flex-col items-center gap-0.5 -mt-5"
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginTop: -20 }}
               >
                 <div
                   className="w-14 h-14 rounded-full flex items-center justify-center transition-all"
@@ -40,7 +40,7 @@ export function TabBar() {
                 >
                   <Icon size={22} color="white" strokeWidth={1.8} />
                 </div>
-                <span className="text-xs font-medium" style={{ color: active ? "var(--green-primary)" : "var(--text-tertiary)", fontSize: 10 }}>
+                <span style={{ fontSize: 10, fontWeight: 500, color: active ? "var(--green-primary)" : "var(--text-tertiary)" }}>
                   {label}
                 </span>
               </button>
@@ -51,11 +51,11 @@ export function TabBar() {
             <button
               key={id}
               onClick={() => setTab(id)}
-              className="relative flex flex-col items-center gap-0.5 min-w-12 py-1 transition-all"
+              style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, paddingTop: 4, paddingBottom: 4 }}
             >
               <div
                 className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
-                style={{ background: active ? "var(--green-light)" : "transparent" }}
+                style={{ background: active ? "var(--green-light)" : "transparent", position: "relative" }}
               >
                 <Icon
                   size={18}
@@ -64,17 +64,19 @@ export function TabBar() {
                 />
                 {badge && (
                   <span
-                    className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center font-bold text-white"
-                    style={{ background: "var(--green-primary)", fontSize: 9 }}
+                    style={{
+                      position: "absolute", top: -2, right: -2,
+                      width: 16, height: 16, borderRadius: "50%",
+                      background: "var(--green-primary)", color: "white",
+                      fontSize: 9, fontWeight: 700,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}
                   >
                     {badge > 9 ? "9+" : badge}
                   </span>
                 )}
               </div>
-              <span
-                className="font-medium transition-all"
-                style={{ color: active ? "var(--green-primary)" : "var(--text-tertiary)", fontSize: 10 }}
-              >
+              <span style={{ fontSize: 10, fontWeight: 500, color: active ? "var(--green-primary)" : "var(--text-tertiary)" }}>
                 {label}
               </span>
             </button>

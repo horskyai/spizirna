@@ -4,7 +4,6 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Flashlight, X, Keyboard } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import { fetchProductByEAN } from "@/lib/openFoodFacts";
-import { ProductSheet } from "./ProductSheet";
 
 type ScanState = "scanning" | "loading" | "found" | "notfound";
 
@@ -16,7 +15,7 @@ export function Scanner() {
   const lastScannedRef = useRef<string | null>(null);
   const scanStateRef = useRef<ScanState>("scanning");
 
-  const { openSheet, scannedProduct, closeSheet, activeSheet } = useUIStore();
+  const { openSheet, activeSheet } = useUIStore();
 
   const [scanState, setScanState] = useState<ScanState>("scanning");
   const [error, setError] = useState<string | null>(null);
@@ -393,10 +392,6 @@ export function Scanner() {
         </div>
       )}
 
-      {/* Product sheet */}
-      {activeSheet === "product" && scannedProduct && (
-        <ProductSheet product={scannedProduct} onClose={() => closeSheet()} />
-      )}
     </div>
   );
 }

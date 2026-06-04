@@ -18,8 +18,8 @@ export async function fetchProductByEAN(ean: string): Promise<ProductInfo | null
       ean_code: ean,
       product_name: p.product_name || "Neznámý produkt",
       brand: p.brands || "",
-      category: (p.categories_tags?.[0] ?? "").replace("en:", "").replace("cs:", ""),
-      subcategory: (p.categories_tags?.[1] ?? "").replace("en:", "").replace("cs:", ""),
+      category: formatCategory(p.categories_tags?.[0] ?? ""),
+      subcategory: formatCategory(p.categories_tags?.[1] ?? ""),
       image_url: p.image_url || p.image_front_url || "",
       ...qty,
       calories_kcal: p.nutriments?.["energy-kcal_100g"],
@@ -38,6 +38,16 @@ export async function fetchProductByEAN(ean: string): Promise<ProductInfo | null
   } catch {
     return null;
   }
+}
+
+function formatCategory(raw: string): string {
+  return raw
+    .replace(/^(en:|cs:)/, "")
+    .replace(/-/g, " ")
+    .replace(/\b\w/g, (c) => c.toUpperCase())
+    .split(" ")
+    .slice(0, 3)
+    .join(" ");
 }
 
 function parseQuantity(qty: string): { weight_g?: number; volume_ml?: number; pieces_count?: number; unit: "g" | "ml" | "ks" } {
