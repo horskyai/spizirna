@@ -32,9 +32,9 @@ export function ProductSheet({ product, onClose }: Props) {
   const [added, setAdded] = useState(false);
 
   const displayWeight = product.weight_g
-    ? `${product.weight_g}g`
+    ? product.weight_g >= 1000 ? `${(product.weight_g / 1000).toFixed(product.weight_g % 1000 === 0 ? 0 : 1)}kg` : `${product.weight_g}g`
     : product.volume_ml
-    ? `${product.volume_ml}ml`
+    ? product.volume_ml >= 1000 ? `${(product.volume_ml / 1000).toFixed(product.volume_ml % 1000 === 0 ? 0 : 1)}l` : `${product.volume_ml}ml`
     : product.pieces_count
     ? `${product.pieces_count} ks`
     : "";
@@ -81,6 +81,7 @@ export function ProductSheet({ product, onClose }: Props) {
           zIndex: 1,
           background: "var(--bg-primary)",
           maxHeight: "92dvh",
+          minHeight: "60dvh",
           paddingBottom: "env(safe-area-inset-bottom, 16px)",
         }}
         onClick={(e) => e.stopPropagation()}

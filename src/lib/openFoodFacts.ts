@@ -51,15 +51,20 @@ function formatCategory(raw: string): string {
 }
 
 function parseQuantity(qty: string): { weight_g?: number; volume_ml?: number; pieces_count?: number; unit: "g" | "ml" | "ks" } {
-  const lower = qty.toLowerCase();
-  const num = parseFloat(qty.replace(/[^0-9.]/g, ""));
-  if (lower.includes("ml") || lower.includes("l")) {
-    const ml = lower.includes(" l") || lower.endsWith("l") && !lower.includes("ml")
-      ? num * 1000 : num;
-    return { volume_ml: ml, unit: "ml" };
+  const lower = qty.toLowerCase().trim();
+  // extract first number (supports comma as decimal separator)
+  const match = lower.match(/[\d]+[.,]?[\d]*/);
+  if (!match) return { unit: "g" };
+  const num = parseFloat(match[0].replace(",", "."));
+  if (isNaN(num) || num <= 0) return { unit: "g" };
+
+  if (lower.includes("cl")) return { volume_ml: Math.round(num * 10), unit: "ml" };
+  if (lower.includes("ml")) return { volume_ml: Math.round(num), unit: "ml" };
+  if (/\d\s*l\b/.test(lower) || lower.endsWith(" l") || lower === `${num}l`) {
+    return { volume_ml: Math.round(num * 1000), unit: "ml" };
   }
-  if (lower.includes("kg")) return { weight_g: num * 1000, unit: "g" };
-  if (lower.includes("g")) return { weight_g: num, unit: "g" };
-  if (!isNaN(num) && num > 0) return { pieces_count: num, unit: "ks" };
+  if (lower.includes("kg")) return { weight_g: Math.round(num * 1000), unit: "g" };
+  if (lower.includes(" g") || lower.endsWith("g")) return { weight_g: Math.round(num), unit: "g" };
+  if (lower.includes("ks") || lower.includes("pcs") || lower.includes("st")) return { pieces_count: num, unit: "ks" };
   return { unit: "g" };
 }
