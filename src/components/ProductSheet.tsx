@@ -64,16 +64,21 @@ export function ProductSheet({ product, onClose }: Props) {
 
   return (
     <div
-      className="flex flex-col justify-end animate-fade-in"
-      style={{ position: "fixed", inset: 0, zIndex: 200 }}
+      style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}
     >
       {/* Backdrop */}
-      <div className="absolute inset-0 sheet-overlay" onClick={onClose} />
+      <div
+        className="sheet-overlay animate-fade-in"
+        onClick={onClose}
+        style={{ position: "absolute", inset: 0, zIndex: 0 }}
+      />
 
       {/* Sheet */}
       <div
-        className="relative animate-slide-up rounded-t-3xl flex flex-col"
+        className="animate-slide-up rounded-t-3xl flex flex-col"
         style={{
+          position: "relative",
+          zIndex: 1,
           background: "var(--bg-primary)",
           maxHeight: "92dvh",
           paddingBottom: "env(safe-area-inset-bottom, 16px)",
@@ -86,15 +91,38 @@ export function ProductSheet({ product, onClose }: Props) {
         </div>
 
         {/* Header */}
-        <div className="flex items-start justify-between px-5 pt-2 pb-3 flex-shrink-0">
-          <div className="flex-1 pr-4">
+        <div className="flex items-start gap-3 px-5 pt-2 pb-3 flex-shrink-0">
+          {/* Product image */}
+          {product.image_url ? (
+            <div
+              className="flex-shrink-0 rounded-2xl overflow-hidden"
+              style={{ width: 72, height: 72, background: "white", border: "1px solid var(--border)" }}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={product.image_url}
+                alt={product.product_name}
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+            </div>
+          ) : (
+            <div
+              className="flex-shrink-0 rounded-2xl flex items-center justify-center"
+              style={{ width: 72, height: 72, background: "var(--border)", fontSize: 28 }}
+            >
+              🛒
+            </div>
+          )}
+
+          <div className="flex-1 min-w-0">
             <p className="text-xs font-medium mb-0.5" style={{ color: "var(--text-tertiary)" }}>
-              {product.brand} · EAN {product.ean_code}
+              {product.brand}{product.brand && " · "}EAN {product.ean_code}
             </p>
-            <h2 className="text-xl font-bold leading-tight" style={{ color: "var(--text-primary)" }}>
+            <h2 className="text-lg font-bold leading-tight" style={{ color: "var(--text-primary)" }}>
               {product.product_name}
             </h2>
-            <div className="flex items-center gap-2 mt-1" style={{ flexWrap: "wrap" }}>
+            <div className="flex items-center gap-1.5 mt-1" style={{ flexWrap: "wrap" }}>
               {displayWeight && (
                 <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "var(--green-light)", color: "var(--green-dark)" }}>
                   {displayWeight}
@@ -107,6 +135,7 @@ export function ProductSheet({ product, onClose }: Props) {
               )}
             </div>
           </div>
+
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
