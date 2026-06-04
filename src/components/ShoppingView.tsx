@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Check, ShoppingCart, X, LayoutList, Tag } from "lucide-react";
+import { Plus, Check, ShoppingCart, X, LayoutList, Tag, Share2 } from "lucide-react";
 import { useShoppingStore } from "@/store/shoppingStore";
 
 const CATEGORIES = [
@@ -138,6 +138,24 @@ export function ShoppingView() {
     );
   }, [unchecked]);
 
+  const shareList = () => {
+    const lines: string[] = ["🛒 Nákupní seznam ze Spižírny\n"];
+    const grouped = groupBy === "category" ? byCategory : byRecipe;
+    Object.entries(grouped).forEach(([key, groupItems]) => {
+      const cat = CATEGORIES.find((c) => c.id === key);
+      const label = groupBy === "category" ? (cat ? `${cat.emoji} ${cat.label}` : key) : `📖 ${key}`;
+      lines.push(label);
+      groupItems.forEach((i) => lines.push(`  • ${i.name} — ${i.quantity} ${i.unit}`));
+      lines.push("");
+    });
+    const text = lines.join("\n");
+    if (navigator.share) {
+      navigator.share({ title: "Nákupní seznam", text });
+    } else {
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+    }
+  };
+
   if (items.length === 0) {
     return (
       <div className="relative flex-1 flex flex-col items-center justify-center gap-5 p-8">
@@ -253,14 +271,25 @@ export function ShoppingView() {
           </div>
         )}
 
-        {/* Add more */}
-        <button
-          onClick={() => setShowAdd(true)}
-          className="w-full py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
-          style={{ background: "white", color: "var(--text-secondary)", border: "1.5px dashed var(--border)" }}
-        >
-          <Plus size={16} /> Přidat položku
-        </button>
+        {/* Add more + share */}
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowAdd(true)}
+            className="flex-1 py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
+            style={{ background: "white", color: "var(--text-secondary)", border: "1.5px dashed var(--border)" }}
+          >
+            <Plus size={16} /> Přidat položku
+          </button>
+          {unchecked.length > 0 && (
+            <button
+              onClick={shareList}
+              className="py-3 px-4 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
+              style={{ background: "var(--green-light)", color: "var(--green-dark)", border: "1.5px solid var(--green-primary)" }}
+            >
+              <Share2 size={16} /> Sdílet
+            </button>
+          )}
+        </div>
 
         {items.length > 0 && (
           <button
