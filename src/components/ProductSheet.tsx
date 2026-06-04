@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { X, Plus, AlertCircle, Pencil, ChevronLeft } from "lucide-react";
 import { ProductInfo, StorageLocation } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
@@ -26,7 +26,11 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
   const updateItem = usePantryStore((s) => s.updateItem);
   const pantryItems = usePantryStore((s) => s.items);
   const addRecord = usePriceStore((s) => s.addRecord);
-  const priceRecords = usePriceStore((s) => s.records.filter((r) => r.ean_code === product.ean_code).sort((a, b) => b.date.localeCompare(a.date)));
+  const allPriceRecords = usePriceStore((s) => s.records);
+  const priceRecords = useMemo(
+    () => allPriceRecords.filter((r) => r.ean_code === product.ean_code).sort((a, b) => b.date.localeCompare(a.date)),
+    [allPriceRecords, product.ean_code]
+  );
 
   // Najdi existující položky ve spižírně podle EAN
   const existingItems = pantryItems.filter((i) => i.product.ean_code === product.ean_code);
