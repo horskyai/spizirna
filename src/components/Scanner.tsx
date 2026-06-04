@@ -33,10 +33,13 @@ export function Scanner() {
     let active = true;
     async function initZXing() {
       try {
-        const { readBarcodesFromImageData, prepareZXingModule } = await import("zxing-wasm");
-        await prepareZXingModule();
-        zxingRef.current = readBarcodesFromImageData;
-        if (active) setZxingReady(true);
+        const zxingModule = await import("zxing-wasm").catch(() => null);
+        if (!zxingModule) return;
+        const { readBarcodes, prepareZXingModule } = zxingModule;
+        try { prepareZXingModule(); } catch {}
+        if (!active) return;
+        zxingRef.current = readBarcodes;
+        setZxingReady(true);
       } catch (e) {
         console.error("ZXing init failed", e);
       }
@@ -113,8 +116,9 @@ export function Scanner() {
 
       try {
         const results = await zxingRef.current(imageData, {
-          formats: ["EAN-13", "EAN-8", "UPC-A", "UPC-E", "Code128", "Code39", "QRCode"],
+          formats: ["EAN-13", "EAN-8", "UPC-A", "UPC-E", "Code128", "Code39"],
           maxNumberOfSymbols: 1,
+          tryHarder: true,
         });
 
         if (results.length > 0) {
