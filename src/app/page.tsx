@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { TabBar } from "@/components/TabBar";
 import { AppHeader } from "@/components/AppHeader";
@@ -9,9 +10,22 @@ import { FoodLogView } from "@/components/FoodLogView";
 import { RecipesView } from "@/components/RecipesView";
 import { ShoppingView } from "@/components/ShoppingView";
 import { ProductSheet } from "@/components/ProductSheet";
+import { Onboarding } from "@/components/Onboarding";
 
 export default function Home() {
   const { activeTab, activeSheet, scannedProduct, closeSheet } = useUIStore();
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    if (!localStorage.getItem("onboarding-done")) {
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  const finishOnboarding = () => {
+    localStorage.setItem("onboarding-done", "1");
+    setShowOnboarding(false);
+  };
 
   return (
     <div className="relative flex-1 flex flex-col overflow-hidden" style={{ background: "var(--bg-primary)" }}>
@@ -31,6 +45,9 @@ export default function Home() {
       {activeSheet === "product" && scannedProduct && (
         <ProductSheet product={scannedProduct} onClose={() => closeSheet()} />
       )}
+
+      {/* Onboarding — shown only on first visit */}
+      {showOnboarding && <Onboarding onDone={finishOnboarding} />}
     </div>
   );
 }

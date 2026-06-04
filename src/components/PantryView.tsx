@@ -13,7 +13,7 @@ const LOCATION_LABELS: Record<StorageLocation, { label: string; emoji: string }>
   lednice: { label: "Lednice", emoji: "🧊" },
   mrazak: { label: "Mrazák", emoji: "❄️" },
   spiz: { label: "Spíž", emoji: "🏠" },
-  linka: { label: "Linka", emoji: "🍳" },
+  linka: { label: "Skříňka", emoji: "🗄️" },
 };
 
 function ExpiryBadge({ expiresAt }: { expiresAt?: string }) {

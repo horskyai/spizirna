@@ -15,7 +15,7 @@ const LOCATIONS: { id: StorageLocation; label: string; emoji: string }[] = [
   { id: "lednice", label: "Lednice", emoji: "🧊" },
   { id: "mrazak", label: "Mrazák", emoji: "❄️" },
   { id: "spiz", label: "Spíž", emoji: "🏠" },
-  { id: "linka", label: "Linka", emoji: "🍳" },
+  { id: "linka", label: "Skříňka", emoji: "🗄️" },
 ];
 
 const STORES = ["Lidl", "Albert", "Billa", "Kaufland", "Tesco", "Penny", "Rohlik", "Košík", "Jiný"];
