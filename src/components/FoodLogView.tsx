@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, X, Search, Package } from "lucide-react";
+import { Plus, X, Search, Package, Settings } from "lucide-react";
 import { useFoodLogStore } from "@/store/foodLogStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { FoodLogEntry, FoodLogItem } from "@/types";
@@ -347,8 +347,9 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
 }
 
 export function FoodLogView() {
-  const { entries, addEntry, removeEntry, goal } = useFoodLogStore();
+  const { entries, addEntry, removeEntry, goal, setGoal } = useFoodLogStore();
   const [showModal, setShowModal] = useState(false);
+  const [showGoalModal, setShowGoalModal] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
   const todayEntries = useMemo(() => entries.filter((e) => e.date === today), [entries, today]);
@@ -389,7 +390,13 @@ export function FoodLogView() {
             </div>
           </div>
           <div className="flex justify-between items-center mt-4 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
-            <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Cíl: {goal.calories_kcal} kcal</span>
+            <button
+              onClick={() => setShowGoalModal(true)}
+              className="flex items-center gap-1.5"
+            >
+              <Settings size={13} style={{ color: "var(--text-tertiary)" }} />
+              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Cíl: {goal.calories_kcal} kcal</span>
+            </button>
             <span className="text-xs font-semibold" style={{ color: "var(--green-primary)" }}>
               Zbývá: {Math.max(0, goal.calories_kcal - Math.round(totals.kcal))} kcal
             </span>
@@ -447,6 +454,83 @@ export function FoodLogView() {
       </div>
 
       {showModal && <QuickLogModal onClose={() => setShowModal(false)} onAdd={addEntry} />}
+
+      {showGoalModal && (
+        <GoalModal goal={goal} onSave={(g) => { setGoal(g); setShowGoalModal(false); }} onClose={() => setShowGoalModal(false)} />
+      )}
+    </div>
+  );
+}
+
+function GoalModal({ goal, onSave, onClose }: { goal: any; onSave: (g: any) => void; onClose: () => void }) {
+  const [kcal, setKcal] = useState(goal.calories_kcal.toString());
+  const [protein, setProtein] = useState(goal.protein_g.toString());
+  const [carbs, setCarbs] = useState(goal.carbs_g.toString());
+  const [fat, setFat] = useState(goal.fat_g.toString());
+
+  const handleSave = () => {
+    onSave({
+      calories_kcal: parseInt(kcal) || 2000,
+      protein_g: parseInt(protein) || 150,
+      carbs_g: parseInt(carbs) || 250,
+      fat_g: parseInt(fat) || 65,
+    });
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 100 }}>
+      <div className="sheet-overlay animate-fade-in" onClick={onClose} style={{ position: "absolute", inset: 0 }} />
+      <div
+        className="relative animate-slide-up rounded-t-3xl"
+        style={{ background: "var(--bg-primary)", paddingBottom: "env(safe-area-inset-bottom, 16px)" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
+        </div>
+        <div className="px-5 pt-2 pb-6 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Denní cíle</h3>
+            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
+              <X size={15} style={{ color: "var(--text-secondary)" }} />
+            </button>
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "Kalorie (kcal)", val: kcal, set: setKcal, accent: true },
+              { label: "Bílkoviny (g)", val: protein, set: setProtein },
+              { label: "Sacharidy (g)", val: carbs, set: setCarbs },
+              { label: "Tuky (g)", val: fat, set: setFat },
+            ].map(({ label, val, set, accent }) => (
+              <div key={label}>
+                <p className="text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>{label}</p>
+                <input
+                  type="number"
+                  value={val}
+                  onChange={(e) => set(e.target.value)}
+                  className="w-full px-3 py-3 rounded-xl text-base font-bold outline-none text-center"
+                  style={{
+                    background: "white",
+                    border: `1.5px solid ${accent ? "var(--green-primary)" : "var(--border)"}`,
+                    color: "var(--text-primary)",
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-2xl p-3" style={{ background: "var(--green-light)" }}>
+            <p className="text-xs font-medium text-center" style={{ color: "var(--green-dark)" }}>
+              Průměrný dospělý: 2000 kcal · 150g bílkovin · 250g sacharidů · 65g tuků
+            </p>
+          </div>
+
+          <button onClick={handleSave} className="btn-primary w-full">
+            Uložit cíle
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
