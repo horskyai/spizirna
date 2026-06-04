@@ -204,8 +204,10 @@ export function PantryView() {
                 <span
                   className="text-xs px-1.5 py-0.5 rounded-full font-bold"
                   style={{
-                    background: filter === f.id ? "rgba(255,255,255,0.25)" : "var(--green-light)",
-                    color: filter === f.id ? "white" : "var(--green-dark)",
+                    background: filter === f.id ? "rgba(0,0,0,0.2)" : "var(--green-primary)",
+                    color: "white",
+                    minWidth: 20,
+                    textAlign: "center",
                   }}
                 >
                   {count}
