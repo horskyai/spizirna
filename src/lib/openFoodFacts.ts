@@ -4,7 +4,7 @@ const OFF_API = "https://world.openfoodfacts.org/api/v2/product";
 
 export async function fetchProductByEAN(ean: string): Promise<ProductInfo | null> {
   try {
-    const res = await fetch(`${OFF_API}/${ean}.json?fields=product_name,brands,categories_tags,nutriments,allergens_tags,image_url,quantity`, {
+    const res = await fetch(`${OFF_API}/${ean}.json?fields=product_name,brands,categories_tags,nutriments,allergens_tags,image_url,image_front_url,image_front_display_url,image_front_small_url,quantity`, {
       next: { revalidate: 86400 },
     });
     if (!res.ok) return null;
@@ -13,6 +13,7 @@ export async function fetchProductByEAN(ean: string): Promise<ProductInfo | null
     const p = data.product;
 
     const qty = parseQuantity(p.quantity ?? "");
+    const imageUrl = p.image_front_display_url || p.image_front_url || p.image_url || p.image_front_small_url || "";
 
     return {
       ean_code: ean,
@@ -20,7 +21,7 @@ export async function fetchProductByEAN(ean: string): Promise<ProductInfo | null
       brand: p.brands || "",
       category: formatCategory(p.categories_tags?.[0] ?? ""),
       subcategory: formatCategory(p.categories_tags?.[1] ?? ""),
-      image_url: p.image_url || p.image_front_url || "",
+      image_url: imageUrl,
       ...qty,
       calories_kcal: p.nutriments?.["energy-kcal_100g"],
       protein_g: p.nutriments?.proteins_100g,
