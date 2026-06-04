@@ -26,6 +26,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
   const updateItem = usePantryStore((s) => s.updateItem);
   const pantryItems = usePantryStore((s) => s.items);
   const addRecord = usePriceStore((s) => s.addRecord);
+  const priceRecords = usePriceStore((s) => s.records.filter((r) => r.ean_code === product.ean_code).sort((a, b) => b.date.localeCompare(a.date)));
 
   // Najdi existující položky ve spižírně podle EAN
   const existingItems = pantryItems.filter((i) => i.product.ean_code === product.ean_code);
@@ -301,6 +302,38 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
                       <span key={a} className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "#FCDCB0", color: "#B85C00" }}>
                         {a}
                       </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Price history */}
+              {priceRecords.length > 0 && (
+                <div className="rounded-2xl p-4" style={{ background: "white" }}>
+                  <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>HISTORIE CEN</p>
+                  {/* Best price */}
+                  {(() => {
+                    const best = priceRecords.reduce((b, r) => r.price < b.price ? r : b);
+                    return (
+                      <div className="flex items-center justify-between rounded-xl px-3 py-2 mb-2" style={{ background: "var(--green-light)" }}>
+                        <div>
+                          <p className="text-xs font-medium" style={{ color: "var(--green-dark)" }}>Nejlepší cena</p>
+                          <p className="text-sm font-bold" style={{ color: "var(--green-dark)" }}>{best.store}</p>
+                        </div>
+                        <p className="text-xl font-bold" style={{ color: "var(--green-primary)" }}>{best.price} Kč</p>
+                      </div>
+                    );
+                  })()}
+                  {/* Last 3 records */}
+                  <div className="space-y-1.5 mt-2">
+                    {priceRecords.slice(0, 3).map((r, i) => (
+                      <div key={i} className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{r.store}</span>
+                          <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>{r.date}</span>
+                        </div>
+                        <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>{r.price} Kč</span>
+                      </div>
                     ))}
                   </div>
                 </div>
