@@ -19,17 +19,14 @@ export function TabBar() {
   return (
     <nav
       style={{
-        background: "rgba(255,255,255,0.96)",
-        backdropFilter: "blur(24px)",
-        WebkitBackdropFilter: "blur(24px)",
-        borderTop: "1px solid var(--border)",
+        background: "var(--bg-primary)",
         paddingBottom: "env(safe-area-inset-bottom, 12px)",
-        paddingTop: 10,
-        paddingLeft: 16,
-        paddingRight: 16,
+        paddingTop: 8,
+        paddingLeft: 12,
+        paddingRight: 12,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around" }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around" }}>
         {TABS.map(({ id, label, Icon }) => {
           const active = activeTab === id;
           const isCenter = id === "skenovat";
@@ -40,18 +37,19 @@ export function TabBar() {
               <button
                 key={id}
                 onClick={() => setTab(id)}
-                style={{ display: "flex", alignItems: "center", justifyContent: "center", marginTop: -24 }}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginBottom: 2 }}
               >
                 <div
                   style={{
-                    width: 56, height: 56, borderRadius: "50%",
+                    width: 58, height: 58, borderRadius: "50%",
                     display: "flex", alignItems: "center", justifyContent: "center",
                     background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)",
-                    boxShadow: "0 4px 18px rgba(76,175,130,0.45)",
+                    boxShadow: "0 6px 20px rgba(76,175,130,0.45)",
                   }}
                 >
-                  <Icon size={22} color="white" strokeWidth={1.8} />
+                  <Icon size={24} color="white" strokeWidth={1.8} />
                 </div>
+                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--green-primary)" }}>{label}</span>
               </button>
             );
           }
@@ -60,39 +58,45 @@ export function TabBar() {
             <button
               key={id}
               onClick={() => setTab(id)}
-              style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}
+              style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginBottom: 2 }}
             >
               <div
                 style={{
-                  width: 46, height: 46, borderRadius: "50%",
+                  width: 48, height: 48, borderRadius: "50%",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  background: active ? "var(--green-light)" : "white",
-                  boxShadow: active ? "0 2px 10px rgba(76,175,130,0.25)" : "0 1px 4px rgba(0,0,0,0.08)",
-                  border: active ? "1.5px solid var(--green-primary)" : "1.5px solid var(--border)",
+                  background: active
+                    ? "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)"
+                    : "white",
+                  boxShadow: active
+                    ? "0 4px 14px rgba(76,175,130,0.4)"
+                    : "0 2px 8px rgba(0,0,0,0.10)",
                   transition: "all 0.2s ease",
                   position: "relative",
                 }}
               >
                 <Icon
-                  size={19}
+                  size={20}
                   strokeWidth={active ? 2.2 : 1.6}
-                  style={{ color: active ? "var(--green-primary)" : "var(--text-tertiary)" }}
+                  style={{ color: active ? "white" : "var(--text-tertiary)" }}
                 />
                 {badge && (
                   <span
                     style={{
-                      position: "absolute", top: 0, right: 0,
+                      position: "absolute", top: 1, right: 1,
                       width: 16, height: 16, borderRadius: "50%",
                       background: "var(--red)", color: "white",
                       fontSize: 9, fontWeight: 700,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      border: "2px solid white",
+                      border: "2px solid var(--bg-primary)",
                     }}
                   >
                     {badge > 9 ? "9+" : badge}
                   </span>
                 )}
               </div>
+              <span style={{ fontSize: 10, fontWeight: active ? 600 : 500, color: active ? "var(--green-primary)" : "var(--text-tertiary)" }}>
+                {label}
+              </span>
             </button>
           );
         })}
