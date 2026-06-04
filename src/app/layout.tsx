@@ -1,6 +1,14 @@
 import type { Metadata, Viewport } from "next";
+import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+
+const plusJakarta = Plus_Jakarta_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  display: "swap",
+  variable: "--font-jakarta",
+});
 
 export const metadata: Metadata = {
   title: "Spižírna",
@@ -24,8 +32,8 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="cs">
-      <body>
+    <html lang="cs" className={plusJakarta.variable}>
+      <body style={{ fontFamily: "var(--font-jakarta), -apple-system, sans-serif" }}>
         <Providers>
           <div style={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
             {children}
