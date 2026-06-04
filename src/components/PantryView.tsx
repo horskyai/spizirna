@@ -141,11 +141,11 @@ export function PantryView() {
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-0 pb-4">
         {/* Hero card */}
-        <div className="hero-card px-5 py-5 mb-5">
+        <div className="hero-card px-5 py-5 mb-5" style={{ textAlign: "center" }}>
           <p className="text-xs font-semibold mb-1" style={{ color: "rgba(255,255,255,0.65)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
             Celkem v spižírně
           </p>
-          <p style={{ fontSize: 44, fontWeight: 700, lineHeight: 1, color: "white", letterSpacing: "-1px" }}>
+          <p style={{ fontSize: 56, fontWeight: 700, lineHeight: 1, color: "white", letterSpacing: "-2px" }}>
             {items.length}
           </p>
           <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.7)" }}>
