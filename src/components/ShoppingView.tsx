@@ -112,13 +112,13 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
 export function ShoppingView() {
   const { items, toggleItem, removeItem, removeChecked, clearAll } = useShoppingStore();
   const [showAdd, setShowAdd] = useState(false);
-  const [groupBy, setGroupBy] = useState<"recipe" | "category">("category");
+  const [groupBy, setGroupBy] = useState<"recipe" | "category">("recipe");
 
   const unchecked = items.filter((i) => !i.checked);
   const checked = items.filter((i) => i.checked);
 
   const byRecipe = useMemo(() => unchecked.reduce<Record<string, typeof unchecked>>((acc, item) => {
-    const key = item.recipe_name || "Ostatní";
+    const key = item.recipe_name || "Přidáno ručně";
     acc[key] = acc[key] || [];
     acc[key].push(item);
     return acc;
