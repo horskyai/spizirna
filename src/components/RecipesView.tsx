@@ -40,7 +40,8 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
   const ingredientsWithStatus = recipe.ingredients.map((ing) => {
     const pantryMatch = findPantryMatch(ing);
     const pantryQty = pantryMatch?.quantity ?? 0;
-    const available = pantryQty >= ing.quantity;
+    // available = je v spižírně A množství stačí (pokud ing.quantity=0, potřebujeme aspoň existenci v spižírně)
+    const available = pantryMatch !== null && (ing.quantity === 0 || pantryQty >= ing.quantity);
     const partial = !available && pantryQty > 0;
     const missing = Math.max(0, ing.quantity - pantryQty);
     const isLinked = !!(ing.linked_ean || ing.linked_product_name);
