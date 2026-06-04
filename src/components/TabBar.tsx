@@ -18,7 +18,7 @@ export function TabBar() {
 
   return (
     <nav className="tab-bar flex-shrink-0" style={{ paddingBottom: "env(safe-area-inset-bottom, 8px)" }}>
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", alignItems: "flex-end", paddingTop: 8, paddingBottom: 4, paddingLeft: 4, paddingRight: 4 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(5, 1fr)", alignItems: "flex-end", paddingTop: 6, paddingBottom: 2, paddingLeft: 4, paddingRight: 4 }}>
         {TABS.map(({ id, label, Icon }) => {
           const active = activeTab === id;
           const isCenter = id === "skenovat";
@@ -29,18 +29,18 @@ export function TabBar() {
               <button
                 key={id}
                 onClick={() => setTab(id)}
-                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginTop: -20 }}
+                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 3, marginTop: -22 }}
               >
                 <div
                   className="w-14 h-14 rounded-full flex items-center justify-center transition-all"
                   style={{
-                    background: "var(--green-primary)",
-                    boxShadow: "0 4px 20px rgba(107,143,94,0.4)",
+                    background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)",
+                    boxShadow: "0 4px 18px rgba(76,175,130,0.45)",
                   }}
                 >
                   <Icon size={22} color="white" strokeWidth={1.8} />
                 </div>
-                <span style={{ fontSize: 10, fontWeight: 500, color: active ? "var(--green-primary)" : "var(--text-tertiary)" }}>
+                <span style={{ fontSize: 10, fontWeight: 600, color: active ? "var(--green-primary)" : "var(--text-tertiary)" }}>
                   {label}
                 </span>
               </button>
@@ -51,21 +51,26 @@ export function TabBar() {
             <button
               key={id}
               onClick={() => setTab(id)}
-              style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 2, paddingTop: 4, paddingBottom: 4 }}
+              style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 3, paddingTop: 4, paddingBottom: 4 }}
             >
               <div
-                className="w-8 h-8 rounded-xl flex items-center justify-center transition-all"
-                style={{ background: active ? "var(--green-light)" : "transparent", position: "relative" }}
+                style={{
+                  width: 40, height: 32, borderRadius: 12,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: active ? "var(--green-light)" : "transparent",
+                  position: "relative",
+                  transition: "all 0.15s ease",
+                }}
               >
                 <Icon
-                  size={18}
-                  strokeWidth={active ? 2.2 : 1.6}
+                  size={19}
+                  strokeWidth={active ? 2.3 : 1.6}
                   style={{ color: active ? "var(--green-primary)" : "var(--text-tertiary)" }}
                 />
                 {badge && (
                   <span
                     style={{
-                      position: "absolute", top: -2, right: -2,
+                      position: "absolute", top: 0, right: 2,
                       width: 16, height: 16, borderRadius: "50%",
                       background: "var(--green-primary)", color: "white",
                       fontSize: 9, fontWeight: 700,
@@ -76,7 +81,7 @@ export function TabBar() {
                   </span>
                 )}
               </div>
-              <span style={{ fontSize: 10, fontWeight: 500, color: active ? "var(--green-primary)" : "var(--text-tertiary)" }}>
+              <span style={{ fontSize: 10, fontWeight: active ? 600 : 500, color: active ? "var(--green-primary)" : "var(--text-tertiary)" }}>
                 {label}
               </span>
             </button>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Trash2, ChevronRight, Bell, RefrigeratorIcon } from "lucide-react";
+import { Plus, Trash2, ChevronRight, Bell, RefrigeratorIcon, ScanLine } from "lucide-react";
 import { usePantryStore } from "@/store/pantryStore";
 import { useUIStore } from "@/store/uiStore";
 import { PantryItem, StorageLocation } from "@/types";
@@ -37,8 +37,10 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
         onClick={() => setExpanded(e => !e)}
       >
         {/* Icon */}
-        <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-base"
-          style={{ background: "var(--green-light)" }}>
+        <div
+          className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 text-lg"
+          style={{ background: "var(--green-light)" }}
+        >
           {loc.emoji}
         </div>
 
@@ -47,14 +49,14 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
           <p className="font-semibold text-sm truncate" style={{ color: "var(--text-primary)" }}>
             {item.product.product_name}
           </p>
-          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+          <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
             {item.product.brand && `${item.product.brand} · `}
             {item.quantity} {item.unit} · {loc.label}
           </p>
         </div>
 
         {/* Right */}
-        <div className="flex flex-col items-end gap-1">
+        <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
           <ExpiryBadge expiresAt={item.expires_at} />
           <ChevronRight size={14} className={cn("transition-transform", expanded && "rotate-90")} style={{ color: "var(--text-tertiary)" }} />
         </div>
@@ -137,16 +139,46 @@ export function PantryView() {
 
   return (
     <div className="relative flex-1 overflow-y-auto">
-      <div className="px-5 pt-2 pb-4">
+      <div className="px-5 pt-0 pb-4">
+        {/* Hero card */}
+        <div className="hero-card px-5 py-5 mb-5">
+          <p className="text-xs font-semibold mb-1" style={{ color: "rgba(255,255,255,0.65)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            Celkem v spižírně
+          </p>
+          <p style={{ fontSize: 44, fontWeight: 700, lineHeight: 1, color: "white", letterSpacing: "-1px" }}>
+            {items.length}
+          </p>
+          <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.7)" }}>
+            {expiring.length > 0 ? `${expiring.length} brzy vyprší` : "Vše v pořádku ✓"}
+          </p>
+          {/* Quick actions row */}
+          <div className="flex gap-3 mt-4">
+            <button
+              onClick={() => setTab("skenovat")}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-semibold transition-all"
+              style={{ background: "rgba(255,255,255,0.18)", color: "white", border: "1px solid rgba(255,255,255,0.25)" }}
+            >
+              <ScanLine size={14} /> Skenovat
+            </button>
+            <button
+              onClick={() => setShowManual(true)}
+              className="flex-1 flex items-center justify-center gap-2 py-2.5 rounded-2xl text-xs font-semibold transition-all"
+              style={{ background: "rgba(255,255,255,0.18)", color: "white", border: "1px solid rgba(255,255,255,0.25)" }}
+            >
+              <Plus size={14} /> Přidat ručně
+            </button>
+          </div>
+        </div>
+
         {/* Expiry alerts */}
         {expiring.length > 0 && (
-          <div className="rounded-2xl p-3.5 mb-4 flex items-start gap-3" style={{ background: "#FEF3E2" }}>
-            <Bell size={16} style={{ color: "#B85C00", flexShrink: 0, marginTop: 1 }} />
+          <div className="rounded-2xl p-3.5 mb-4 flex items-start gap-3" style={{ background: "#FFF8EC", border: "1px solid #FFE0B2" }}>
+            <Bell size={16} style={{ color: "#F57C00", flexShrink: 0, marginTop: 1 }} />
             <div>
-              <p className="text-sm font-semibold" style={{ color: "#B85C00" }}>
+              <p className="text-sm font-semibold" style={{ color: "#E65100" }}>
                 {expiring.length} {expiring.length === 1 ? "produkt vyprší" : "produkty vyprší"} brzy!
               </p>
-              <p className="text-xs mt-0.5" style={{ color: "#B85C00" }}>
+              <p className="text-xs mt-0.5" style={{ color: "#BF360C" }}>
                 {expiring.map(i => i.product.product_name).slice(0, 2).join(", ")}
                 {expiring.length > 2 ? ` a ${expiring.length - 2} další` : ""}
               </p>
@@ -196,14 +228,6 @@ export function PantryView() {
           ))
         )}
 
-        {/* Add manually button */}
-        <button
-          onClick={() => setShowManual(true)}
-          className="w-full mt-2 py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2 transition-all"
-          style={{ background: "white", color: "var(--text-secondary)", border: "1.5px dashed var(--border)" }}
-        >
-          <Plus size={16} /> Přidat produkt ručně
-        </button>
       </div>
 
       {showManual && <AddProductManual onClose={() => setShowManual(false)} />}

@@ -33,57 +33,70 @@ export function AppHeader() {
 
   if (activeTab === "skenovat") return null;
 
+  const isPantry = activeTab === "spizirna";
+
   return (
     <>
-      <header
-        className="flex-shrink-0 flex items-center justify-between px-5 pt-4 pb-3"
-        style={{ paddingTop: "max(16px, env(safe-area-inset-top, 16px))" }}
-      >
-        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
-          {title}
-        </h1>
-
-        <div className="flex items-center gap-2">
-          {/* Expiry notification */}
-          {expiringCount > 0 && activeTab === "spizirna" && (
-            <button
-              onClick={() => setShowExpiry(true)}
-              className="relative w-9 h-9 rounded-full flex items-center justify-center"
-              style={{ background: "#FEF3E2" }}
-            >
-              <Bell size={16} style={{ color: "#B85C00" }} />
-              <span
-                className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center font-bold text-white"
-                style={{ background: "#D95757", fontSize: 10 }}
+      {isPantry ? (
+        /* ── HERO HEADER for pantry ── */
+        <header
+          className="flex-shrink-0 px-5 pb-4"
+          style={{ paddingTop: "max(20px, env(safe-area-inset-top, 20px))" }}
+        >
+          {/* Top row: greeting + actions */}
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <p className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>Dobrý den 👋</p>
+              <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)", lineHeight: 1.2 }}>Spižírna</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              {expiringCount > 0 && (
+                <button
+                  onClick={() => setShowExpiry(true)}
+                  className="relative w-10 h-10 rounded-full flex items-center justify-center"
+                  style={{ background: "#FFF3E0", border: "1px solid #FFE0B2" }}
+                >
+                  <Bell size={17} style={{ color: "#F57C00" }} />
+                  <span
+                    className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center font-bold text-white"
+                    style={{ background: "var(--red)", fontSize: 9 }}
+                  >
+                    {expiringCount}
+                  </span>
+                </button>
+              )}
+              <button
+                onClick={() => setShowAddMenu(true)}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+                style={{ background: "var(--green-primary)", boxShadow: "0 4px 14px rgba(76,175,130,0.4)" }}
               >
-                {expiringCount}
-              </span>
-            </button>
-          )}
-
-          {/* Add button for pantry */}
-          {activeTab === "spizirna" && (
-            <button
-              onClick={() => setShowAddMenu(true)}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-all"
-              style={{ background: "var(--green-primary)" }}
-            >
-              <Plus size={18} color="white" strokeWidth={2.5} />
-            </button>
-          )}
-
-          {/* Add button for recipes */}
-          {activeTab === "recepty" && (
-            <button
-              onClick={() => setShowAddRecipe(true)}
-              className="w-9 h-9 rounded-full flex items-center justify-center transition-all"
-              style={{ background: "var(--green-primary)" }}
-            >
-              <Plus size={18} color="white" strokeWidth={2.5} />
-            </button>
-          )}
-        </div>
-      </header>
+                <Plus size={19} color="white" strokeWidth={2.5} />
+              </button>
+            </div>
+          </div>
+        </header>
+      ) : (
+        /* ── PLAIN HEADER for other tabs ── */
+        <header
+          className="flex-shrink-0 flex items-center justify-between px-5 pt-4 pb-3"
+          style={{ paddingTop: "max(16px, env(safe-area-inset-top, 16px))" }}
+        >
+          <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)" }}>
+            {title}
+          </h1>
+          <div className="flex items-center gap-2">
+            {activeTab === "recepty" && (
+              <button
+                onClick={() => setShowAddRecipe(true)}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+                style={{ background: "var(--green-primary)", boxShadow: "0 4px 14px rgba(76,175,130,0.4)" }}
+              >
+                <Plus size={19} color="white" strokeWidth={2.5} />
+              </button>
+            )}
+          </div>
+        </header>
+      )}
 
       {/* Add menu sheet */}
       {showAddMenu && (
