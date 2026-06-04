@@ -310,9 +310,13 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
 }) {
   const consumeItem = usePantryStore((s) => s.consumeItem);
   const pantryItems = usePantryStore((s) => s.items);
+  const addItems = useShoppingStore((s) => s.addItems);
   const [done, setDone] = useState(false);
+  const [addedMissing, setAddedMissing] = useState(false);
   const ratio = portions / recipe.servings;
   const scaledKcal = recipe.calories_per_serving ? Math.round(recipe.calories_per_serving * ratio) : null;
+
+  const missingIngs = ingredientsWithStatus.filter((i) => !i.available && i.pantryQty === 0);
 
   const handleCook = () => {
     recipe.ingredients.forEach((ing) => {
@@ -324,6 +328,17 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
     });
     setDone(true);
     setTimeout(onClose, 1200);
+  };
+
+  const handleAddMissing = () => {
+    addItems(missingIngs.map((ing) => ({
+      name: ing.name,
+      quantity: ing.quantity * ratio,
+      unit: ing.unit,
+      recipe_id: recipe.id,
+      recipe_name: recipe.name,
+    })));
+    setAddedMissing(true);
   };
 
   return (
@@ -366,6 +381,27 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
                   );
                 })}
               </div>
+            </div>
+          )}
+
+          {missingIngs.length > 0 && (
+            <div className="card p-4" style={{ background: "#FEF3E2" }}>
+              <p className="text-xs font-semibold mb-2" style={{ color: "#B85C00" }}>CHYBÍ V SPIŽÍRNĚ</p>
+              <div className="space-y-1.5 mb-3">
+                {missingIngs.map((ing, i) => (
+                  <div key={i} className="flex justify-between">
+                    <span className="text-sm" style={{ color: "#B85C00" }}>{ing.name}</span>
+                    <span className="text-sm font-medium" style={{ color: "#B85C00" }}>{(ing.quantity * ratio).toFixed(0)} {ing.unit}</span>
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={handleAddMissing}
+                className="w-full py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
+                style={{ background: addedMissing ? "#4A6B3F" : "#E8B84B", color: "white" }}
+              >
+                {addedMissing ? "✓ Přidáno na nákupní seznam" : <><ShoppingCart size={13} /> Přidat chybějící na seznam</>}
+              </button>
             </div>
           )}
 
