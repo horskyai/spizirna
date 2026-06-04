@@ -39,10 +39,20 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
       >
         {/* Icon */}
         <div
-          className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0"
-          style={{ background: "var(--green-light)" }}
+          className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0 overflow-hidden"
+          style={{ background: "var(--green-light)", border: "1px solid var(--border)" }}
         >
-          <loc.Icon size={26} />
+          {item.product.image_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.product.image_url}
+              alt={item.product.product_name}
+              style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
+            />
+          ) : (
+            <loc.Icon size={26} />
+          )}
         </div>
 
         {/* Info */}
