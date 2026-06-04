@@ -10,6 +10,7 @@ export interface ShoppingItem {
   recipe_id?: string;
   recipe_name?: string;
   ean_code?: string;
+  category?: string;
 }
 
 interface ShoppingStore {

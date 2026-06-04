@@ -1,20 +1,32 @@
 "use client";
 
-import { useState } from "react";
-import { Plus, Trash2, Check, ShoppingCart, X } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Plus, Check, ShoppingCart, X, LayoutList, Tag } from "lucide-react";
 import { useShoppingStore } from "@/store/shoppingStore";
+
+const CATEGORIES = [
+  { id: "ovoce-zelenina", label: "Ovoce a zelenina", emoji: "🥦" },
+  { id: "maso-ryby", label: "Maso a ryby", emoji: "🥩" },
+  { id: "mlecne", label: "Mléčné výrobky", emoji: "🧀" },
+  { id: "pecivo", label: "Pečivo", emoji: "🍞" },
+  { id: "suche", label: "Suché potraviny", emoji: "🌾" },
+  { id: "napoje", label: "Nápoje", emoji: "🥤" },
+  { id: "mrazene", label: "Mražené", emoji: "❄️" },
+  { id: "ostatni", label: "Ostatní", emoji: "🛒" },
+];
 
 function AddItemModal({ onClose }: { onClose: () => void }) {
   const addItem = useShoppingStore((s) => s.addItem);
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [unit, setUnit] = useState("ks");
+  const [category, setCategory] = useState("ostatni");
 
   const units = ["ks", "g", "kg", "ml", "l", "balení"];
 
   const handleAdd = () => {
     if (!name.trim()) return;
-    addItem({ name: name.trim(), quantity: parseFloat(quantity) || 1, unit });
+    addItem({ name: name.trim(), quantity: parseFloat(quantity) || 1, unit, category });
     setName("");
     setQuantity("1");
   };
@@ -24,13 +36,13 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
       <div className="sheet-overlay animate-fade-in" onClick={onClose} style={{ position: "absolute", inset: 0 }} />
       <div
         className="relative animate-slide-up rounded-t-3xl overflow-hidden"
-        style={{ background: "var(--bg-primary)", paddingBottom: "env(safe-area-inset-bottom, 16px)" }}
+        style={{ background: "var(--bg-primary)", maxHeight: "90dvh", paddingBottom: "env(safe-area-inset-bottom, 16px)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
         </div>
-        <div className="px-5 pt-2 pb-8 space-y-3">
+        <div className="overflow-y-auto px-5 pt-2 pb-8 space-y-3">
           <div className="flex items-center justify-between mb-1">
             <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Přidat položku</h3>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
@@ -56,21 +68,32 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
               className="w-20 px-3 py-2.5 rounded-xl text-sm outline-none text-center font-semibold"
               style={{ background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
             />
-            <div className="flex gap-1.5 flex-1 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-              {units.map((u) => (
-                <button
-                  key={u}
-                  onClick={() => setUnit(u)}
-                  className="flex-shrink-0 px-3 py-2 rounded-full text-sm font-medium transition-all"
-                  style={{
-                    background: unit === u ? "var(--green-primary)" : "white",
-                    color: unit === u ? "white" : "var(--text-secondary)",
-                  }}
-                >
-                  {u}
-                </button>
-              ))}
-            </div>
+            <select
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              style={{ flex: 1, background: "white", border: "1.5px solid var(--border)", borderRadius: 12, padding: "8px 12px", fontSize: 14, fontWeight: 600, outline: "none", color: "var(--text-primary)" }}
+            >
+              {units.map((u) => <option key={u} value={u}>{u}</option>)}
+            </select>
+          </div>
+
+          {/* Kategorie */}
+          <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>KATEGORIE</p>
+          <div className="grid grid-cols-2 gap-2">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setCategory(cat.id)}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left"
+                style={{
+                  background: category === cat.id ? "var(--green-light)" : "white",
+                  border: `1.5px solid ${category === cat.id ? "var(--green-primary)" : "var(--border)"}`,
+                  color: category === cat.id ? "var(--green-dark)" : "var(--text-primary)",
+                }}
+              >
+                <span>{cat.emoji}</span> {cat.label}
+              </button>
+            ))}
           </div>
 
           <button
@@ -89,17 +112,31 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
 export function ShoppingView() {
   const { items, toggleItem, removeItem, removeChecked, clearAll } = useShoppingStore();
   const [showAdd, setShowAdd] = useState(false);
+  const [groupBy, setGroupBy] = useState<"recipe" | "category">("category");
 
   const unchecked = items.filter((i) => !i.checked);
   const checked = items.filter((i) => i.checked);
 
-  // Group unchecked by recipe
-  const byRecipe = unchecked.reduce<Record<string, typeof unchecked>>((acc, item) => {
-    const key = item.recipe_name || "Bez receptu";
+  const byRecipe = useMemo(() => unchecked.reduce<Record<string, typeof unchecked>>((acc, item) => {
+    const key = item.recipe_name || "Ostatní";
     acc[key] = acc[key] || [];
     acc[key].push(item);
     return acc;
-  }, {});
+  }, {}), [unchecked]);
+
+  const byCategory = useMemo(() => {
+    const order = CATEGORIES.map((c) => c.id);
+    const grouped = unchecked.reduce<Record<string, typeof unchecked>>((acc, item) => {
+      const key = item.category || "ostatni";
+      acc[key] = acc[key] || [];
+      acc[key].push(item);
+      return acc;
+    }, {});
+    // Sort by category order
+    return Object.fromEntries(
+      order.filter((k) => grouped[k]).map((k) => [k, grouped[k]])
+    );
+  }, [unchecked]);
 
   if (items.length === 0) {
     return (
@@ -122,54 +159,69 @@ export function ShoppingView() {
   return (
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-2 pb-24 space-y-4">
-        {/* Summary bar */}
+        {/* Summary + grouping toggle */}
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>
             {unchecked.length} položek zbývá
           </p>
-          {checked.length > 0 && (
+          <div className="flex rounded-xl overflow-hidden" style={{ background: "var(--border)" }}>
             <button
-              onClick={removeChecked}
-              className="text-xs font-semibold px-3 py-1.5 rounded-full"
-              style={{ background: "#FDE8E8", color: "#C0392B" }}
+              onClick={() => setGroupBy("category")}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold transition-all"
+              style={{ background: groupBy === "category" ? "var(--green-primary)" : "transparent", color: groupBy === "category" ? "white" : "var(--text-secondary)", borderRadius: 10, margin: groupBy === "category" ? 2 : 0 }}
             >
-              Odebrat hotové ({checked.length})
+              <Tag size={12} /> Kategorie
             </button>
-          )}
+            <button
+              onClick={() => setGroupBy("recipe")}
+              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold transition-all"
+              style={{ background: groupBy === "recipe" ? "var(--green-primary)" : "transparent", color: groupBy === "recipe" ? "white" : "var(--text-secondary)", borderRadius: 10, margin: groupBy === "recipe" ? 2 : 0 }}
+            >
+              <LayoutList size={12} /> Recept
+            </button>
+          </div>
         </div>
 
-        {/* Unchecked grouped by recipe */}
-        {Object.entries(byRecipe).map(([recipeName, groupItems]) => (
-          <div key={recipeName}>
-            {recipeName !== "Bez receptu" && (
+        {checked.length > 0 && (
+          <button onClick={removeChecked} className="text-xs font-semibold px-3 py-1.5 rounded-full self-start" style={{ background: "#FDE8E8", color: "#C0392B" }}>
+            Odebrat hotové ({checked.length})
+          </button>
+        )}
+
+        {/* Grouped items */}
+        {Object.entries(groupBy === "category" ? byCategory : byRecipe).map(([key, groupItems]) => {
+          const cat = CATEGORIES.find((c) => c.id === key);
+          const label = groupBy === "category" ? (cat ? `${cat.emoji} ${cat.label}` : key) : key;
+          return (
+            <div key={key}>
               <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>
-                {recipeName}
+                {label}
               </p>
-            )}
-            <div className="card overflow-hidden">
-              {groupItems.map((item, idx) => (
-                <div
-                  key={item.id}
-                  className="flex items-center gap-3 px-4 py-3.5 transition-all"
-                  style={{ borderBottom: idx < groupItems.length - 1 ? "1px solid var(--border)" : "none" }}
-                >
-                  <button
-                    onClick={() => toggleItem(item.id)}
-                    className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
-                    style={{ borderColor: "var(--green-primary)", background: "transparent" }}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{item.name}</p>
-                    <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{item.quantity} {item.unit}</p>
+              <div className="card overflow-hidden">
+                {groupItems.map((item, idx) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center gap-3 px-4 py-3.5 transition-all"
+                    style={{ borderBottom: idx < groupItems.length - 1 ? "1px solid var(--border)" : "none" }}
+                  >
+                    <button
+                      onClick={() => toggleItem(item.id)}
+                      className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
+                      style={{ borderColor: "var(--green-primary)", background: "transparent" }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{item.name}</p>
+                      <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{item.quantity} {item.unit}</p>
+                    </div>
+                    <button onClick={() => removeItem(item.id)}>
+                      <X size={14} style={{ color: "var(--text-tertiary)" }} />
+                    </button>
                   </div>
-                  <button onClick={() => removeItem(item.id)}>
-                    <X size={14} style={{ color: "var(--text-tertiary)" }} />
-                  </button>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
 
         {/* Checked items */}
         {checked.length > 0 && (
