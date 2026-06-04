@@ -443,24 +443,28 @@ export function AddRecipeModal({ onClose }: Props) {
                         value={ing.quantity || ""}
                         onChange={(e) => updateIngredient(idx, "quantity", parseFloat(e.target.value) || 0)}
                         placeholder="Množství"
-                        className="w-24 px-3 py-2 rounded-xl text-sm outline-none text-center"
+                        className="flex-1 px-3 py-2 rounded-xl text-sm outline-none text-center"
                         style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
                       />
-                      <div className="flex gap-1 overflow-x-auto flex-1" style={{ scrollbarWidth: "none" }}>
+                      <select
+                        value={ing.unit}
+                        onChange={(e) => updateIngredient(idx, "unit", e.target.value)}
+                        style={{
+                          background: "var(--green-light)",
+                          color: "var(--green-dark)",
+                          border: "1.5px solid var(--green-primary)",
+                          borderRadius: 12,
+                          padding: "8px 12px",
+                          fontSize: 14,
+                          fontWeight: 600,
+                          outline: "none",
+                          minWidth: 90,
+                        }}
+                      >
                         {UNITS.map((u) => (
-                          <button
-                            key={u}
-                            onClick={() => updateIngredient(idx, "unit", u)}
-                            className="flex-shrink-0 px-2.5 py-2 rounded-full text-xs font-medium transition-all"
-                            style={{
-                              background: ing.unit === u ? "var(--green-primary)" : "var(--bg-primary)",
-                              color: ing.unit === u ? "white" : "var(--text-secondary)",
-                            }}
-                          >
-                            {u}
-                          </button>
+                          <option key={u} value={u}>{u}</option>
                         ))}
-                      </div>
+                      </select>
                     </div>
 
                     {/* Propojit se spižírnou */}
