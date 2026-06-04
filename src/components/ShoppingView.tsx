@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Check, ShoppingCart, X, LayoutList, Tag, Share2 } from "lucide-react";
+import { Plus, Check, ShoppingCart, X, Share2 } from "lucide-react";
 import { useShoppingStore } from "@/store/shoppingStore";
 
 const CATEGORIES = [
@@ -112,40 +112,32 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
 export function ShoppingView() {
   const { items, toggleItem, removeItem, removeChecked, clearAll } = useShoppingStore();
   const [showAdd, setShowAdd] = useState(false);
-  const [groupBy, setGroupBy] = useState<"recipe" | "category">("recipe");
 
-  const unchecked = items.filter((i) => !i.checked);
-  const checked = items.filter((i) => i.checked);
+  const unchecked = useMemo(() => items.filter((i) => !i.checked), [items]);
+  const checked = useMemo(() => items.filter((i) => i.checked), [items]);
 
-  const byRecipe = useMemo(() => unchecked.reduce<Record<string, typeof unchecked>>((acc, item) => {
-    const key = item.recipe_name || "Přidáno ručně";
-    acc[key] = acc[key] || [];
-    acc[key].push(item);
-    return acc;
-  }, {}), [unchecked]);
-
-  const byCategory = useMemo(() => {
-    const order = CATEGORIES.map((c) => c.id);
-    const grouped = unchecked.reduce<Record<string, typeof unchecked>>((acc, item) => {
-      const key = item.category || "ostatni";
+  const groups = useMemo(() => {
+    const byRecipe = unchecked.reduce<Record<string, typeof unchecked>>((acc, item) => {
+      const key = item.recipe_name || "Přidáno ručně";
       acc[key] = acc[key] || [];
       acc[key].push(item);
       return acc;
     }, {});
-    // Sort by category order
-    return Object.fromEntries(
-      order.filter((k) => grouped[k]).map((k) => [k, grouped[k]])
+    // Recipes first, "Přidáno ručně" last
+    const keys = Object.keys(byRecipe).sort((a, b) =>
+      a === "Přidáno ručně" ? 1 : b === "Přidáno ručně" ? -1 : 0
     );
+    return keys.map((k) => ({ name: k, items: byRecipe[k], isManual: k === "Přidáno ručně" }));
   }, [unchecked]);
 
   const shareList = () => {
     const lines: string[] = ["🛒 Nákupní seznam ze Spižírny\n"];
-    const grouped = groupBy === "category" ? byCategory : byRecipe;
-    Object.entries(grouped).forEach(([key, groupItems]) => {
-      const cat = CATEGORIES.find((c) => c.id === key);
-      const label = groupBy === "category" ? (cat ? `${cat.emoji} ${cat.label}` : key) : `📖 ${key}`;
-      lines.push(label);
-      groupItems.forEach((i) => lines.push(`  • ${i.name} — ${i.quantity} ${i.unit}`));
+    groups.forEach(({ name, items: groupItems }) => {
+      lines.push(name === "Přidáno ručně" ? "🛒 Přidáno ručně" : `📖 ${name}`);
+      groupItems.forEach((i) => {
+        const cat = CATEGORIES.find((c) => c.id === i.category);
+        lines.push(`  • ${i.name} — ${i.quantity} ${i.unit}${cat ? ` (${cat.label})` : ""}`);
+      });
       lines.push("");
     });
     const text = lines.join("\n");
@@ -177,46 +169,28 @@ export function ShoppingView() {
   return (
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-2 pb-24 space-y-4">
-        {/* Summary + grouping toggle */}
+        {/* Summary */}
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>
             {unchecked.length} položek zbývá
           </p>
-          <div className="flex rounded-xl overflow-hidden" style={{ background: "var(--border)" }}>
-            <button
-              onClick={() => setGroupBy("category")}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold transition-all"
-              style={{ background: groupBy === "category" ? "var(--green-primary)" : "transparent", color: groupBy === "category" ? "white" : "var(--text-secondary)", borderRadius: 10, margin: groupBy === "category" ? 2 : 0 }}
-            >
-              <Tag size={12} /> Kategorie
+          {checked.length > 0 && (
+            <button onClick={removeChecked} className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: "#FDE8E8", color: "#C0392B" }}>
+              Odebrat hotové ({checked.length})
             </button>
-            <button
-              onClick={() => setGroupBy("recipe")}
-              className="flex items-center gap-1 px-3 py-1.5 text-xs font-semibold transition-all"
-              style={{ background: groupBy === "recipe" ? "var(--green-primary)" : "transparent", color: groupBy === "recipe" ? "white" : "var(--text-secondary)", borderRadius: 10, margin: groupBy === "recipe" ? 2 : 0 }}
-            >
-              <LayoutList size={12} /> Recept
-            </button>
-          </div>
+          )}
         </div>
 
-        {checked.length > 0 && (
-          <button onClick={removeChecked} className="text-xs font-semibold px-3 py-1.5 rounded-full self-start" style={{ background: "#FDE8E8", color: "#C0392B" }}>
-            Odebrat hotové ({checked.length})
-          </button>
-        )}
-
-        {/* Grouped items */}
-        {Object.entries(groupBy === "category" ? byCategory : byRecipe).map(([key, groupItems]) => {
-          const cat = CATEGORIES.find((c) => c.id === key);
-          const label = groupBy === "category" ? (cat ? `${cat.emoji} ${cat.label}` : key) : key;
-          return (
-            <div key={key}>
-              <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>
-                {label}
-              </p>
-              <div className="card overflow-hidden">
-                {groupItems.map((item, idx) => (
+        {/* Groups */}
+        {groups.map(({ name, items: groupItems, isManual }) => (
+          <div key={name}>
+            <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>
+              {isManual ? "🛒 Přidáno ručně" : `📖 ${name}`}
+            </p>
+            <div className="card overflow-hidden">
+              {groupItems.map((item, idx) => {
+                const cat = CATEGORIES.find((c) => c.id === item.category);
+                return (
                   <div
                     key={item.id}
                     className="flex items-center gap-3 px-4 py-3.5 transition-all"
@@ -229,17 +203,20 @@ export function ShoppingView() {
                     />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{item.name}</p>
-                      <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{item.quantity} {item.unit}</p>
+                      <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                        {item.quantity} {item.unit}
+                        {cat && <span style={{ color: "var(--text-tertiary)" }}> · {cat.emoji} {cat.label}</span>}
+                      </p>
                     </div>
                     <button onClick={() => removeItem(item.id)}>
                       <X size={14} style={{ color: "var(--text-tertiary)" }} />
                     </button>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
-          );
-        })}
+          </div>
+        ))}
 
         {/* Checked items */}
         {checked.length > 0 && (
