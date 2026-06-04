@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Plus, AlertCircle, Pencil } from "lucide-react";
+import { X, Plus, AlertCircle, Pencil, ChevronLeft } from "lucide-react";
 import { ProductInfo, StorageLocation } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
 import { usePriceStore } from "@/store/priceStore";
@@ -9,6 +9,7 @@ import { usePriceStore } from "@/store/priceStore";
 interface Props {
   product: ProductInfo;
   onClose: () => void;
+  fromScanner?: boolean;
 }
 
 const LOCATIONS: { id: StorageLocation; label: string; emoji: string }[] = [
@@ -20,7 +21,7 @@ const LOCATIONS: { id: StorageLocation; label: string; emoji: string }[] = [
 
 const STORES = ["Lidl", "Albert", "Billa", "Kaufland", "Tesco", "Penny", "Rohlik", "Košík", "Jiný"];
 
-export function ProductSheet({ product, onClose }: Props) {
+export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
   const addItem = usePantryStore((s) => s.addItem);
   const updateItem = usePantryStore((s) => s.updateItem);
   const pantryItems = usePantryStore((s) => s.items);
@@ -95,12 +96,13 @@ export function ProductSheet({ product, onClose }: Props) {
 
       {/* Sheet */}
       <div
-        className="animate-slide-up rounded-t-3xl flex flex-col"
+        className="animate-slide-up flex flex-col"
         style={{
           position: "relative",
           zIndex: 1,
           background: "var(--bg-primary)",
-          maxHeight: "85dvh",
+          maxHeight: fromScanner ? "100dvh" : "85dvh",
+          borderRadius: fromScanner ? "28px 28px 0 0" : "28px 28px 0 0",
           paddingBottom: "env(safe-area-inset-bottom, 16px)",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -156,13 +158,23 @@ export function ProductSheet({ product, onClose }: Props) {
             </div>
           </div>
 
-          <button
-            onClick={onClose}
-            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
-            style={{ background: "var(--border)" }}
-          >
-            <X size={16} style={{ color: "var(--text-secondary)" }} />
-          </button>
+          {fromScanner ? (
+            <button
+              onClick={onClose}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium flex-shrink-0"
+              style={{ background: "var(--border)", color: "var(--text-secondary)" }}
+            >
+              <ChevronLeft size={15} /> Kamera
+            </button>
+          ) : (
+            <button
+              onClick={onClose}
+              className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+              style={{ background: "var(--border)" }}
+            >
+              <X size={16} style={{ color: "var(--text-secondary)" }} />
+            </button>
+          )}
         </div>
 
         {/* Tabs */}

@@ -68,7 +68,7 @@ export default function Home() {
 
       {/* Product sheet rendered at root level so it covers full screen incl. tab bar */}
       {activeSheet === "product" && scannedProduct && (
-        <ProductSheet product={scannedProduct} onClose={() => closeSheet()} />
+        <ProductSheet product={scannedProduct} onClose={() => closeSheet()} fromScanner={activeTab === "skenovat"} />
       )}
 
       {/* Onboarding — shown only on first visit */}
