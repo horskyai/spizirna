@@ -100,8 +100,7 @@ export function ProductSheet({ product, onClose }: Props) {
           position: "relative",
           zIndex: 1,
           background: "var(--bg-primary)",
-          maxHeight: "92dvh",
-          minHeight: "60dvh",
+          maxHeight: "85dvh",
           paddingBottom: "env(safe-area-inset-bottom, 16px)",
         }}
         onClick={(e) => e.stopPropagation()}
@@ -168,19 +167,27 @@ export function ProductSheet({ product, onClose }: Props) {
 
         {/* Tabs */}
         <div className="flex px-5 gap-2 mb-3 flex-shrink-0">
-          {(["info", "add"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className="px-4 py-2 rounded-full text-sm font-medium transition-all"
-              style={{
-                background: tab === t ? "var(--green-primary)" : "var(--border)",
-                color: tab === t ? "white" : "var(--text-secondary)",
-              }}
-            >
-              {t === "info" ? "Informace" : "Přidat do spižírny"}
-            </button>
-          ))}
+          <button
+            onClick={() => setTab("info")}
+            className="px-4 py-2 rounded-full text-sm font-medium transition-all"
+            style={{
+              background: tab === "info" ? "var(--green-primary)" : "var(--border)",
+              color: tab === "info" ? "white" : "var(--text-secondary)",
+            }}
+          >
+            Informace
+          </button>
+          <button
+            onClick={() => setTab("add")}
+            className="flex-1 py-2.5 rounded-full text-sm font-bold transition-all"
+            style={{
+              background: tab === "add" ? "var(--green-primary)" : "var(--green-light)",
+              color: tab === "add" ? "white" : "var(--green-dark)",
+              border: `2px solid ${tab === "add" ? "var(--green-primary)" : "var(--green-primary)"}`,
+            }}
+          >
+            + Přidat do spižírny
+          </button>
         </div>
 
         {/* Content */}
