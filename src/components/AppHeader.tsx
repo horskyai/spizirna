@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { usePantryStore } from "@/store/pantryStore";
-import { Plus, Bell, ScanLine, PenLine, X } from "lucide-react";
+import { Plus, Bell, ScanLine, PenLine, AlertTriangle } from "lucide-react";
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
+import { daysUntil } from "@/lib/dateUtils";
 
 const TITLES: Record<string, string> = {
   spizirna: "Spižírna",
@@ -17,10 +18,12 @@ const TITLES: Record<string, string> = {
 
 export function AppHeader() {
   const { activeTab, setTab } = useUIStore();
-  const expiringCount = usePantryStore((s) => s.getExpiringItems(3).length);
+  const expiringItems = usePantryStore((s) => s.getExpiringItems(3));
+  const expiringCount = expiringItems.length;
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [showAddRecipe, setShowAddRecipe] = useState(false);
+  const [showExpiry, setShowExpiry] = useState(false);
   const title = TITLES[activeTab] ?? "Spižírna";
 
   if (activeTab === "skenovat") return null;
@@ -38,7 +41,11 @@ export function AppHeader() {
         <div className="flex items-center gap-2">
           {/* Expiry notification */}
           {expiringCount > 0 && activeTab === "spizirna" && (
-            <button className="relative w-9 h-9 rounded-full flex items-center justify-center" style={{ background: "#FEF3E2" }}>
+            <button
+              onClick={() => setShowExpiry(true)}
+              className="relative w-9 h-9 rounded-full flex items-center justify-center"
+              style={{ background: "#FEF3E2" }}
+            >
               <Bell size={16} style={{ color: "#B85C00" }} />
               <span
                 className="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full flex items-center justify-center font-bold text-white"
@@ -121,6 +128,58 @@ export function AppHeader() {
 
       {/* Add recipe modal */}
       {showAddRecipe && <AddRecipeModal onClose={() => setShowAddRecipe(false)} />}
+
+      {/* Expiry panel */}
+      {showExpiry && (
+        <div className="absolute inset-0 flex flex-col justify-end" style={{ zIndex: 60 }}>
+          <div className="absolute inset-0 sheet-overlay" onClick={() => setShowExpiry(false)} />
+          <div
+            className="relative animate-slide-up rounded-t-3xl"
+            style={{ background: "var(--bg-primary)", paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))" }}
+          >
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
+            </div>
+            <div className="px-5 pt-2 pb-4">
+              <div className="flex items-center gap-2 mb-4">
+                <AlertTriangle size={18} style={{ color: "#B85C00" }} />
+                <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Brzy vyprší</h3>
+              </div>
+              <div className="space-y-2">
+                {expiringItems.map((item) => {
+                  const days = daysUntil(item.expires_at!);
+                  const urgent = days <= 1;
+                  return (
+                    <div
+                      key={item.id}
+                      className="flex items-center justify-between rounded-2xl px-4 py-3"
+                      style={{ background: urgent ? "#FEF3E2" : "white" }}
+                    >
+                      <div>
+                        <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>
+                          {item.product.product_name}
+                        </p>
+                        <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                          {item.quantity}× · {item.location}
+                        </p>
+                      </div>
+                      <span
+                        className="text-xs font-bold px-2 py-1 rounded-full"
+                        style={{
+                          background: urgent ? "#D95757" : "#E8B84B",
+                          color: "white",
+                        }}
+                      >
+                        {days < 0 ? "Prošlé!" : days === 0 ? "Dnes" : days === 1 ? "Zítra" : `Za ${days} dní`}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
