@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, Plus, ShoppingCart, Utensils, Package, AlertCircle } from "lucide-react";
+import { X, Plus, AlertCircle, Pencil } from "lucide-react";
 import { ProductInfo, StorageLocation } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
 import { usePriceStore } from "@/store/priceStore";
@@ -28,7 +28,6 @@ export function ProductSheet({ product, onClose }: Props) {
 
   // Najdi existující položky ve spižírně podle EAN
   const existingItems = pantryItems.filter((i) => i.product.ean_code === product.ean_code);
-  const totalExisting = existingItems.reduce((sum, i) => sum + i.quantity, 0);
 
   const [tab, setTab] = useState<"info" | "add">("info");
   const [qty, setQty] = useState(1);
@@ -37,6 +36,11 @@ export function ProductSheet({ product, onClose }: Props) {
   const [store, setStore] = useState("Lidl");
   const [added, setAdded] = useState(false);
   const [addedToExisting, setAddedToExisting] = useState(false);
+  const [editingNutrition, setEditingNutrition] = useState(false);
+  const [manualKcal, setManualKcal] = useState(product.calories_kcal?.toString() ?? "");
+  const [manualProtein, setManualProtein] = useState(product.protein_g?.toString() ?? "");
+  const [manualCarbs, setManualCarbs] = useState(product.carbs_g?.toString() ?? "");
+  const [manualFat, setManualFat] = useState(product.fat_g?.toString() ?? "");
 
   const displayWeight = product.weight_g
     ? product.weight_g >= 1000 ? `${(product.weight_g / 1000).toFixed(product.weight_g % 1000 === 0 ? 0 : 1)}kg` : `${product.weight_g}g`
@@ -69,13 +73,14 @@ export function ProductSheet({ product, onClose }: Props) {
     setTimeout(onClose, 1200);
   };
 
-  const kcal = product.calories_kcal;
+  const kcal = parseFloat(manualKcal) || product.calories_kcal;
   const macros = [
-    { label: "Bílkoviny", value: product.protein_g, unit: "g", color: "#6B8F5E" },
-    { label: "Sacharidy", value: product.carbs_g, unit: "g", color: "#E8B84B" },
-    { label: "Tuky", value: product.fat_g, unit: "g", color: "#E8845A" },
+    { label: "Bílkoviny", value: parseFloat(manualProtein) || product.protein_g, unit: "g", color: "#6B8F5E" },
+    { label: "Sacharidy", value: parseFloat(manualCarbs) || product.carbs_g, unit: "g", color: "#E8B84B" },
+    { label: "Tuky", value: parseFloat(manualFat) || product.fat_g, unit: "g", color: "#E8845A" },
     { label: "Vláknina", value: product.fiber_g, unit: "g", color: "#8FA8B8" },
   ];
+  const hasNutrition = !!kcal || macros.some(m => m.value !== undefined);
 
   return (
     <div
@@ -182,30 +187,81 @@ export function ProductSheet({ product, onClose }: Props) {
         <div className="overflow-y-auto px-5 pb-6" style={{ flex: "1 1 0", minHeight: 0 }}>
           {tab === "info" ? (
             <div className="space-y-4">
-              {/* Calories big */}
-              {kcal && (
-                <div className="rounded-2xl p-4 text-center" style={{ background: "white" }}>
-                  <p className="text-4xl font-bold" style={{ color: "var(--green-primary)" }}>{kcal}</p>
-                  <p className="text-sm" style={{ color: "var(--text-secondary)" }}>kcal / 100g</p>
-                </div>
-              )}
-
-              {/* Macros */}
-              <div className="grid grid-cols-2 gap-3">
-                {macros.filter(m => m.value !== undefined).map((m) => (
-                  <div key={m.label} className="rounded-2xl p-3 flex items-center gap-3" style={{ background: "white" }}>
-                    <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: m.color + "20" }}>
-                      <div className="w-3 h-3 rounded-full" style={{ background: m.color }} />
-                    </div>
-                    <div>
-                      <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{m.label}</p>
-                      <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>
-                        {m.value?.toFixed(1)}{m.unit}
-                      </p>
-                    </div>
+              {/* Chybí data — formulář pro ruční zadání */}
+              {!hasNutrition || editingNutrition ? (
+                <div className="rounded-2xl p-4 space-y-3" style={{ background: "white" }}>
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+                      {editingNutrition ? "Upravit výživové hodnoty" : "Výrobce data neposkytl"}
+                    </p>
+                    {editingNutrition && (
+                      <button onClick={() => setEditingNutrition(false)} style={{ color: "var(--text-tertiary)", fontSize: 13 }}>Zrušit</button>
+                    )}
                   </div>
-                ))}
-              </div>
+                  {!editingNutrition && (
+                    <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Zadej hodnoty ručně ze štítku produktu (na 100g/ml).</p>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    {[
+                      { label: "Kalorie (kcal)", val: manualKcal, set: setManualKcal, accent: true },
+                      { label: "Bílkoviny (g)", val: manualProtein, set: setManualProtein },
+                      { label: "Sacharidy (g)", val: manualCarbs, set: setManualCarbs },
+                      { label: "Tuky (g)", val: manualFat, set: setManualFat },
+                    ].map(({ label, val, set, accent }) => (
+                      <div key={label}>
+                        <p className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>{label}</p>
+                        <input
+                          type="number"
+                          value={val}
+                          onChange={(e) => set(e.target.value)}
+                          placeholder="0"
+                          className="w-full px-3 py-2 rounded-xl text-sm font-semibold outline-none text-center"
+                          style={{
+                            background: "var(--bg-primary)",
+                            border: `1.5px solid ${accent ? "var(--green-primary)" : "var(--border)"}`,
+                            color: "var(--text-primary)",
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  {editingNutrition && (
+                    <button onClick={() => setEditingNutrition(false)} className="btn-primary w-full" style={{ fontSize: 14 }}>
+                      Uložit
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <>
+                  {/* Calories big */}
+                  <div className="rounded-2xl p-4 text-center" style={{ background: "white" }}>
+                    <div className="flex items-center justify-center gap-2">
+                      <p className="text-4xl font-bold" style={{ color: "var(--green-primary)" }}>{Math.round(kcal!)}</p>
+                      <button onClick={() => setEditingNutrition(true)} style={{ color: "var(--text-tertiary)", marginTop: 4 }}>
+                        <Pencil size={14} />
+                      </button>
+                    </div>
+                    <p className="text-sm" style={{ color: "var(--text-secondary)" }}>kcal / 100g</p>
+                  </div>
+
+                  {/* Macros */}
+                  <div className="grid grid-cols-2 gap-3">
+                    {macros.filter(m => m.value !== undefined).map((m) => (
+                      <div key={m.label} className="rounded-2xl p-3 flex items-center gap-3" style={{ background: "white" }}>
+                        <div className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: m.color + "20" }}>
+                          <div className="w-3 h-3 rounded-full" style={{ background: m.color }} />
+                        </div>
+                        <div>
+                          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{m.label}</p>
+                          <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>
+                            {m.value?.toFixed(1)}{m.unit}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
 
               {/* Allergens */}
               {product.allergens.length > 0 && (
