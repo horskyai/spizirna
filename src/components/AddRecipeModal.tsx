@@ -32,11 +32,11 @@ function PantryPickerModal({
   );
 
   return (
-    <div className="absolute inset-0 flex flex-col justify-end" style={{ zIndex: 80 }}>
-      <div className="absolute inset-0 sheet-overlay" onClick={onClose} />
+    <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 150 }}>
+      <div className="sheet-overlay animate-fade-in" onClick={onClose} style={{ position: "absolute", inset: 0 }} />
       <div
         className="relative animate-slide-up rounded-t-3xl overflow-hidden"
-        style={{ background: "var(--bg-primary)", maxHeight: "70vh" }}
+        style={{ background: "var(--bg-primary)", maxHeight: "92dvh", paddingBottom: "env(safe-area-inset-bottom, 16px)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-center pt-3 pb-1">
@@ -212,11 +212,11 @@ export function AddRecipeModal({ onClose }: Props) {
 
   return (
     <>
-      <div className="absolute inset-0 flex flex-col justify-end" style={{ zIndex: 60 }}>
-        <div className="absolute inset-0 sheet-overlay" onClick={onClose} />
+      <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 200 }}>
+        <div className="sheet-overlay animate-fade-in" onClick={onClose} style={{ position: "absolute", inset: 0 }} />
         <div
           className="relative animate-slide-up rounded-t-3xl overflow-hidden"
-          style={{ background: "var(--bg-primary)", maxHeight: "95vh" }}
+          style={{ background: "var(--bg-primary)", maxHeight: "92dvh", paddingBottom: "env(safe-area-inset-bottom, 16px)" }}
           onClick={(e) => e.stopPropagation()}
         >
           {/* Handle */}

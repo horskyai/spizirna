@@ -87,8 +87,8 @@ export function AppHeader() {
 
       {/* Add menu sheet */}
       {showAddMenu && (
-        <div className="absolute inset-0 flex flex-col justify-end" style={{ zIndex: 60 }}>
-          <div className="absolute inset-0 sheet-overlay" onClick={() => setShowAddMenu(false)} />
+        <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 100 }}>
+          <div className="sheet-overlay animate-fade-in" onClick={() => setShowAddMenu(false)} style={{ position: "absolute", inset: 0 }} />
           <div className="relative animate-slide-up px-4 pb-8 space-y-2" style={{ paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))" }}>
             <div className="card p-1 overflow-hidden">
               <button
@@ -136,8 +136,8 @@ export function AppHeader() {
 
       {/* Expiry panel */}
       {showExpiry && (
-        <div className="absolute inset-0 flex flex-col justify-end" style={{ zIndex: 60 }}>
-          <div className="absolute inset-0 sheet-overlay" onClick={() => setShowExpiry(false)} />
+        <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 100 }}>
+          <div className="sheet-overlay animate-fade-in" onClick={() => setShowExpiry(false)} style={{ position: "absolute", inset: 0 }} />
           <div
             className="relative animate-slide-up rounded-t-3xl"
             style={{ background: "var(--bg-primary)", paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))" }}

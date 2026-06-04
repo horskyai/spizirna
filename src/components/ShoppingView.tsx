@@ -20,11 +20,11 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
   };
 
   return (
-    <div className="absolute inset-0 flex flex-col justify-end" style={{ zIndex: 60 }}>
-      <div className="absolute inset-0 sheet-overlay" onClick={onClose} />
+    <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 100 }}>
+      <div className="sheet-overlay animate-fade-in" onClick={onClose} style={{ position: "absolute", inset: 0 }} />
       <div
         className="relative animate-slide-up rounded-t-3xl overflow-hidden"
-        style={{ background: "var(--bg-primary)" }}
+        style={{ background: "var(--bg-primary)", paddingBottom: "env(safe-area-inset-bottom, 16px)" }}
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-center pt-3 pb-1">

@@ -334,9 +334,10 @@ export function Scanner() {
 
       {/* Manual EAN input modal */}
       {showManualInput && (
-        <div className="absolute inset-0 flex flex-col justify-end" style={{ zIndex: 50 }}>
+        <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 100 }}>
           <div
-            className="absolute inset-0 sheet-overlay"
+            className="sheet-overlay animate-fade-in"
+            style={{ position: "absolute", inset: 0 }}
             onClick={() => { setShowManualInput(false); setManualEAN(""); }}
           />
           <div
