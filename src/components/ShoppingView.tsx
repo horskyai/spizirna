@@ -132,11 +132,14 @@ export function ShoppingView() {
   const addToPantry = usePantryStore((s) => s.addItem);
   const [showAdd, setShowAdd] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
+  const [justChecked, setJustChecked] = useState<Set<string>>(new Set());
 
   const handleCheck = (item: ShoppingItem) => {
     const wasChecked = item.checked;
     toggleItem(item.id);
     if (!wasChecked) {
+      setJustChecked((prev) => new Set(prev).add(item.id));
+      setTimeout(() => setJustChecked((prev) => { const s = new Set(prev); s.delete(item.id); return s; }), 400);
       addToPantry(shoppingItemToProduct(item), item.quantity, "spiz");
       setToast(item.name);
       setTimeout(() => setToast(null), 3000);
@@ -228,9 +231,17 @@ export function ShoppingView() {
                   >
                     <button
                       onClick={() => handleCheck(item)}
-                      className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 transition-all"
-                      style={{ borderColor: "var(--green-primary)", background: "transparent" }}
-                    />
+                      className={`flex-shrink-0 ${justChecked.has(item.id) ? "animate-check-bounce" : ""}`}
+                      style={{
+                        width: 28, height: 28, borderRadius: "50%",
+                        border: "2.5px solid var(--green-primary)",
+                        background: justChecked.has(item.id) ? "var(--green-primary)" : "transparent",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        transition: "background 0.15s",
+                      }}
+                    >
+                      {justChecked.has(item.id) && <Check size={13} color="white" strokeWidth={3} />}
+                    </button>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{item.name}</p>
                       <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
