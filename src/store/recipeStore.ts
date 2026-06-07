@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import { Recipe } from "@/types";
 import { DEFAULT_RECIPES } from "@/data/defaultRecipes";
 
-const SEED_VERSION = 2;
+const SEED_VERSION = 3;
 
 interface RecipeStore {
   recipes: Recipe[];

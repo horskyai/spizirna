@@ -442,23 +442,46 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
   );
 }
 
+const CATEGORIES = ["Vše", "Česká klasika", "Polévky", "Těstoviny", "Kuřecí", "Ryby & mořské plody", "Vegetariánské", "Veganské", "Snídaně", "Saláty", "Mezinárodní", "Dezerty", "Rychlá jídla"];
+
+function getCategory(recipe: Recipe): string {
+  if (recipe.category) return recipe.category;
+  const t = recipe.tags.map(t => t.toLowerCase());
+  if (t.some(t => ["česká klasika", "česky", "knedlík", "svíčková", "guláš"].some(k => t.includes(k)))) return "Česká klasika";
+  if (t.some(t => ["polévka", "vývar", "soup"].some(k => t.includes(k)))) return "Polévky";
+  if (t.some(t => ["těstoviny", "pasta", "špagety", "lasagne"].some(k => t.includes(k)))) return "Těstoviny";
+  if (t.some(t => ["kuřecí", "kuře"].some(k => t.includes(k)))) return "Kuřecí";
+  if (t.some(t => ["ryby", "losos", "treska", "krevety", "mořské"].some(k => t.includes(k)))) return "Ryby & mořské plody";
+  if (t.some(t => ["vegan", "veganský", "veganské"].some(k => t.includes(k)))) return "Veganské";
+  if (t.some(t => ["vegetariánský", "vegetariánské", "bez masa"].some(k => t.includes(k)))) return "Vegetariánské";
+  if (t.some(t => ["snídaně", "breakfast"].some(k => t.includes(k)))) return "Snídaně";
+  if (t.some(t => ["salát", "salad"].some(k => t.includes(k)))) return "Saláty";
+  if (t.some(t => ["dezert", "sladké", "cake", "dort"].some(k => t.includes(k)))) return "Dezerty";
+  if (t.some(t => ["rychlé", "rychlá"].some(k => t.includes(k)))) return "Rychlá jídla";
+  if (t.some(t => ["mexické", "asijské", "indické", "japonské", "thajské", "řecké", "francouzské"].some(k => t.includes(k)))) return "Mezinárodní";
+  return "Ostatní";
+}
+
 export function RecipesView() {
   const [search, setSearch] = useState("");
+  const [activeCategory, setActiveCategory] = useState("Vše");
   const [showAdd, setShowAdd] = useState(false);
   const { recipes, deleteRecipe } = useRecipeStore();
 
-  const filtered = recipes.filter(
-    (r) =>
+  const filtered = recipes.filter((r) => {
+    const matchSearch =
       r.name.toLowerCase().includes(search.toLowerCase()) ||
       r.tags.some((t) => t.toLowerCase().includes(search.toLowerCase())) ||
-      r.description.toLowerCase().includes(search.toLowerCase())
-  );
+      r.description.toLowerCase().includes(search.toLowerCase());
+    const matchCategory = activeCategory === "Vše" || getCategory(r) === activeCategory;
+    return matchSearch && matchCategory;
+  });
 
   return (
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-2 pb-24">
         {/* Search */}
-        <div style={{ position: "relative", marginBottom: 16 }}>
+        <div style={{ position: "relative", marginBottom: 12 }}>
           <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--text-tertiary)" }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
           <input
             value={search}
@@ -466,6 +489,31 @@ export function RecipesView() {
             placeholder="Hledat recepty..."
             style={{ width: "100%", paddingLeft: 38, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 14, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
           />
+        </div>
+
+        {/* Category filter */}
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 12, scrollbarWidth: "none" }}>
+          {CATEGORIES.map((cat) => (
+            <button
+              key={cat}
+              onClick={() => setActiveCategory(cat)}
+              style={{
+                flexShrink: 0,
+                padding: "6px 14px",
+                borderRadius: 20,
+                fontSize: 13,
+                fontWeight: activeCategory === cat ? 600 : 500,
+                border: "none",
+                background: activeCategory === cat ? "var(--green-primary)" : "white",
+                color: activeCategory === cat ? "white" : "var(--text-secondary)",
+                boxShadow: activeCategory === cat ? "0 2px 8px rgba(76,175,130,0.3)" : "0 1px 4px rgba(0,0,0,0.08)",
+                transition: "all 0.15s ease",
+                whiteSpace: "nowrap",
+              }}
+            >
+              {cat}
+            </button>
+          ))}
         </div>
 
         {/* Empty state */}

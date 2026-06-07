@@ -93,6 +93,7 @@ export interface Recipe {
   name: string;
   description: string;
   image_url?: string;
+  category?: string;
   servings: number;
   prep_time_min: number;
   cook_time_min: number;

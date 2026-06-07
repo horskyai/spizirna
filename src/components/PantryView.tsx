@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Trash2, ChevronRight, Bell, RefrigeratorIcon, ScanLine } from "lucide-react";
+import { Plus, Trash2, ChevronRight, Pencil, X } from "lucide-react";
 import { usePantryStore } from "@/store/pantryStore";
 import { useUIStore } from "@/store/uiStore";
 import { PantryItem, StorageLocation } from "@/types";
@@ -27,8 +27,97 @@ function ExpiryBadge({ expiresAt }: { expiresAt?: string }) {
   );
 }
 
+function EditModal({ item, onClose }: { item: PantryItem; onClose: () => void }) {
+  const { updateItem } = usePantryStore();
+  const [quantity, setQuantity] = useState(String(item.quantity));
+  const [unit, setUnit] = useState(item.unit);
+  const [location, setLocation] = useState<StorageLocation>(item.location);
+  const [expires, setExpires] = useState(item.expires_at ?? "");
+
+  const save = () => {
+    updateItem(item.id, {
+      quantity: parseFloat(quantity) || item.quantity,
+      unit,
+      location,
+      expires_at: expires || undefined,
+    });
+    onClose();
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
+      <div className="relative rounded-t-3xl px-5 pt-5 pb-8 space-y-4 animate-slide-up" style={{ background: "var(--bg-primary)", paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))" }}>
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Upravit položku</h3>
+          <button onClick={onClose}><X size={20} style={{ color: "var(--text-tertiary)" }} /></button>
+        </div>
+        <p className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>{item.product.product_name}</p>
+
+        <div className="flex gap-3">
+          <div style={{ flex: 1 }}>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Množství</label>
+            <input
+              type="number"
+              value={quantity}
+              onChange={e => setQuantity(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-2xl text-sm"
+              style={{ border: "1.5px solid var(--border)", background: "white", outline: "none", color: "var(--text-primary)" }}
+            />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Jednotka</label>
+            <input
+              type="text"
+              value={unit}
+              onChange={e => setUnit(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-2xl text-sm"
+              style={{ border: "1.5px solid var(--border)", background: "white", outline: "none", color: "var(--text-primary)" }}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Umístění</label>
+          <div className="flex gap-2 flex-wrap">
+            {(["spiz", "lednice", "mrazak", "linka"] as StorageLocation[]).map(loc => (
+              <button
+                key={loc}
+                onClick={() => setLocation(loc)}
+                className="px-3 py-1.5 rounded-full text-xs font-semibold"
+                style={{
+                  background: location === loc ? "var(--green-primary)" : "white",
+                  color: location === loc ? "white" : "var(--text-secondary)",
+                  border: "1.5px solid",
+                  borderColor: location === loc ? "var(--green-primary)" : "var(--border)",
+                }}
+              >
+                {LOCATION_LABELS[loc].label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Datum expirace</label>
+          <input
+            type="date"
+            value={expires}
+            onChange={e => setExpires(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-2xl text-sm"
+            style={{ border: "1.5px solid var(--border)", background: "white", outline: "none", color: "var(--text-primary)" }}
+          />
+        </div>
+
+        <button onClick={save} className="btn-primary">Uložit změny</button>
+      </div>
+    </div>
+  );
+}
+
 function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => void }) {
   const [expanded, setExpanded] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const loc = LOCATION_LABELS[item.location];
 
   return (
@@ -96,15 +185,25 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
               Expiruje: <b>{formatDateShort(item.expires_at)}</b>
             </p>
           )}
-          <button
-            onClick={onRemove}
-            className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all"
-            style={{ background: "#FDE8E8", color: "#C0392B" }}
-          >
-            <Trash2 size={12} /> Odebrat ze spižírny
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowEdit(true)}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all"
+              style={{ background: "var(--green-light)", color: "var(--green-primary)" }}
+            >
+              <Pencil size={12} /> Upravit
+            </button>
+            <button
+              onClick={onRemove}
+              className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all"
+              style={{ background: "#FDE8E8", color: "#C0392B" }}
+            >
+              <Trash2 size={12} /> Odebrat
+            </button>
+          </div>
         </div>
       )}
+      {showEdit && <EditModal item={item} onClose={() => setShowEdit(false)} />}
     </div>
   );
 }
