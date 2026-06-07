@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Trash2, ChevronRight, Pencil, X } from "lucide-react";
+import { Plus, Trash2, ChevronRight, Pencil, X, RefrigeratorIcon, ScanLine, Bell } from "lucide-react";
 import { usePantryStore } from "@/store/pantryStore";
 import { useUIStore } from "@/store/uiStore";
 import { PantryItem, StorageLocation } from "@/types";
