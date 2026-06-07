@@ -3,7 +3,8 @@
 import { useState, useMemo } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { usePantryStore } from "@/store/pantryStore";
-import { Plus, Bell, ScanLine, PenLine, AlertTriangle, UtensilsCrossed } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
+import { Plus, Bell, AlertTriangle, UtensilsCrossed, LogOut, User } from "lucide-react";
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { daysUntil } from "@/lib/dateUtils";
@@ -19,6 +20,7 @@ const TITLES: Record<string, string> = {
 
 export function AppHeader() {
   const { activeTab, setTab } = useUIStore();
+  const { profile, signOut } = useAuthStore();
   const pantryItems = usePantryStore((s) => s.items);
   const expiringItems = useMemo(() => {
     const cutoff = new Date();
@@ -47,7 +49,7 @@ export function AppHeader() {
           {/* Top row: greeting + actions */}
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>Dobrý den 👋</p>
+              <p className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>Dobrý den, {profile?.display_name ?? "uživateli"} 👋</p>
               <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)", lineHeight: 1.2 }}>Spižírna</h1>
             </div>
             <div className="flex items-center gap-2">
@@ -73,6 +75,14 @@ export function AppHeader() {
                 title="Potravinový deník"
               >
                 <UtensilsCrossed size={18} style={{ color: "var(--text-tertiary)" }} />
+              </button>
+              <button
+                onClick={signOut}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+                style={{ background: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }}
+                title="Odhlásit se"
+              >
+                <LogOut size={18} style={{ color: "var(--text-tertiary)" }} />
               </button>
               <button
                 onClick={() => setShowAddMenu(true)}
