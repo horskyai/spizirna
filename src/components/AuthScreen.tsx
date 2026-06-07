@@ -48,18 +48,18 @@ export function AuthScreen() {
   }
 
   return (
-    <div className="flex flex-col min-h-dvh px-6" style={{ background: "var(--bg-primary)", paddingTop: "max(60px, env(safe-area-inset-top, 60px))" }}>
+    <div className="flex flex-col min-h-dvh px-5 justify-center" style={{ background: "var(--bg-primary)", paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       {/* Logo */}
-      <div className="flex flex-col items-center mb-10">
-        <div className="w-20 h-20 rounded-3xl flex items-center justify-center mb-4" style={{ background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)", boxShadow: "0 8px 24px rgba(76,175,130,0.4)" }}>
-          <ChefHat size={36} color="white" />
+      <div className="flex flex-col items-center mb-6">
+        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)", boxShadow: "0 6px 20px rgba(76,175,130,0.4)" }}>
+          <ChefHat size={28} color="white" />
         </div>
-        <h1 className="text-3xl font-bold" style={{ color: "var(--text-primary)" }}>Spižírna</h1>
-        <p className="text-sm mt-1" style={{ color: "var(--text-secondary)" }}>Chytrá správa potravin</p>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Spižírna</h1>
+        <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Chytrá správa potravin</p>
       </div>
 
       {/* Toggle */}
-      <div className="flex rounded-2xl p-1 mb-6" style={{ background: "white", border: "1.5px solid var(--border)" }}>
+      <div className="flex rounded-2xl p-1 mb-4" style={{ background: "white", border: "1.5px solid var(--border)" }}>
         {(["login", "signup"] as const).map((m) => (
           <button
             key={m}
@@ -76,7 +76,7 @@ export function AuthScreen() {
       </div>
 
       {/* Form */}
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {mode === "signup" && (
           <div style={{ position: "relative" }}>
             <User size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
@@ -84,7 +84,7 @@ export function AuthScreen() {
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder="Jméno"
-              style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 14, paddingBottom: 14, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+              style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
             />
           </div>
         )}
@@ -95,7 +95,7 @@ export function AuthScreen() {
             value={email}
             onChange={e => setEmail(e.target.value)}
             placeholder="Email"
-            style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 14, paddingBottom: 14, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+            style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
           />
         </div>
         <div style={{ position: "relative" }}>
@@ -106,7 +106,7 @@ export function AuthScreen() {
             onChange={e => setPassword(e.target.value)}
             placeholder="Heslo"
             onKeyDown={e => e.key === "Enter" && submit()}
-            style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 14, paddingBottom: 14, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+            style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
           />
         </div>
 
