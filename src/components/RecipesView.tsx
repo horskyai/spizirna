@@ -30,11 +30,28 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
       const m = pantryItems.find((p) => p.product.product_name === ing.linked_product_name);
       if (m) return m;
     }
-    // 2. Fuzzy fallback pokud není propojení
-    return pantryItems.find((p) =>
-      p.product.product_name.toLowerCase().includes(ing.name.toLowerCase()) ||
-      ing.name.toLowerCase().includes(p.product.product_name.toLowerCase().split(" ")[0])
-    ) ?? null;
+    // 2. Fuzzy matching — klíčová slova z názvu ingredience vs produktu
+    // Stopslova která ignorujeme při porovnání
+    const STOP = new Set(["konzervovaná", "konzervovaný", "konzervované", "čerstvý", "čerstvá", "čerstvé",
+      "sušený", "sušená", "sušené", "mražený", "mražená", "mražené", "celý", "celá", "celé",
+      "strouhaný", "strouhaná", "strouhaný", "nakrájený", "nakrájená", "mletý", "mletá", "mleté",
+      "uvařená", "uvařený", "velký", "velká", "malý", "malá", "baby", "sterilované", "sterilovaný"]);
+
+    const keywords = (str: string) =>
+      str.toLowerCase()
+        .split(/[\s,()\/]+/)
+        .map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, ""))
+        .filter(w => w.length > 2 && !STOP.has(w));
+
+    const ingWords = keywords(ing.name);
+
+    return pantryItems.find((p) => {
+      const prodWords = keywords(p.product.product_name);
+      // Stačí aby se alespoň jedno klíčové slovo shodovalo
+      return ingWords.some(iw =>
+        prodWords.some(pw => pw.includes(iw) || iw.includes(pw))
+      );
+    }) ?? null;
   };
 
   const ingredientsWithStatus = recipe.ingredients.map((ing) => {
@@ -319,11 +336,21 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
   const missingIngs = ingredientsWithStatus.filter((i) => !i.available && i.pantryQty === 0);
 
   const handleCook = () => {
+    const STOP = new Set(["konzervovaná", "konzervovaný", "konzervované", "čerstvý", "čerstvá", "čerstvé",
+      "sušený", "sušená", "sušené", "mražený", "mražená", "mražené", "celý", "celá", "celé",
+      "strouhaný", "strouhaná", "nakrájený", "nakrájená", "mletý", "mletá", "mleté",
+      "uvařená", "uvařený", "velký", "velká", "malý", "malá", "baby", "sterilované"]);
+    const keywords = (str: string) =>
+      str.toLowerCase().split(/[\s,()\/]+/)
+        .map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, ""))
+        .filter(w => w.length > 2 && !STOP.has(w));
+
     recipe.ingredients.forEach((ing) => {
-      const m = pantryItems.find((p) =>
-        p.product.product_name.toLowerCase().includes(ing.name.toLowerCase()) ||
-        ing.name.toLowerCase().includes(p.product.product_name.toLowerCase().split(" ")[0])
-      );
+      const ingWords = keywords(ing.name);
+      const m = pantryItems.find((p) => {
+        const prodWords = keywords(p.product.product_name);
+        return ingWords.some(iw => prodWords.some(pw => pw.includes(iw) || iw.includes(pw)));
+      });
       if (m) consumeItem(m.id, ing.quantity * ratio);
     });
     setDone(true);
