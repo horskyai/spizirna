@@ -12,7 +12,7 @@ export interface ParsedItem {
 // Převod mluvených čísel na číslice
 const NUMBERS: Record<string, number> = {
   jeden: 1, jedna: 1, jedno: 1, "jednu": 1,
-  dva: 2, dvě: 2, "dvě": 2,
+  dva: 2, dvě: 2, dve: 2,
   tři: 3, čtyři: 4, pět: 5, šest: 6, sedm: 7, osm: 8, devět: 9, deset: 10,
   jedenáct: 11, dvanáct: 12, třináct: 13, čtrnáct: 14, patnáct: 15,
   šestnáct: 16, sedmnáct: 17, osmnáct: 18, devatenáct: 19, dvacet: 20,
