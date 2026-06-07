@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { usePantryStore } from "@/store/pantryStore";
-import { Plus, Bell, ScanLine, PenLine, AlertTriangle } from "lucide-react";
+import { Plus, Bell, ScanLine, PenLine, AlertTriangle, UtensilsCrossed } from "lucide-react";
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { daysUntil } from "@/lib/dateUtils";
@@ -66,6 +66,14 @@ export function AppHeader() {
                   </span>
                 </button>
               )}
+              <button
+                onClick={() => setTab("jidlo")}
+                className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+                style={{ background: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }}
+                title="Potravinový deník"
+              >
+                <UtensilsCrossed size={18} style={{ color: "var(--text-tertiary)" }} />
+              </button>
               <button
                 onClick={() => setShowAddMenu(true)}
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all"

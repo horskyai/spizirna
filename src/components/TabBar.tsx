@@ -3,13 +3,12 @@
 import { useUIStore } from "@/store/uiStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useRecurringStore } from "@/store/recurringStore";
-import { ShoppingBag, ScanLine, UtensilsCrossed, BookOpen, ShoppingCart, RefreshCw } from "lucide-react";
+import { ShoppingBag, ScanLine, BookOpen, ShoppingCart, RefreshCw } from "lucide-react";
 
 const TABS = [
   { id: "spizirna", label: "Spižírna", Icon: ShoppingBag },
-  { id: "jidlo", label: "Jídlo", Icon: UtensilsCrossed },
-  { id: "skenovat", label: "Skenovat", Icon: ScanLine },
   { id: "recepty", label: "Recepty", Icon: BookOpen },
+  { id: "skenovat", label: "Skenovat", Icon: ScanLine },
   { id: "nakup", label: "Nákup", Icon: ShoppingCart },
   { id: "opakujici", label: "Zásoby", Icon: RefreshCw },
 ] as const;
