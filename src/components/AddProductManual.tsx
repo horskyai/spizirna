@@ -5,6 +5,7 @@ import { X, Plus, ChevronDown } from "lucide-react";
 import { ProductInfo, StorageLocation } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG } from "@/components/LocationIcons";
+import { VoiceInput } from "@/components/VoiceInput";
 
 interface Props {
   onClose: () => void;
@@ -57,6 +58,25 @@ export function AddProductManual({ onClose }: Props) {
 
   const canProceedBasic = name.trim().length > 0;
 
+  const handleVoicePantry = (items: { name: string; quantity: number; unit: string }[]) => {
+    items.forEach((item) => {
+      const product: ProductInfo = {
+        ean_code: `manual-${Date.now()}-${Math.random()}`,
+        product_name: item.name,
+        brand: "",
+        category: "Jiné",
+        subcategory: "",
+        image_url: "",
+        unit: (["g", "ml", "ks"].includes(item.unit) ? item.unit : "ks") as "g" | "ml" | "ks",
+        allergens: [],
+        source: "user_added",
+        verified: false,
+      };
+      addItem(product, item.quantity, location);
+    });
+    if (items.length > 0) { setAdded(true); setTimeout(onClose, 800); }
+  };
+
   const handleAdd = () => {
     const product: ProductInfo = {
       ean_code: `manual-${Date.now()}`,
@@ -108,6 +128,15 @@ export function AddProductManual({ onClose }: Props) {
           >
             <X size={16} style={{ color: "var(--text-secondary)" }} />
           </button>
+        </div>
+
+        {/* Voice quick-add */}
+        <div className="px-5 mb-3">
+          <VoiceInput onResult={handleVoicePantry} label="Nadiktovat více produktů najednou" />
+        </div>
+
+        <div className="px-5 mb-2">
+          <p className="text-xs font-semibold text-center" style={{ color: "var(--text-tertiary)" }}>— nebo přidat ručně —</p>
         </div>
 
         {/* Step tabs */}

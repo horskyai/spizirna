@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, Plus, Trash2, Link, Link2Off, Search, Package } from "lucide-react";
+import { VoiceInput } from "@/components/VoiceInput";
 import { useRecipeStore } from "@/store/recipeStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { RecipeIngredient } from "@/types";
@@ -495,6 +496,17 @@ export function AddRecipeModal({ onClose }: Props) {
                 >
                   <Plus size={16} /> Přidat surovinu
                 </button>
+
+                <VoiceInput
+                  onResult={(items) => {
+                    const newIngs = items.map((i) => ({ name: i.name, quantity: i.quantity, unit: i.unit }));
+                    setIngredients((prev) => {
+                      const cleaned = prev.filter((p) => p.name.trim());
+                      return [...cleaned, ...newIngs, { ...EMPTY_ING }];
+                    });
+                  }}
+                  label="Nadiktovat suroviny hlasem"
+                />
 
                 <button onClick={() => setStep("instructions")} className="btn-primary" disabled={!canProceedIngredients}>
                   Dál — Postup vaření

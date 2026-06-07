@@ -6,6 +6,7 @@ import { useShoppingStore } from "@/store/shoppingStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { ShoppingItem } from "@/store/shoppingStore";
 import { ProductInfo } from "@/types";
+import { VoiceInput } from "@/components/VoiceInput";
 
 const CATEGORIES = [
   { id: "ovoce-zelenina", label: "Ovoce a zelenina", emoji: "🥦" },
@@ -32,6 +33,11 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
     addItem({ name: name.trim(), quantity: parseFloat(quantity) || 1, unit, category });
     setName("");
     setQuantity("1");
+  };
+
+  const handleVoice = (items: { name: string; quantity: number; unit: string }[]) => {
+    items.forEach((item) => addItem({ name: item.name, quantity: item.quantity, unit: item.unit, category }));
+    if (items.length > 0) onClose();
   };
 
   return (
@@ -106,6 +112,10 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
           >
             <Plus size={18} /> Přidat
           </button>
+
+          <div style={{ height: 1, background: "var(--border)", margin: "4px 0" }} />
+
+          <VoiceInput onResult={handleVoice} label="Nadiktovat více položek" />
         </div>
       </div>
     </div>
