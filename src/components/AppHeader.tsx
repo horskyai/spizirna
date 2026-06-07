@@ -14,6 +14,7 @@ const TITLES: Record<string, string> = {
   skenovat: "Skenovat",
   recepty: "Recepty",
   nakup: "Nákupní seznam",
+  opakujici: "Zásoby & připomínky",
 };
 
 export function AppHeader() {

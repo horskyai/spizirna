@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { ProductInfo } from "@/types";
 
-export type Tab = "spizirna" | "skenovat" | "jidlo" | "recepty" | "nakup";
+export type Tab = "spizirna" | "skenovat" | "jidlo" | "recepty" | "nakup" | "opakujici";
 type Sheet = "product" | "add-to-pantry" | "food-log" | "recipe" | null;
 
 interface UIStore {
