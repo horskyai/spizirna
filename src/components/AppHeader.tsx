@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useAuthStore } from "@/store/authStore";
-import { Plus, Bell, AlertTriangle, UtensilsCrossed, LogOut, User } from "lucide-react";
+import { Plus, Bell, AlertTriangle, UtensilsCrossed, LogOut, User, ScanLine, PenLine } from "lucide-react";
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { daysUntil } from "@/lib/dateUtils";
