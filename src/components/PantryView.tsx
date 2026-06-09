@@ -1,14 +1,23 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Trash2, ChevronRight, Pencil, X, RefrigeratorIcon, ScanLine, Bell } from "lucide-react";
+import { Plus, Trash2, ChevronRight, Pencil, X, RefrigeratorIcon, ScanLine, Bell, Minus, Flame, Star } from "lucide-react";
 import { usePantryStore } from "@/store/pantryStore";
 import { useUIStore } from "@/store/uiStore";
+import { useGamificationStore } from "@/store/gamificationStore";
 import { PantryItem, StorageLocation } from "@/types";
 import { daysUntil, formatDateShort } from "@/lib/dateUtils";
 import { cn } from "@/lib/cn";
 import { AddProductManual } from "@/components/AddProductManual";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG, VseSVG } from "@/components/LocationIcons";
+
+function getSeasonalTip(): { emoji: string; title: string; text: string } {
+  const month = new Date().getMonth(); // 0=leden
+  if (month >= 2 && month <= 4) return { emoji: "🌷", title: "Jaro v kuchyni", text: "Sezóna chřestu, ředkviček a jahod — přidejte je do spižírny!" };
+  if (month >= 5 && month <= 7) return { emoji: "☀️", title: "Léto plné chutí", text: "Rajčata, okurky a paprika jsou teď nejlepší. Ideální čas na saláty." };
+  if (month >= 8 && month <= 10) return { emoji: "🍂", title: "Podzimní hojnost", text: "Dýně, jablka a houby patří do vaší spižírny. Čas na dušení." };
+  return { emoji: "❄️", title: "Zimní pohoda", text: "Zásobte se luštěninami a kořenovou zeleninou na teplé polévky." };
+}
 
 const LOCATION_LABELS: Record<StorageLocation, { label: string; Icon: React.FC<{ size?: number }> }> = {
   lednice: { label: "Lednice", Icon: LedniceSVG },
@@ -118,7 +127,25 @@ function EditModal({ item, onClose }: { item: PantryItem; onClose: () => void })
 function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => void }) {
   const [expanded, setExpanded] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
+  const [justConsumed, setJustConsumed] = useState(false);
+  const { consumeItem } = usePantryStore();
+  const { recordSaved, recordActivity } = useGamificationStore();
   const loc = LOCATION_LABELS[item.location];
+
+  const handleQuickConsume = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setJustConsumed(true);
+    recordActivity();
+    // Pokud brzy expiruje a spotřebujeme → zachránili jsme před vyhozením
+    if (item.expires_at) {
+      const days = daysUntil(item.expires_at);
+      if (days <= 3) recordSaved();
+    }
+    setTimeout(() => {
+      consumeItem(item.id, 1);
+      setJustConsumed(false);
+    }, 300);
+  };
 
   return (
     <div className="card overflow-hidden mb-2">
@@ -158,7 +185,21 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
         {/* Right */}
         <div className="flex flex-col items-end gap-1.5 flex-shrink-0">
           <ExpiryBadge expiresAt={item.expires_at} />
-          <ChevronRight size={14} className={cn("transition-transform", expanded && "rotate-90")} style={{ color: "var(--text-tertiary)" }} />
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={handleQuickConsume}
+              className="w-7 h-7 rounded-full flex items-center justify-center transition-all"
+              style={{
+                background: justConsumed ? "var(--green-primary)" : "var(--green-light)",
+                transform: justConsumed ? "scale(0.85)" : "scale(1)",
+                transition: "all 0.2s ease",
+              }}
+              title="Spotřebovat 1"
+            >
+              <Minus size={12} style={{ color: justConsumed ? "white" : "var(--green-primary)" }} />
+            </button>
+            <ChevronRight size={14} className={cn("transition-transform", expanded && "rotate-90")} style={{ color: "var(--text-tertiary)" }} />
+          </div>
         </div>
       </button>
 
@@ -211,8 +252,13 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
 export function PantryView() {
   const { items, removeItem } = usePantryStore();
   const { setTab } = useUIStore();
+  const { streak, getScore, getLevel } = useGamificationStore();
   const [filter, setFilter] = useState<StorageLocation | "vse">("vse");
   const [showManual, setShowManual] = useState(false);
+  const [showStreakDetail, setShowStreakDetail] = useState(false);
+  const seasonalTip = getSeasonalTip();
+  const score = getScore();
+  const level = getLevel();
 
   const expiring = useMemo(() => {
     const cutoff = new Date();
@@ -251,16 +297,53 @@ export function PantryView() {
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-0 pb-4">
         {/* Hero card */}
-        <div className="hero-card mb-5" style={{ textAlign: "center", padding: "20px 16px 16px" }}>
-          <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.65)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 4 }}>
-            Celkem v spižírně
-          </p>
-          <p style={{ fontSize: 40, fontWeight: 700, lineHeight: 1, color: "white", letterSpacing: "-1px", marginBottom: 4 }}>
-            {items.length}
-          </p>
-          <p style={{ fontSize: 13, color: "rgba(255,255,255,0.7)", marginBottom: 16 }}>
-            {expiring.length > 0 ? `${expiring.length} brzy vyprší` : "Vše v pořádku ✓"}
-          </p>
+        <div className="hero-card mb-5" style={{ padding: "20px 16px 16px" }}>
+          {/* Top row: count + streak */}
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
+            <div>
+              <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.65)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 2 }}>
+                Celkem v spižírně
+              </p>
+              <p style={{ fontSize: 38, fontWeight: 700, lineHeight: 1, color: "white", letterSpacing: "-1px" }}>
+                {items.length}
+              </p>
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 2 }}>
+                {expiring.length > 0 ? `${expiring.length} brzy vyprší` : "Vše v pořádku ✓"}
+              </p>
+            </div>
+            {/* Streak + level badge */}
+            <button
+              onClick={() => setShowStreakDetail(s => !s)}
+              style={{ background: "rgba(255,255,255,0.15)", borderRadius: 16, padding: "10px 14px", border: "1px solid rgba(255,255,255,0.2)", textAlign: "center", minWidth: 80 }}
+            >
+              <div style={{ fontSize: 20, lineHeight: 1 }}>{streak > 0 ? "🔥" : "💤"}</div>
+              <div style={{ fontSize: 16, fontWeight: 800, color: "white", lineHeight: 1.2 }}>{streak}</div>
+              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.65)", fontWeight: 600 }}>dní v řadě</div>
+            </button>
+          </div>
+
+          {/* Score bar */}
+          <div style={{ marginBottom: 14 }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>
+                {level.emoji} {level.label}
+              </span>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>
+                {score} bodů
+                {level.next !== Infinity && ` / ${level.next}`}
+              </span>
+            </div>
+            <div style={{ height: 4, borderRadius: 4, background: "rgba(255,255,255,0.2)", overflow: "hidden" }}>
+              <div style={{
+                height: "100%",
+                borderRadius: 4,
+                background: "rgba(255,255,255,0.85)",
+                width: level.next === Infinity ? "100%" : `${Math.min(100, (score / level.next) * 100)}%`,
+                transition: "width 0.6s ease",
+              }} />
+            </div>
+          </div>
+
           {/* Quick actions row */}
           <div style={{ display: "flex", gap: 10 }}>
             <button
@@ -278,6 +361,33 @@ export function PantryView() {
           </div>
         </div>
 
+        {/* Streak detail panel */}
+        {showStreakDetail && (
+          <div className="rounded-2xl p-4 mb-4 animate-fade-in" style={{ background: "white", border: "1.5px solid var(--border)" }}>
+            <div className="flex items-center gap-2 mb-3">
+              <Flame size={16} style={{ color: "#F57C00" }} />
+              <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>Vaše statistiky</p>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {[
+                { label: "Dní v řadě", value: streak, emoji: "🔥" },
+                { label: "Score", value: score, emoji: "⭐" },
+                { label: "Level", value: level.label, emoji: level.emoji },
+                { label: "Další level za", value: level.next === Infinity ? "Max!" : `${Math.max(0, level.next - score)} b.`, emoji: "🎯" },
+              ].map((stat) => (
+                <div key={stat.label} className="rounded-xl p-3 text-center" style={{ background: "var(--bg-primary)" }}>
+                  <div style={{ fontSize: 20 }}>{stat.emoji}</div>
+                  <div className="font-bold text-sm mt-0.5" style={{ color: "var(--text-primary)" }}>{stat.value}</div>
+                  <div style={{ fontSize: 10, color: "var(--text-tertiary)", fontWeight: 600 }}>{stat.label}</div>
+                </div>
+              ))}
+            </div>
+            <p style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 10, textAlign: "center" }}>
+              Skenujte, vařte a zachraňte potraviny před expirací pro body 💚
+            </p>
+          </div>
+        )}
+
         {/* Expiry alerts */}
         {expiring.length > 0 && (
           <div className="rounded-2xl p-3.5 mb-4 flex items-start gap-3" style={{ background: "#FFF8EC", border: "1px solid #FFE0B2" }}>
@@ -293,6 +403,15 @@ export function PantryView() {
             </div>
           </div>
         )}
+
+        {/* Sezónní tip */}
+        <div className="rounded-2xl p-3.5 mb-4 flex items-start gap-3" style={{ background: "var(--green-light)", border: "1px solid var(--green-primary)" }}>
+          <span style={{ fontSize: 20, flexShrink: 0 }}>{seasonalTip.emoji}</span>
+          <div>
+            <p className="text-sm font-bold" style={{ color: "var(--green-dark)" }}>{seasonalTip.title}</p>
+            <p className="text-xs mt-0.5" style={{ color: "var(--green-dark)", opacity: 0.8 }}>{seasonalTip.text}</p>
+          </div>
+        </div>
 
         {/* Filter pills */}
         <div className="flex gap-2 overflow-x-auto pb-2 -mx-5 px-5 mb-4" style={{ scrollbarWidth: "none" }}>

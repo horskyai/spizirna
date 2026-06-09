@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Check, ShoppingCart, X, Share2 } from "lucide-react";
+import { Plus, Check, ShoppingCart, X, Share2, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { usePantryStore } from "@/store/pantryStore";
+import { useRecurringStore } from "@/store/recurringStore";
+import { useRecipeStore } from "@/store/recipeStore";
 import { ShoppingItem } from "@/store/shoppingStore";
 import { ProductInfo } from "@/types";
 import { VoiceInput } from "@/components/VoiceInput";
@@ -137,6 +139,162 @@ function shoppingItemToProduct(item: ShoppingItem): ProductInfo {
   };
 }
 
+function SmartSuggestionsWidget() {
+  const recurringItems = useRecurringStore((s) => s.items);
+  const pantryItems = usePantryStore((s) => s.items);
+  const { recipes } = useRecipeStore();
+  const addItems = useShoppingStore((s) => s.addItems);
+  const [collapsed, setCollapsed] = useState(false);
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
+
+  const suggestions = useMemo(() => {
+    const results: { id: string; name: string; reason: string; quantity: number; unit: string; category: string }[] = [];
+
+    // 1. Zásoby z recurring store které brzy dojdou (do 3 dnů)
+    const now = new Date();
+    const soon = new Date(now);
+    soon.setDate(soon.getDate() + 3);
+    recurringItems.forEach((item) => {
+      const nextDate = new Date(item.next_reminder);
+      if (nextDate <= soon) {
+        results.push({
+          id: `recurring-${item.id}`,
+          name: item.name,
+          reason: nextDate <= now ? "Zásoby došly" : "Brzy dojde",
+          quantity: item.quantity,
+          unit: item.unit,
+          category: item.category || "ostatni",
+        });
+      }
+    });
+
+    // 2. Pantry položky s malým množstvím (quantity <= 1)
+    pantryItems.forEach((item) => {
+      if (item.quantity <= 1) {
+        const alreadySuggested = results.some(r => r.name.toLowerCase().includes(item.product.product_name.toLowerCase().slice(0, 5)));
+        if (!alreadySuggested) {
+          results.push({
+            id: `pantry-low-${item.id}`,
+            name: item.product.product_name,
+            reason: `Zbývá jen ${item.quantity} ${item.unit}`,
+            quantity: 1,
+            unit: item.unit === "ks" ? "ks" : item.unit,
+            category: "ostatni",
+          });
+        }
+      }
+    });
+
+    // 3. Časté ingredience z receptů co nemáš
+    const COMMON_INGREDIENTS = [
+      { name: "Vejce", unit: "ks", quantity: 6, category: "mlecne", keywords: ["vejce"] },
+      { name: "Mléko", unit: "l", quantity: 1, category: "mlecne", keywords: ["mléko"] },
+      { name: "Máslo", unit: "g", quantity: 250, category: "mlecne", keywords: ["máslo"] },
+      { name: "Cibule", unit: "ks", quantity: 3, category: "ovoce-zelenina", keywords: ["cibule"] },
+      { name: "Česnek", unit: "ks", quantity: 1, category: "ovoce-zelenina", keywords: ["česnek"] },
+      { name: "Rajčata", unit: "ks", quantity: 4, category: "ovoce-zelenina", keywords: ["rajče", "rajčata"] },
+    ];
+
+    COMMON_INGREDIENTS.forEach((ing) => {
+      const inPantry = pantryItems.some((p) =>
+        ing.keywords.some(kw => p.product.product_name.toLowerCase().includes(kw))
+      );
+      if (!inPantry) {
+        const usedInRecipes = recipes.some((r) =>
+          r.ingredients.some((ri) =>
+            ing.keywords.some(kw => ri.name.toLowerCase().includes(kw))
+          )
+        );
+        if (usedInRecipes) {
+          results.push({
+            id: `common-${ing.name}`,
+            name: ing.name,
+            reason: "Chybí k receptům",
+            quantity: ing.quantity,
+            unit: ing.unit,
+            category: ing.category,
+          });
+        }
+      }
+    });
+
+    return results.slice(0, 6);
+  }, [recurringItems, pantryItems, recipes]);
+
+  if (suggestions.length === 0) return null;
+
+  const handleAdd = (id: string, name: string, quantity: number, unit: string, category: string) => {
+    addItems([{ name, quantity, unit, category }]);
+    setAddedIds((prev) => new Set(prev).add(id));
+  };
+
+  const handleAddAll = () => {
+    const toAdd = suggestions
+      .filter((s) => !addedIds.has(s.id))
+      .map((s) => ({ name: s.name, quantity: s.quantity, unit: s.unit, category: s.category }));
+    addItems(toAdd);
+    setAddedIds(new Set(suggestions.map((s) => s.id)));
+  };
+
+  return (
+    <div className="card mb-4 overflow-hidden">
+      <button
+        onClick={() => setCollapsed(c => !c)}
+        className="w-full flex items-center justify-between px-4 py-3"
+      >
+        <div className="flex items-center gap-2">
+          <Lightbulb size={15} style={{ color: "#F57C00" }} />
+          <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
+            Chytré návrhy ({suggestions.length})
+          </p>
+        </div>
+        {collapsed ? <ChevronDown size={15} style={{ color: "var(--text-tertiary)" }} /> : <ChevronUp size={15} style={{ color: "var(--text-tertiary)" }} />}
+      </button>
+
+      {!collapsed && (
+        <div className="border-t animate-fade-in" style={{ borderColor: "var(--border)" }}>
+          {suggestions.map((s, idx) => (
+            <div
+              key={s.id}
+              className="flex items-center gap-3 px-4 py-3"
+              style={{ borderBottom: idx < suggestions.length - 1 ? "1px solid var(--border)" : "none" }}
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{s.name}</p>
+                <p className="text-xs" style={{ color: addedIds.has(s.id) ? "var(--green-primary)" : "#F57C00", fontWeight: 600 }}>
+                  {addedIds.has(s.id) ? "✓ Přidáno" : s.reason}
+                </p>
+              </div>
+              <button
+                onClick={() => handleAdd(s.id, s.name, s.quantity, s.unit, s.category)}
+                disabled={addedIds.has(s.id)}
+                className="w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ background: addedIds.has(s.id) ? "var(--green-primary)" : "var(--green-light)" }}
+              >
+                {addedIds.has(s.id)
+                  ? <Check size={12} color="white" strokeWidth={3} />
+                  : <Plus size={13} style={{ color: "var(--green-primary)" }} />
+                }
+              </button>
+            </div>
+          ))}
+          {suggestions.filter(s => !addedIds.has(s.id)).length > 1 && (
+            <div className="px-4 py-3">
+              <button
+                onClick={handleAddAll}
+                className="w-full py-2.5 rounded-2xl text-sm font-semibold"
+                style={{ background: "var(--green-light)", color: "var(--green-dark)", border: "1px solid var(--green-primary)" }}
+              >
+                + Přidat vše ({suggestions.filter(s => !addedIds.has(s.id)).length} položek)
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function ShoppingView() {
   const { items, toggleItem, removeItem, removeChecked, clearAll } = useShoppingStore();
   const addToPantry = usePantryStore((s) => s.addItem);
@@ -193,17 +351,22 @@ export function ShoppingView() {
 
   if (items.length === 0) {
     return (
-      <div className="relative flex-1 flex flex-col items-center justify-center gap-5 p-8">
-        <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
-          <ShoppingCart size={32} strokeWidth={1.5} style={{ color: "var(--green-primary)" }} />
+      <div className="relative flex-1 overflow-y-auto">
+        <div className="px-5 pt-2 pb-24">
+          <SmartSuggestionsWidget />
+          <div className="flex flex-col items-center justify-center gap-5 py-12">
+            <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
+              <ShoppingCart size={32} strokeWidth={1.5} style={{ color: "var(--green-primary)" }} />
+            </div>
+            <div className="text-center">
+              <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>Seznam je prázdný</p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Přidejte položky ručně nebo je přidejte z receptů.</p>
+            </div>
+            <button className="btn-primary" onClick={() => setShowAdd(true)}>
+              <Plus size={18} /> Přidat položku
+            </button>
+          </div>
         </div>
-        <div className="text-center">
-          <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>Seznam je prázdný</p>
-          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Přidejte položky ručně nebo je přidejte z receptů.</p>
-        </div>
-        <button className="btn-primary" onClick={() => setShowAdd(true)}>
-          <Plus size={18} /> Přidat položku
-        </button>
         {showAdd && <AddItemModal onClose={() => setShowAdd(false)} />}
       </div>
     );
@@ -212,6 +375,9 @@ export function ShoppingView() {
   return (
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-2 pb-24 space-y-4">
+        {/* Smart suggestions */}
+        <SmartSuggestionsWidget />
+
         {/* Summary */}
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>

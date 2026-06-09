@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { Flashlight, X, Keyboard } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
+import { useGamificationStore } from "@/store/gamificationStore";
 import { fetchProductByEAN } from "@/lib/openFoodFacts";
 
 type ScanState = "scanning" | "loading" | "found" | "notfound";
@@ -16,6 +17,7 @@ export function Scanner() {
   const scanStateRef = useRef<ScanState>("scanning");
 
   const { openSheet, activeSheet } = useUIStore();
+  const recordScanned = useGamificationStore((s) => s.recordScanned);
 
   const [scanState, setScanState] = useState<ScanState>("scanning");
   const [error, setError] = useState<string | null>(null);
@@ -134,6 +136,7 @@ export function Scanner() {
               setScanState("found");
               scanStateRef.current = "found";
               openSheet("product", product);
+              recordScanned();
             } else {
               setScanState("notfound");
               scanStateRef.current = "notfound";

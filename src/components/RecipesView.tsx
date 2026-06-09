@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
-import { Clock, Users, ChevronDown, ChevronUp, CheckCircle, XCircle, ShoppingCart, ChefHat, AlertCircle, Plus, Trash2, BookOpen } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Clock, Users, ChevronDown, ChevronUp, CheckCircle, XCircle, ShoppingCart, ChefHat, AlertCircle, Plus, Trash2, BookOpen, Sparkles, RefreshCw } from "lucide-react";
 import { Recipe } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useUIStore } from "@/store/uiStore";
 import { useRecipeStore } from "@/store/recipeStore";
+import { useGamificationStore } from "@/store/gamificationStore";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 
 function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void }) {
@@ -462,6 +463,178 @@ function getCategory(recipe: Recipe): string {
   return "Ostatní";
 }
 
+function TodaySuggestionWidget() {
+  const pantryItems = usePantryStore((s) => s.items);
+  const { recipes } = useRecipeStore();
+  const recordCooked = useGamificationStore((s) => s.recordCooked);
+  const addItems = useShoppingStore((s) => s.addItems);
+  const [refreshKey, setRefreshKey] = useState(0);
+  const [cookDone, setCookDone] = useState(false);
+
+  const suggestion = useMemo(() => {
+    if (recipes.length === 0 || pantryItems.length === 0) return null;
+
+    const STOP = new Set(["konzervovaná","konzervovaný","konzervované","čerstvý","čerstvá","čerstvé",
+      "sušený","sušená","sušené","mražený","mražená","mražené","celý","celá","celé",
+      "strouhaný","strouhaná","nakrájený","nakrájená","mletý","mletá","mleté"]);
+    const keywords = (str: string) =>
+      str.toLowerCase().split(/[\s,()\/]+/)
+        .map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, ""))
+        .filter(w => w.length > 2 && !STOP.has(w));
+
+    const scored = recipes.map((r) => {
+      let matched = 0;
+      r.ingredients.forEach((ing) => {
+        const ingWords = keywords(ing.name);
+        const found = pantryItems.some((p) => {
+          const prodWords = keywords(p.product.product_name);
+          return ingWords.some(iw => prodWords.some(pw => pw.includes(iw) || iw.includes(pw)));
+        });
+        if (found) matched++;
+      });
+      const total = r.ingredients.length || 1;
+      return { recipe: r, score: matched / total, matched, total };
+    });
+
+    const best = scored
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    if (best.length === 0) return null;
+
+    // refreshKey slouží k přepínání návrhu
+    const idx = refreshKey % Math.min(best.length, 5);
+    return best[idx];
+  }, [recipes, pantryItems, refreshKey]);
+
+  if (!suggestion) return null;
+
+  const { recipe, matched, total } = suggestion;
+  const percent = Math.round((matched / total) * 100);
+  const missing = recipe.ingredients.filter((ing) => {
+    const STOP = new Set(["konzervovaná","konzervovaný","konzervované","čerstvý","čerstvá","čerstvé",
+      "sušený","sušená","sušené","mražený","mražená","mražené"]);
+    const keywords = (str: string) =>
+      str.toLowerCase().split(/[\s,()\/]+/)
+        .map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, ""))
+        .filter(w => w.length > 2 && !STOP.has(w));
+    const ingWords = keywords(ing.name);
+    return !pantryItems.some((p) => {
+      const prodWords = keywords(p.product.product_name);
+      return ingWords.some(iw => prodWords.some(pw => pw.includes(iw) || iw.includes(pw)));
+    });
+  });
+
+  const handleCookNow = () => {
+    recordCooked();
+    setCookDone(true);
+    setTimeout(() => setCookDone(false), 2000);
+  };
+
+  const handleAddMissing = () => {
+    addItems(missing.map((ing) => ({
+      name: ing.name,
+      quantity: ing.quantity,
+      unit: ing.unit,
+      recipe_id: recipe.id,
+      recipe_name: recipe.name,
+    })));
+  };
+
+  return (
+    <div
+      className="rounded-3xl mb-4 overflow-hidden"
+      style={{
+        background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)",
+        boxShadow: "0 6px 24px rgba(76,175,130,0.35)",
+      }}
+    >
+      <div className="px-4 pt-4 pb-3">
+        <div className="flex items-center gap-1.5 mb-2">
+          <Sparkles size={13} color="rgba(255,255,255,0.8)" />
+          <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.75)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+            Co uvařím dnes?
+          </p>
+        </div>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex-1">
+            <h3 className="text-lg font-bold leading-tight" style={{ color: "white" }}>{recipe.name}</h3>
+            {recipe.description && (
+              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)", marginTop: 2, lineHeight: 1.4 }}>{recipe.description}</p>
+            )}
+          </div>
+          <button
+            onClick={() => setRefreshKey(k => k + 1)}
+            className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
+            style={{ background: "rgba(255,255,255,0.15)" }}
+          >
+            <RefreshCw size={14} color="white" />
+          </button>
+        </div>
+
+        {/* Progress bar */}
+        <div className="mt-3">
+          <div className="flex justify-between items-center mb-1">
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>Suroviny v spižírně</span>
+            <span style={{ fontSize: 12, fontWeight: 700, color: "white" }}>{matched}/{total} ({percent}%)</span>
+          </div>
+          <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.25)" }}>
+            <div
+              className="h-full rounded-full"
+              style={{ width: `${percent}%`, background: "rgba(255,255,255,0.9)", transition: "width 0.5s ease" }}
+            />
+          </div>
+        </div>
+
+        {/* Meta */}
+        <div className="flex gap-3 mt-2.5">
+          {(recipe.prep_time_min + recipe.cook_time_min) > 0 && (
+            <div className="flex items-center gap-1">
+              <Clock size={11} color="rgba(255,255,255,0.65)" />
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.65)" }}>{recipe.prep_time_min + recipe.cook_time_min} min</span>
+            </div>
+          )}
+          {recipe.calories_per_serving && (
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.65)" }}>{recipe.calories_per_serving} kcal/porci</span>
+          )}
+        </div>
+      </div>
+
+      {/* Buttons */}
+      <div className="flex gap-2 px-4 pb-4">
+        {percent === 100 ? (
+          <button
+            onClick={handleCookNow}
+            className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
+            style={{ background: cookDone ? "rgba(255,255,255,0.3)" : "white", color: cookDone ? "white" : "var(--green-dark)" }}
+          >
+            {cookDone ? "✓ Výborně!" : <><ChefHat size={15} /> Uvařím teď</>}
+          </button>
+        ) : (
+          <>
+            <button
+              onClick={handleCookNow}
+              className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
+              style={{ background: "rgba(255,255,255,0.2)", color: "white", border: "1px solid rgba(255,255,255,0.3)" }}
+            >
+              <ChefHat size={15} /> Uvařím z toho co mám
+            </button>
+            {missing.length > 0 && (
+              <button
+                onClick={handleAddMissing}
+                className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
+                style={{ background: "white", color: "var(--green-dark)" }}
+              >
+                <ShoppingCart size={15} /> Přidat {missing.length} na seznam
+              </button>
+            )}
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function RecipesView() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("Vše");
@@ -480,6 +653,9 @@ export function RecipesView() {
   return (
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-2 pb-24">
+        {/* Today suggestion */}
+        <TodaySuggestionWidget />
+
         {/* Search */}
         <div style={{ position: "relative", marginBottom: 12 }}>
           <svg style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", pointerEvents: "none", color: "var(--text-tertiary)" }} width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
