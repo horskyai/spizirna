@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Component, ReactNode } from "react";
 import { useUIStore } from "@/store/uiStore";
+import { useModeStore } from "@/store/modeStore";
 import { TabBar } from "@/components/TabBar";
 import { AppHeader } from "@/components/AppHeader";
 import { PantryView } from "@/components/PantryView";
@@ -13,6 +14,7 @@ import { RecurringView } from "@/components/RecurringView";
 import { ProvozView } from "@/components/ProvozView";
 import { ProductSheet } from "@/components/ProductSheet";
 import { Onboarding } from "@/components/Onboarding";
+import { ModeSelect } from "@/components/ModeSelect";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   constructor(props: { children: ReactNode }) {
@@ -40,18 +42,40 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
 
 export default function Home() {
   const { activeTab, activeSheet, scannedProduct, closeSheet } = useUIStore();
+  const { mode } = useModeStore();
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [modeSelected, setModeSelected] = useState(true); // true = zkontrolováno
 
   useEffect(() => {
-    if (!localStorage.getItem("onboarding-done")) {
-      setShowOnboarding(true);
+    // Zkontroluj localStorage synchronně aby nevznikl flash
+    const savedMode = localStorage.getItem("app-mode");
+    if (!savedMode || JSON.parse(savedMode)?.state?.mode === null) {
+      setModeSelected(false);
     }
   }, []);
+
+  useEffect(() => {
+    if (mode !== null) {
+      setModeSelected(true);
+      if (!localStorage.getItem("onboarding-done")) {
+        setShowOnboarding(true);
+      }
+    }
+  }, [mode]);
 
   const finishOnboarding = () => {
     localStorage.setItem("onboarding-done", "1");
     setShowOnboarding(false);
   };
+
+  // Výběr režimu — první spuštění
+  if (!modeSelected || mode === null) {
+    return (
+      <ErrorBoundary>
+        <ModeSelect onDone={() => setModeSelected(true)} />
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <ErrorBoundary>

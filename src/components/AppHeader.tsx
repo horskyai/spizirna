@@ -3,7 +3,8 @@
 import { useState, useMemo } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { usePantryStore } from "@/store/pantryStore";
-import { Plus, Bell, AlertTriangle, UtensilsCrossed, ScanLine, PenLine } from "lucide-react";
+import { useModeStore } from "@/store/modeStore";
+import { Plus, Bell, AlertTriangle, UtensilsCrossed, ScanLine, PenLine, ClipboardList } from "lucide-react";
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { daysUntil } from "@/lib/dateUtils";
@@ -20,6 +21,7 @@ const TITLES: Record<string, string> = {
 
 export function AppHeader() {
   const { activeTab, setTab } = useUIStore();
+  const { mode } = useModeStore();
   const pantryItems = usePantryStore((s) => s.items);
   const expiringItems = useMemo(() => {
     const cutoff = new Date();
@@ -75,6 +77,17 @@ export function AppHeader() {
               >
                 <UtensilsCrossed size={18} style={{ color: "var(--text-tertiary)" }} />
               </button>
+
+              {mode !== "provoz" && (
+                <button
+                  onClick={() => setTab("provoz")}
+                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+                  style={{ background: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }}
+                  title="Provoz & inventura"
+                >
+                  <ClipboardList size={18} style={{ color: "var(--text-tertiary)" }} />
+                </button>
+              )}
 
               <button
                 onClick={() => setShowAddMenu(true)}

@@ -2,9 +2,19 @@
 
 import { useUIStore } from "@/store/uiStore";
 import { useShoppingStore } from "@/store/shoppingStore";
-import { ShoppingBag, ScanLine, BookOpen, ShoppingCart, ClipboardList } from "lucide-react";
+import { useRecurringStore } from "@/store/recurringStore";
+import { useModeStore } from "@/store/modeStore";
+import { ShoppingBag, ScanLine, BookOpen, ShoppingCart, RefreshCw, ClipboardList } from "lucide-react";
 
-const TABS = [
+const TABS_DOMACNOST = [
+  { id: "spizirna", label: "Spižírna", Icon: ShoppingBag },
+  { id: "recepty", label: "Recepty", Icon: BookOpen },
+  { id: "skenovat", label: "Skenovat", Icon: ScanLine },
+  { id: "nakup", label: "Nákup", Icon: ShoppingCart },
+  { id: "opakujici", label: "Zásoby", Icon: RefreshCw },
+] as const;
+
+const TABS_PROVOZ = [
   { id: "spizirna", label: "Spižírna", Icon: ShoppingBag },
   { id: "recepty", label: "Recepty", Icon: BookOpen },
   { id: "skenovat", label: "Skenovat", Icon: ScanLine },
@@ -14,7 +24,11 @@ const TABS = [
 
 export function TabBar() {
   const { activeTab, setTab } = useUIStore();
+  const { mode } = useModeStore();
   const shoppingCount = useShoppingStore((s) => s.items.filter((i) => !i.checked).length);
+  const dueCount = useRecurringStore((s) => s.getDueItems().length);
+
+  const TABS = mode === "provoz" ? TABS_PROVOZ : TABS_DOMACNOST;
 
   return (
     <nav
@@ -30,7 +44,9 @@ export function TabBar() {
         {TABS.map(({ id, label, Icon }) => {
           const active = activeTab === id;
           const isCenter = id === "skenovat";
-          const badge = id === "nakup" && shoppingCount > 0 ? shoppingCount : null;
+          const badge = id === "nakup" && shoppingCount > 0 ? shoppingCount
+            : id === "opakujici" && dueCount > 0 ? dueCount
+            : null;
 
           if (isCenter) {
             return (
