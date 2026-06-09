@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import {
-  ClipboardList, Plus, X, ChevronRight, ChevronDown, ChevronUp,
-  AlertTriangle, Check, Truck, Package, BarChart3, Pencil, Trash2
+  ClipboardList, Plus, X, ChevronRight,
+  AlertTriangle, Check, Truck, Package, BarChart3, Trash2, ScanLine, Keyboard
 } from "lucide-react";
 import {
   useProvozStore,
@@ -12,6 +12,8 @@ import {
   InventuraPolozka,
   Inventura,
 } from "@/store/provozStore";
+import { fetchProductByEAN } from "@/lib/openFoodFacts";
+import { Scanner } from "@/components/Scanner";
 
 // ── Formulář nové položky skladu ──────────────────────────────────────────────
 function AddPolozkaModal({ onClose }: { onClose: () => void }) {
@@ -22,7 +24,53 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
   const [minZasoba, setMinZasoba] = useState("1");
   const [cena, setCena] = useState("");
   const [dodavatel, setDodavatel] = useState("");
+  const [showScanner, setShowScanner] = useState(false);
+  const [scanLoading, setScanLoading] = useState(false);
+  const [eanInput, setEanInput] = useState("");
+  const [inputMode, setInputMode] = useState<"name" | "ean">("name");
   const JEDNOTKY = ["ks", "l", "dl", "ml", "kg", "g", "lahev", "balení", "porce"];
+
+  const handleEanScanned = useCallback(async (ean: string) => {
+    setShowScanner(false);
+    setScanLoading(true);
+    try {
+      const product = await fetchProductByEAN(ean);
+      if (product) {
+        setNazev(product.product_name || ean);
+        if (product.unit === "ml") {
+          setJednotka("l");
+        } else if (product.unit === "g") {
+          setJednotka("kg");
+        }
+      } else {
+        setNazev(ean);
+      }
+    } finally {
+      setScanLoading(false);
+    }
+  }, []);
+
+  const handleEanManual = async () => {
+    if (!eanInput.trim()) return;
+    setScanLoading(true);
+    try {
+      const product = await fetchProductByEAN(eanInput.trim());
+      if (product) {
+        setNazev(product.product_name || eanInput.trim());
+        if (product.unit === "ml") {
+          setJednotka("l");
+        } else if (product.unit === "g") {
+          setJednotka("kg");
+        }
+      } else {
+        setNazev(eanInput.trim());
+      }
+      setInputMode("name");
+      setEanInput("");
+    } finally {
+      setScanLoading(false);
+    }
+  };
 
   const save = () => {
     if (!nazev.trim()) return;
@@ -37,6 +85,15 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
     onClose();
   };
 
+  // Full-screen embedded scanner
+  if (showScanner) {
+    return (
+      <div style={{ position: "fixed", inset: 0, zIndex: 300 }}>
+        <Scanner onScanned={handleEanScanned} onClose={() => setShowScanner(false)} />
+      </div>
+    );
+  }
+
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
@@ -47,63 +104,147 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
           <button onClick={onClose}><X size={20} style={{ color: "var(--text-tertiary)" }} /></button>
         </div>
 
-        <div>
-          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Název</label>
-          <input
-            autoFocus value={nazev} onChange={e => setNazev(e.target.value)}
-            placeholder="např. Kuřecí prsa, Vodka Absolut..."
-            className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
-            style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }}
-          />
+        {/* Způsob zadání — EAN nebo ručně */}
+        <div style={{ display: "flex", gap: 8 }}>
+          <button
+            onClick={() => setInputMode("name")}
+            style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "9px 0", borderRadius: 14, fontSize: 13, fontWeight: 600,
+              background: inputMode === "name" ? "var(--green-primary)" : "white",
+              color: inputMode === "name" ? "white" : "var(--text-secondary)",
+              border: `1.5px solid ${inputMode === "name" ? "var(--green-primary)" : "var(--border)"}`,
+            }}
+          >
+            <Keyboard size={14} /> Zadat ručně
+          </button>
+          <button
+            onClick={() => setInputMode("ean")}
+            style={{
+              flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+              padding: "9px 0", borderRadius: 14, fontSize: 13, fontWeight: 600,
+              background: inputMode === "ean" ? "var(--green-primary)" : "white",
+              color: inputMode === "ean" ? "white" : "var(--text-secondary)",
+              border: `1.5px solid ${inputMode === "ean" ? "var(--green-primary)" : "var(--border)"}`,
+            }}
+          >
+            <ScanLine size={14} /> Skenovat EAN
+          </button>
         </div>
 
-        <div>
-          <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-tertiary)" }}>Kategorie</label>
-          <div className="grid grid-cols-2 gap-2">
-            {INVENTURA_KATEGORIE.map((k) => (
-              <button key={k.id} onClick={() => setKategorie(k.id)}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-left"
+        {inputMode === "ean" ? (
+          <div className="space-y-3">
+            <button
+              onClick={() => setShowScanner(true)}
+              style={{
+                width: "100%", padding: "14px 0", borderRadius: 16, fontSize: 14, fontWeight: 700,
+                background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)",
+                color: "white", display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                boxShadow: "0 4px 14px rgba(76,175,130,0.4)",
+              }}
+            >
+              <ScanLine size={18} /> Otevřít fotoaparát
+            </button>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+              <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>nebo zadat EAN číslo</span>
+              <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                type="number"
+                value={eanInput}
+                onChange={e => setEanInput(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleEanManual()}
+                placeholder="např. 8594013425054"
                 style={{
-                  background: kategorie === k.id ? "var(--green-light)" : "white",
-                  border: `1.5px solid ${kategorie === k.id ? "var(--green-primary)" : "var(--border)"}`,
-                  color: kategorie === k.id ? "var(--green-dark)" : "var(--text-primary)",
-                }}>
-                <span>{k.emoji}</span> {k.label}
+                  flex: 1, padding: "10px 14px", borderRadius: 14, fontSize: 14, fontWeight: 600,
+                  border: "1.5px solid var(--border)", background: "white", outline: "none",
+                  color: "var(--text-primary)", letterSpacing: "0.1em",
+                }}
+              />
+              <button
+                onClick={handleEanManual}
+                disabled={eanInput.length < 6 || scanLoading}
+                style={{
+                  padding: "10px 16px", borderRadius: 14, fontSize: 13, fontWeight: 700,
+                  background: eanInput.length >= 6 ? "var(--green-primary)" : "var(--border)",
+                  color: eanInput.length >= 6 ? "white" : "var(--text-tertiary)",
+                }}
+              >
+                {scanLoading ? "..." : "Hledat"}
               </button>
-            ))}
+            </div>
+            {nazev && (
+              <div style={{ padding: "10px 14px", borderRadius: 14, background: "var(--green-light)", border: "1px solid var(--green-primary)" }}>
+                <p style={{ fontSize: 12, color: "var(--green-dark)", fontWeight: 600 }}>✓ Nalezeno: {nazev}</p>
+              </div>
+            )}
           </div>
-        </div>
-
-        <div className="flex gap-3">
-          <div style={{ flex: 1 }}>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Jednotka</label>
-            <select value={jednotka} onChange={e => setJednotka(e.target.value)}
-              style={{ width: "100%", background: "white", border: "1.5px solid var(--border)", borderRadius: 12, padding: "10px 12px", fontSize: 14, outline: "none", color: "var(--text-primary)" }}>
-              {JEDNOTKY.map(j => <option key={j} value={j}>{j}</option>)}
-            </select>
-          </div>
-          <div style={{ flex: 1 }}>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Min. zásoba</label>
-            <input type="number" value={minZasoba} onChange={e => setMinZasoba(e.target.value)}
-              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none text-center"
-              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
-          </div>
-        </div>
-
-        <div className="flex gap-3">
-          <div style={{ flex: 1 }}>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Cena/jedn. (Kč)</label>
-            <input type="number" value={cena} onChange={e => setCena(e.target.value)} placeholder="volitelné"
+        ) : (
+          <div>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Název</label>
+            <input
+              autoFocus value={nazev} onChange={e => setNazev(e.target.value)}
+              placeholder="např. Kuřecí prsa, Vodka Absolut..."
               className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
-              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }}
+            />
           </div>
-          <div style={{ flex: 1 }}>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Dodavatel</label>
-            <input value={dodavatel} onChange={e => setDodavatel(e.target.value)} placeholder="volitelné"
-              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
-              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
-          </div>
-        </div>
+        )}
+
+        {/* Zbytek formuláře — vždy viditelný pokud máme název */}
+        {(nazev.trim() || inputMode === "name") && (
+          <>
+            <div>
+              <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-tertiary)" }}>Kategorie</label>
+              <div className="grid grid-cols-2 gap-2">
+                {INVENTURA_KATEGORIE.map((k) => (
+                  <button key={k.id} onClick={() => setKategorie(k.id)}
+                    className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-left"
+                    style={{
+                      background: kategorie === k.id ? "var(--green-light)" : "white",
+                      border: `1.5px solid ${kategorie === k.id ? "var(--green-primary)" : "var(--border)"}`,
+                      color: kategorie === k.id ? "var(--green-dark)" : "var(--text-primary)",
+                    }}>
+                    <span>{k.emoji}</span> {k.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div style={{ flex: 1 }}>
+                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Jednotka</label>
+                <select value={jednotka} onChange={e => setJednotka(e.target.value)}
+                  style={{ width: "100%", background: "white", border: "1.5px solid var(--border)", borderRadius: 12, padding: "10px 12px", fontSize: 14, outline: "none", color: "var(--text-primary)" }}>
+                  {JEDNOTKY.map(j => <option key={j} value={j}>{j}</option>)}
+                </select>
+              </div>
+              <div style={{ flex: 1 }}>
+                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Min. zásoba</label>
+                <input type="number" value={minZasoba} onChange={e => setMinZasoba(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none text-center"
+                  style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <div style={{ flex: 1 }}>
+                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Cena/jedn. (Kč)</label>
+                <input type="number" value={cena} onChange={e => setCena(e.target.value)} placeholder="volitelné"
+                  className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+                  style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Dodavatel</label>
+                <input value={dodavatel} onChange={e => setDodavatel(e.target.value)} placeholder="volitelné"
+                  className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+                  style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+              </div>
+            </div>
+          </>
+        )}
 
         <button onClick={save} className="btn-primary" disabled={!nazev.trim()}>
           <Plus size={16} /> Přidat položku

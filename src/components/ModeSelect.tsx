@@ -109,10 +109,8 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
               style={{
                 width: "100%", textAlign: "left",
                 background: "white", borderRadius: 20,
-                border: `2px solid ${plan.id === "kompletni" ? plan.color + "40" : "transparent"}`,
-                boxShadow: plan.id === "kompletni"
-                  ? `0 4px 20px ${plan.color}25`
-                  : "0 2px 12px rgba(0,0,0,0.07)",
+                border: "2px solid transparent",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.07)",
                 overflow: "hidden",
                 cursor: "pointer",
                 transition: "transform 0.1s",
@@ -120,7 +118,6 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
               onTouchStart={e => { e.currentTarget.style.transform = "scale(0.985)"; }}
               onTouchEnd={e => { e.currentTarget.style.transform = "scale(1)"; }}
             >
-              {/* Badge na Kompletní */}
               {plan.badge && (
                 <div style={{
                   background: plan.color,

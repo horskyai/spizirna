@@ -1,14 +1,21 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Flashlight, X, Keyboard } from "lucide-react";
+import { Flashlight, X, Keyboard, ArrowLeft } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { fetchProductByEAN } from "@/lib/openFoodFacts";
 
 type ScanState = "scanning" | "loading" | "found" | "notfound";
 
-export function Scanner() {
+// onScanned: callback for embedded mode (e.g. from ProvozView)
+// onClose: callback to close embedded scanner
+interface ScannerProps {
+  onScanned?: (ean: string) => void;
+  onClose?: () => void;
+}
+
+export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -16,7 +23,7 @@ export function Scanner() {
   const lastScannedRef = useRef<string | null>(null);
   const scanStateRef = useRef<ScanState>("scanning");
 
-  const { openSheet, activeSheet } = useUIStore();
+  const { openSheet, activeSheet, setTab } = useUIStore();
   const recordScanned = useGamificationStore((s) => s.recordScanned);
 
   const [scanState, setScanState] = useState<ScanState>("scanning");
@@ -26,6 +33,8 @@ export function Scanner() {
   const [manualEAN, setManualEAN] = useState("");
   const [zxingReady, setZxingReady] = useState(false);
   const zxingRef = useRef<any>(null);
+
+  const isEmbedded = !!onScanned;
 
   // keep ref in sync with state for use inside rAF loop
   useEffect(() => { scanStateRef.current = scanState; }, [scanState]);
@@ -51,12 +60,22 @@ export function Scanner() {
     return () => { active = false; };
   }, []);
 
-  // Init camera
+  // Init camera — checks existing permission first to avoid repeated prompts
   useEffect(() => {
     let active = true;
 
     async function startCamera() {
       try {
+        // Check if permission already granted (avoids re-prompt on supported browsers)
+        if (navigator.permissions) {
+          try {
+            const perm = await navigator.permissions.query({ name: "camera" as PermissionName });
+            if (perm.state === "denied") {
+              setError("Přístup ke kameře byl zamítnut. Povolte kameru v nastavení prohlížeče nebo zadejte EAN ručně.");
+              return;
+            }
+          } catch {}
+        }
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
             facingMode: "environment",
@@ -70,8 +89,12 @@ export function Scanner() {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
         }
-      } catch {
-        setError("Nepodařilo se spustit kameru. Povolte přístup ke kameře nebo zadejte EAN ručně.");
+      } catch (err: any) {
+        if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
+          setError("Přístup ke kameře byl zamítnut. Povolte kameru v nastavení prohlížeče nebo zadejte EAN ručně.");
+        } else {
+          setError("Nepodařilo se spustit kameru. Povolte přístup ke kameře nebo zadejte EAN ručně.");
+        }
       }
     }
 
@@ -131,20 +154,27 @@ export function Scanner() {
             setScanState("loading");
             scanStateRef.current = "loading";
 
-            const product = await fetchProductByEAN(code);
-            if (product) {
+            if (isEmbedded && onScanned) {
+              // Embedded mode — just return the EAN code
               setScanState("found");
               scanStateRef.current = "found";
-              openSheet("product", product);
-              recordScanned();
+              onScanned(code);
             } else {
-              setScanState("notfound");
-              scanStateRef.current = "notfound";
-              setTimeout(() => {
-                setScanState("scanning");
-                scanStateRef.current = "scanning";
-                lastScannedRef.current = null;
-              }, 2500);
+              const product = await fetchProductByEAN(code);
+              if (product) {
+                setScanState("found");
+                scanStateRef.current = "found";
+                openSheet("product", product);
+                recordScanned();
+              } else {
+                setScanState("notfound");
+                scanStateRef.current = "notfound";
+                setTimeout(() => {
+                  setScanState("scanning");
+                  scanStateRef.current = "scanning";
+                  lastScannedRef.current = null;
+                }, 2500);
+              }
             }
           }
         }
@@ -155,7 +185,7 @@ export function Scanner() {
 
     animFrameRef.current = requestAnimationFrame(scan);
     return () => { if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current); };
-  }, [zxingReady, activeSheet, openSheet]);
+  }, [zxingReady, activeSheet, openSheet, isEmbedded, onScanned]);
 
   // Reset after sheet closes
   useEffect(() => {
@@ -311,6 +341,24 @@ export function Scanner() {
           </button>
         </div>
       )}
+
+      {/* Top left — back/close button */}
+      <div className="absolute top-4 left-4">
+        <button
+          onClick={() => {
+            if (onClose) {
+              onClose();
+            } else {
+              setTab("spizirna");
+            }
+          }}
+          className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+          style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)" }}
+          title="Zavřít"
+        >
+          {isEmbedded ? <X size={18} style={{ color: "white" }} /> : <ArrowLeft size={18} style={{ color: "white" }} />}
+        </button>
+      </div>
 
       {/* Top controls */}
       <div className="absolute top-4 right-4 flex flex-col gap-2">
