@@ -2,7 +2,6 @@
 
 import { useState, useEffect, Component, ReactNode } from "react";
 import { useUIStore } from "@/store/uiStore";
-import { useAuthStore } from "@/store/authStore";
 import { TabBar } from "@/components/TabBar";
 import { AppHeader } from "@/components/AppHeader";
 import { PantryView } from "@/components/PantryView";
@@ -13,7 +12,6 @@ import { ShoppingView } from "@/components/ShoppingView";
 import { RecurringView } from "@/components/RecurringView";
 import { ProductSheet } from "@/components/ProductSheet";
 import { Onboarding } from "@/components/Onboarding";
-import { AuthScreen } from "@/components/AuthScreen";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   constructor(props: { children: ReactNode }) {
@@ -41,44 +39,18 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
 
 export default function Home() {
   const { activeTab, activeSheet, scannedProduct, closeSheet } = useUIStore();
-  const { user, loading, init } = useAuthStore();
   const [showOnboarding, setShowOnboarding] = useState(false);
 
   useEffect(() => {
-    init();
-  }, [init]);
-
-  useEffect(() => {
-    if (user && !localStorage.getItem("onboarding-done")) {
+    if (!localStorage.getItem("onboarding-done")) {
       setShowOnboarding(true);
     }
-  }, [user]);
+  }, []);
 
   const finishOnboarding = () => {
     localStorage.setItem("onboarding-done", "1");
     setShowOnboarding(false);
   };
-
-  // Načítání
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-dvh" style={{ background: "var(--bg-primary)" }}>
-        <div style={{ textAlign: "center" }}>
-          <div style={{ width: 48, height: 48, borderRadius: "50%", border: "3px solid var(--green-light)", borderTopColor: "var(--green-primary)", animation: "spin 0.8s linear infinite", margin: "0 auto 12px" }} />
-          <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>Načítám...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Nepřihlášený → přihlašovací obrazovka
-  if (!user) {
-    return (
-      <ErrorBoundary>
-        <AuthScreen />
-      </ErrorBoundary>
-    );
-  }
 
   return (
     <ErrorBoundary>
