@@ -1,7 +1,7 @@
 "use client";
 
 import { useModeStore, AppMode } from "@/store/modeStore";
-import { Home, ClipboardList, Layers, ChefHat, Check } from "lucide-react";
+import { Home, ClipboardList, ChefHat, Check } from "lucide-react";
 
 const PLANS: {
   id: AppMode;
@@ -52,25 +52,6 @@ const PLANS: {
       "Správa dodavatelů",
     ],
     tags: ["Spižírna", "Recepty", "Nákup", "Inventura", "Dodavatelé"],
-  },
-  {
-    id: "kompletni",
-    name: "Kompletní",
-    price: "249 Kč",
-    priceNote: "/ měsíc",
-    desc: "Domácnost i provoz v jednom",
-    color: "#9B6BC4",
-    colorLight: "#F5EEFF",
-    icon: <Layers size={20} style={{ color: "#9B6BC4" }} />,
-    badge: "Nejlepší hodnota",
-    features: [
-      "Vše z plánu Domácnost",
-      "Vše z plánu Provoz",
-      "Zásoby & připomínky",
-      "Inventura skladu",
-      "Správa dodavatelů",
-    ],
-    tags: ["Domácnost", "Provoz", "Vše v jednom"],
   },
 ];
 

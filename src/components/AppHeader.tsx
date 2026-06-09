@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useModeStore } from "@/store/modeStore";
-import { Plus, Bell, AlertTriangle, UtensilsCrossed, ScanLine, PenLine, ClipboardList, RefreshCw } from "lucide-react";
+import { Plus, Bell, AlertTriangle, UtensilsCrossed, ScanLine, PenLine, ClipboardList } from "lucide-react";
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { daysUntil } from "@/lib/dateUtils";
@@ -86,16 +86,6 @@ export function AppHeader() {
                   title="Provoz & inventura"
                 >
                   <ClipboardList size={18} style={{ color: "var(--text-tertiary)" }} />
-                </button>
-              )}
-              {mode === "kompletni" && (
-                <button
-                  onClick={() => setTab("opakujici")}
-                  className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
-                  style={{ background: "white", boxShadow: "0 2px 8px rgba(0,0,0,0.10)" }}
-                  title="Zásoby & připomínky"
-                >
-                  <RefreshCw size={18} style={{ color: "var(--text-tertiary)" }} />
                 </button>
               )}
 
