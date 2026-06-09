@@ -1,23 +1,32 @@
 import { ProductInfo } from "@/types";
 
-const OFF_API = "https://world.openfoodfacts.org/api/v2/product";
+const FIELDS = "product_name,brands,categories_tags,nutriments,allergens_tags,image_url,image_front_url,image_front_display_url,image_front_small_url,quantity";
 
-export async function fetchProductByEAN(ean: string): Promise<ProductInfo | null> {
+// All four Open*Facts databases — tried in order until one returns a result
+const DATABASES: { base: string; source: ProductInfo["source"] }[] = [
+  { base: "https://world.openfoodfacts.org/api/v2/product", source: "open_food_facts" },
+  { base: "https://world.openbeautyfacts.org/api/v2/product", source: "open_food_facts" },
+  { base: "https://world.openpetfoodfacts.org/api/v2/product", source: "open_food_facts" },
+  { base: "https://world.openproductsfacts.org/api/v2/product", source: "open_food_facts" },
+];
+
+async function fetchFromDatabase(ean: string, base: string, source: ProductInfo["source"]): Promise<ProductInfo | null> {
   try {
-    const res = await fetch(`${OFF_API}/${ean}.json?fields=product_name,brands,categories_tags,nutriments,allergens_tags,image_url,image_front_url,image_front_display_url,image_front_small_url,quantity`, {
+    const res = await fetch(`${base}/${ean}.json?fields=${FIELDS}`, {
       next: { revalidate: 86400 },
     });
     if (!res.ok) return null;
     const data = await res.json();
     if (data.status !== 1) return null;
     const p = data.product;
+    if (!p.product_name) return null;
 
     const qty = parseQuantity(p.quantity ?? "");
     const imageUrl = p.image_front_display_url || p.image_front_url || p.image_url || p.image_front_small_url || "";
 
     return {
       ean_code: ean,
-      product_name: p.product_name || "Neznámý produkt",
+      product_name: p.product_name,
       brand: p.brands || "",
       category: formatCategory(p.categories_tags?.[0] ?? ""),
       subcategory: formatCategory(p.categories_tags?.[1] ?? ""),
@@ -33,12 +42,20 @@ export async function fetchProductByEAN(ean: string): Promise<ProductInfo | null
       salt_g: p.nutriments?.salt_100g,
       allergens: (p.allergens_tags ?? []).map((a: string) => a.replace("en:", "").replace("cs:", "")),
       typical_expiry_days: undefined,
-      source: "open_food_facts",
+      source,
       verified: true,
     };
   } catch {
     return null;
   }
+}
+
+export async function fetchProductByEAN(ean: string): Promise<ProductInfo | null> {
+  for (const db of DATABASES) {
+    const result = await fetchFromDatabase(ean, db.base, db.source);
+    if (result) return result;
+  }
+  return null;
 }
 
 function formatCategory(raw: string): string {
