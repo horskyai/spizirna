@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
-export type AppMode = "domacnost" | "provoz";
+export type AppMode = "domacnost" | "provoz" | "kompletni";
 
 interface ModeStore {
   mode: AppMode | null; // null = ještě nevybráno

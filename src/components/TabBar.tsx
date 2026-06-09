@@ -28,7 +28,9 @@ export function TabBar() {
   const shoppingCount = useShoppingStore((s) => s.items.filter((i) => !i.checked).length);
   const dueCount = useRecurringStore((s) => s.getDueItems().length);
 
-  const TABS = mode === "provoz" ? TABS_PROVOZ : TABS_DOMACNOST;
+  const TABS = mode === "provoz" ? TABS_PROVOZ
+    : mode === "kompletni" ? TABS_PROVOZ  // kompletní = provoz TabBar, Zásoby přes header
+    : TABS_DOMACNOST;
 
   return (
     <nav
