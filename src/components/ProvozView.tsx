@@ -418,7 +418,8 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
 
 // ── Přehled minulých inventur ─────────────────────────────────────────────────
 function HistorieInventur() {
-  const { inventury, polozky, setAktivniInventura, removeInventura, getHodnotaSkladu } = useProvozStore();
+  const { inventury, polozky, removeInventura, getHodnotaSkladu } = useProvozStore();
+  const [otevreneId, setOtevreneId] = useState<string | null>(null);
   const zavrene = inventury.filter(i => i.zavrena);
 
   if (zavrene.length === 0) return (
@@ -431,23 +432,84 @@ function HistorieInventur() {
     <div className="space-y-3">
       {zavrene.map(inv => {
         const hodnota = getHodnotaSkladu(inv.id);
-        const podMin = inv.zaznamy.filter(z => {
+        const zaznamy = inv.zaznamy.map(z => {
           const p = polozky.find(p => p.id === z.polozkaId);
-          return p && z.skutecnyStav <= p.minZasoba;
-        }).length;
+          const kat = INVENTURA_KATEGORIE.find(k => k.id === p?.kategorie);
+          const podMin = p ? z.skutecnyStav <= p.minZasoba : false;
+          return { ...z, polozka: p, kat, podMin };
+        });
+        const podMin = zaznamy.filter(z => z.podMin).length;
+        const otevreno = otevreneId === inv.id;
+
         return (
-          <div key={inv.id} className="card p-4">
-            <div className="flex items-start justify-between">
-              <div>
+          <div key={inv.id} className="card overflow-hidden">
+            {/* Hlavička — kliknutím rozklikne */}
+            <button
+              onClick={() => setOtevreneId(otevreno ? null : inv.id)}
+              style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, textAlign: "left" }}
+            >
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{inv.nazev}</p>
                 <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{inv.datum} · {inv.zaznamy.length} položek</p>
-                {hodnota > 0 && <p className="text-xs mt-0.5" style={{ color: "var(--green-primary)", fontWeight: 600 }}>💰 {hodnota.toLocaleString("cs-CZ")} Kč</p>}
-                {podMin > 0 && <p className="text-xs mt-0.5" style={{ color: "#F57C00", fontWeight: 600 }}>⚠️ {podMin} položek pod minimem</p>}
+                <div style={{ display: "flex", gap: 8, marginTop: 3, flexWrap: "wrap" }}>
+                  {hodnota > 0 && <span style={{ fontSize: 11, color: "var(--green-primary)", fontWeight: 600 }}>💰 {hodnota.toLocaleString("cs-CZ")} Kč</span>}
+                  {podMin > 0 && <span style={{ fontSize: 11, color: "#F57C00", fontWeight: 600 }}>⚠️ {podMin} pod minimem</span>}
+                </div>
               </div>
-              <button onClick={() => removeInventura(inv.id)}>
-                <Trash2 size={15} style={{ color: "var(--text-tertiary)" }} />
-              </button>
-            </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                <ChevronRight size={16} style={{ color: "var(--text-tertiary)", transform: otevreno ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
+                <button
+                  onClick={e => { e.stopPropagation(); removeInventura(inv.id); }}
+                  style={{ padding: 4 }}
+                >
+                  <Trash2 size={14} style={{ color: "var(--text-tertiary)" }} />
+                </button>
+              </div>
+            </button>
+
+            {/* Detail položek */}
+            {otevreno && (
+              <div style={{ borderTop: "1px solid var(--border)" }}>
+                {zaznamy.length === 0 ? (
+                  <p style={{ padding: "12px 16px", fontSize: 13, color: "var(--text-tertiary)" }}>Žádné záznamy</p>
+                ) : (
+                  zaznamy.map((z, idx) => (
+                    <div
+                      key={z.polozkaId}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 10,
+                        padding: "10px 16px",
+                        borderBottom: idx < zaznamy.length - 1 ? "1px solid var(--border)" : "none",
+                        background: z.podMin ? "#FFF8F0" : "white",
+                      }}
+                    >
+                      <span style={{ fontSize: 16, flexShrink: 0 }}>{z.kat?.emoji ?? "📦"}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>
+                          {z.polozka?.nazev ?? z.polozkaId}
+                        </p>
+                        {z.polozka && (
+                          <p style={{ fontSize: 11, color: z.podMin ? "#F57C00" : "var(--text-secondary)", margin: 0 }}>
+                            Min. {z.polozka.minZasoba} {z.polozka.jednotka}
+                            {z.podMin ? " — pod minimem!" : ""}
+                          </p>
+                        )}
+                      </div>
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        <p style={{ fontSize: 15, fontWeight: 700, color: z.podMin ? "#E65100" : "var(--text-primary)", margin: 0 }}>
+                          {z.skutecnyStav} {z.polozka?.jednotka ?? ""}
+                        </p>
+                        {z.polozka?.cenaJednotka && (
+                          <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: 0 }}>
+                            {(z.skutecnyStav * z.polozka.cenaJednotka).toLocaleString("cs-CZ")} Kč
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         );
       })}
