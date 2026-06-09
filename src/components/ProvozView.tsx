@@ -1,0 +1,643 @@
+"use client";
+
+import { useState } from "react";
+import {
+  ClipboardList, Plus, X, ChevronRight, ChevronDown, ChevronUp,
+  AlertTriangle, Check, Truck, Package, BarChart3, Pencil, Trash2
+} from "lucide-react";
+import {
+  useProvozStore,
+  INVENTURA_KATEGORIE,
+  InventuraKategorie,
+  InventuraPolozka,
+  Inventura,
+} from "@/store/provozStore";
+
+// ── Formulář nové položky skladu ──────────────────────────────────────────────
+function AddPolozkaModal({ onClose }: { onClose: () => void }) {
+  const { addPolozka } = useProvozStore();
+  const [nazev, setNazev] = useState("");
+  const [kategorie, setKategorie] = useState<InventuraKategorie>("potraviny");
+  const [jednotka, setJednotka] = useState("ks");
+  const [minZasoba, setMinZasoba] = useState("1");
+  const [cena, setCena] = useState("");
+  const [dodavatel, setDodavatel] = useState("");
+  const JEDNOTKY = ["ks", "l", "dl", "ml", "kg", "g", "lahev", "balení", "porce"];
+
+  const save = () => {
+    if (!nazev.trim()) return;
+    addPolozka({
+      nazev: nazev.trim(),
+      kategorie,
+      jednotka,
+      minZasoba: parseFloat(minZasoba) || 1,
+      cenaJednotka: cena ? parseFloat(cena) : undefined,
+      dodavatel: dodavatel.trim() || undefined,
+    });
+    onClose();
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
+      <div className="relative rounded-t-3xl px-5 pt-5 pb-8 space-y-4 animate-slide-up"
+        style={{ background: "var(--bg-primary)", paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))", maxHeight: "90dvh", overflowY: "auto" }}>
+        <div className="flex items-center justify-between mb-1">
+          <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Nová položka skladu</h3>
+          <button onClick={onClose}><X size={20} style={{ color: "var(--text-tertiary)" }} /></button>
+        </div>
+
+        <div>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Název</label>
+          <input
+            autoFocus value={nazev} onChange={e => setNazev(e.target.value)}
+            placeholder="např. Kuřecí prsa, Vodka Absolut..."
+            className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+            style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }}
+          />
+        </div>
+
+        <div>
+          <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-tertiary)" }}>Kategorie</label>
+          <div className="grid grid-cols-2 gap-2">
+            {INVENTURA_KATEGORIE.map((k) => (
+              <button key={k.id} onClick={() => setKategorie(k.id)}
+                className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium text-left"
+                style={{
+                  background: kategorie === k.id ? "var(--green-light)" : "white",
+                  border: `1.5px solid ${kategorie === k.id ? "var(--green-primary)" : "var(--border)"}`,
+                  color: kategorie === k.id ? "var(--green-dark)" : "var(--text-primary)",
+                }}>
+                <span>{k.emoji}</span> {k.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <div style={{ flex: 1 }}>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Jednotka</label>
+            <select value={jednotka} onChange={e => setJednotka(e.target.value)}
+              style={{ width: "100%", background: "white", border: "1.5px solid var(--border)", borderRadius: 12, padding: "10px 12px", fontSize: 14, outline: "none", color: "var(--text-primary)" }}>
+              {JEDNOTKY.map(j => <option key={j} value={j}>{j}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Min. zásoba</label>
+            <input type="number" value={minZasoba} onChange={e => setMinZasoba(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none text-center"
+              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+          </div>
+        </div>
+
+        <div className="flex gap-3">
+          <div style={{ flex: 1 }}>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Cena/jedn. (Kč)</label>
+            <input type="number" value={cena} onChange={e => setCena(e.target.value)} placeholder="volitelné"
+              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Dodavatel</label>
+            <input value={dodavatel} onChange={e => setDodavatel(e.target.value)} placeholder="volitelné"
+              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+          </div>
+        </div>
+
+        <button onClick={save} className="btn-primary" disabled={!nazev.trim()}>
+          <Plus size={16} /> Přidat položku
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Aktivní inventura — zadávání stavů ────────────────────────────────────────
+function AktivniInventura({ inventura }: { inventura: Inventura }) {
+  const { polozky, zadatZaznam, zavritInventuru, getHodnotaSkladu } = useProvozStore();
+  const [aktivniKat, setAktivniKat] = useState<InventuraKategorie | "vse">("vse");
+  const [vstupy, setVstupy] = useState<Record<string, string>>({});
+  const [ulozeno, setUlozeno] = useState<Set<string>>(new Set());
+  const [showZavrit, setShowZavrit] = useState(false);
+
+  const hodnotaSkladu = getHodnotaSkladu(inventura.id);
+
+  const kategoriePouzite = INVENTURA_KATEGORIE.filter(k =>
+    polozky.some(p => p.kategorie === k.id)
+  );
+
+  const filtrovane = polozky.filter(p =>
+    aktivniKat === "vse" || p.kategorie === aktivniKat
+  );
+
+  const zaznamMap: Record<string, number> = {};
+  inventura.zaznamy.forEach(z => { zaznamMap[z.polozkaId] = z.skutecnyStav; });
+
+  const handleUlozit = (polozka: InventuraPolozka) => {
+    const val = parseFloat(vstupy[polozka.id] ?? "");
+    if (isNaN(val)) return;
+    zadatZaznam(inventura.id, polozka.id, val);
+    setUlozeno(prev => new Set(prev).add(polozka.id));
+    setTimeout(() => setUlozeno(prev => { const s = new Set(prev); s.delete(polozka.id); return s; }), 1500);
+  };
+
+  const zadano = inventura.zaznamy.length;
+  const celkem = polozky.length;
+  const progress = celkem > 0 ? Math.round((zadano / celkem) * 100) : 0;
+
+  return (
+    <div>
+      {/* Progress header */}
+      <div className="hero-card mb-4" style={{ padding: "16px" }}>
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.65)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
+              Probíhající inventura
+            </p>
+            <h3 className="font-bold text-lg" style={{ color: "white" }}>{inventura.nazev}</h3>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>{inventura.datum}</p>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <p style={{ fontSize: 26, fontWeight: 800, color: "white", lineHeight: 1 }}>{zadano}/{celkem}</p>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.65)" }}>položek</p>
+          </div>
+        </div>
+        <div style={{ height: 6, borderRadius: 6, background: "rgba(255,255,255,0.2)", overflow: "hidden", marginBottom: 10 }}>
+          <div style={{ height: "100%", borderRadius: 6, background: "white", width: `${progress}%`, transition: "width 0.4s ease" }} />
+        </div>
+        {hodnotaSkladu > 0 && (
+          <p style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginBottom: 10 }}>
+            💰 Hodnota skladu: <b>{hodnotaSkladu.toLocaleString("cs-CZ")} Kč</b>
+          </p>
+        )}
+        <button
+          onClick={() => setShowZavrit(true)}
+          style={{ width: "100%", padding: "9px 0", borderRadius: 14, fontSize: 13, fontWeight: 600, color: "white", background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)" }}
+        >
+          Uzavřít inventuru
+        </button>
+      </div>
+
+      {/* Potvrzení uzavření */}
+      {showZavrit && (
+        <div className="card p-4 mb-4 animate-fade-in" style={{ background: "#FFF3E0", border: "1px solid #FFE0B2" }}>
+          <p className="text-sm font-bold mb-2" style={{ color: "#E65100" }}>Uzavřít inventuru?</p>
+          <p className="text-xs mb-3" style={{ color: "#BF360C" }}>Po uzavření nelze editovat zadané stavy.</p>
+          <div className="flex gap-2">
+            <button onClick={() => zavritInventuru(inventura.id)} className="flex-1 py-2 rounded-xl text-sm font-bold" style={{ background: "#E65100", color: "white" }}>
+              Ano, uzavřít
+            </button>
+            <button onClick={() => setShowZavrit(false)} className="flex-1 py-2 rounded-xl text-sm font-bold" style={{ background: "var(--border)", color: "var(--text-secondary)" }}>
+              Zpět
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Kategorie filter */}
+      {kategoriePouzite.length > 1 && (
+        <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 8, scrollbarWidth: "none", marginBottom: 12 }}>
+          <button
+            onClick={() => setAktivniKat("vse")}
+            style={{ flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: aktivniKat === "vse" ? 700 : 500, background: aktivniKat === "vse" ? "var(--green-primary)" : "white", color: aktivniKat === "vse" ? "white" : "var(--text-secondary)", border: "none", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>
+            Vše ({celkem})
+          </button>
+          {kategoriePouzite.map(k => {
+            const pocet = polozky.filter(p => p.kategorie === k.id).length;
+            return (
+              <button key={k.id} onClick={() => setAktivniKat(k.id)}
+                style={{ flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: aktivniKat === k.id ? 700 : 500, background: aktivniKat === k.id ? "var(--green-primary)" : "white", color: aktivniKat === k.id ? "white" : "var(--text-secondary)", border: "none", boxShadow: "0 1px 4px rgba(0,0,0,0.08)", whiteSpace: "nowrap" }}>
+                {k.emoji} {k.label} ({pocet})
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Položky */}
+      {filtrovane.length === 0 ? (
+        <div className="text-center py-8">
+          <p style={{ color: "var(--text-tertiary)", fontSize: 14 }}>Žádné položky v této kategorii</p>
+        </div>
+      ) : (
+        <div className="card overflow-hidden">
+          {filtrovane.map((polozka, idx) => {
+            const zaznam = zaznamMap[polozka.id];
+            const jePod = zaznam !== undefined && zaznam <= polozka.minZasoba;
+            const jeUlozeno = ulozeno.has(polozka.id);
+            const kat = INVENTURA_KATEGORIE.find(k => k.id === polozka.kategorie);
+            return (
+              <div key={polozka.id}
+                style={{ borderBottom: idx < filtrovane.length - 1 ? "1px solid var(--border)" : "none", padding: "14px 16px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span style={{ fontSize: 15 }}>{kat?.emoji}</span>
+                      <p className="font-semibold text-sm truncate" style={{ color: "var(--text-primary)" }}>{polozka.nazev}</p>
+                      {jePod && <AlertTriangle size={13} style={{ color: "#F57C00", flexShrink: 0 }} />}
+                    </div>
+                    {zaznam !== undefined && (
+                      <p style={{ fontSize: 12, color: jePod ? "#F57C00" : "var(--text-secondary)", marginTop: 2 }}>
+                        {zaznam} {polozka.jednotka}
+                        {jePod ? " — pod minimem!" : " ✓"}
+                        {polozka.cenaJednotka ? ` · ${(zaznam * polozka.cenaJednotka).toLocaleString("cs-CZ")} Kč` : ""}
+                      </p>
+                    )}
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+                    <input
+                      type="number"
+                      value={vstupy[polozka.id] ?? (zaznam !== undefined ? String(zaznam) : "")}
+                      onChange={e => setVstupy(prev => ({ ...prev, [polozka.id]: e.target.value }))}
+                      placeholder="0"
+                      style={{ width: 70, textAlign: "center", padding: "8px 6px", borderRadius: 12, fontSize: 15, fontWeight: 700, border: "1.5px solid var(--border)", background: "white", outline: "none", color: "var(--text-primary)" }}
+                    />
+                    <span style={{ fontSize: 12, color: "var(--text-tertiary)", minWidth: 28 }}>{polozka.jednotka}</span>
+                    <button
+                      onClick={() => handleUlozit(polozka)}
+                      style={{
+                        width: 34, height: 34, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                        background: jeUlozeno ? "var(--green-primary)" : "var(--green-light)",
+                        transition: "all 0.2s",
+                      }}
+                    >
+                      <Check size={16} style={{ color: jeUlozeno ? "white" : "var(--green-primary)" }} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Přehled minulých inventur ─────────────────────────────────────────────────
+function HistorieInventur() {
+  const { inventury, polozky, setAktivniInventura, removeInventura, getHodnotaSkladu } = useProvozStore();
+  const zavrene = inventury.filter(i => i.zavrena);
+
+  if (zavrene.length === 0) return (
+    <div className="text-center py-8">
+      <p style={{ color: "var(--text-tertiary)", fontSize: 14 }}>Zatím žádná uzavřená inventura</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-3">
+      {zavrene.map(inv => {
+        const hodnota = getHodnotaSkladu(inv.id);
+        const podMin = inv.zaznamy.filter(z => {
+          const p = polozky.find(p => p.id === z.polozkaId);
+          return p && z.skutecnyStav <= p.minZasoba;
+        }).length;
+        return (
+          <div key={inv.id} className="card p-4">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{inv.nazev}</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{inv.datum} · {inv.zaznamy.length} položek</p>
+                {hodnota > 0 && <p className="text-xs mt-0.5" style={{ color: "var(--green-primary)", fontWeight: 600 }}>💰 {hodnota.toLocaleString("cs-CZ")} Kč</p>}
+                {podMin > 0 && <p className="text-xs mt-0.5" style={{ color: "#F57C00", fontWeight: 600 }}>⚠️ {podMin} položek pod minimem</p>}
+              </div>
+              <button onClick={() => removeInventura(inv.id)}>
+                <Trash2 size={15} style={{ color: "var(--text-tertiary)" }} />
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ── Správa skladu (seznam položek) ────────────────────────────────────────────
+function SpravaSkladu() {
+  const { polozky, removePolozka, getPolozkyCritical } = useProvozStore();
+  const [showAdd, setShowAdd] = useState(false);
+  const critical = getPolozkyCritical();
+
+  const byKategorie = INVENTURA_KATEGORIE.map(k => ({
+    ...k,
+    polozky: polozky.filter(p => p.kategorie === k.id),
+  })).filter(k => k.polozky.length > 0);
+
+  return (
+    <div>
+      {critical.length > 0 && (
+        <div className="rounded-2xl p-3.5 mb-4 flex items-start gap-3" style={{ background: "#FFF3E0", border: "1px solid #FFE0B2" }}>
+          <AlertTriangle size={16} style={{ color: "#F57C00", flexShrink: 0, marginTop: 1 }} />
+          <div>
+            <p className="text-sm font-bold" style={{ color: "#E65100" }}>
+              {critical.length} položek pod minimální zásobou!
+            </p>
+            <p className="text-xs mt-0.5" style={{ color: "#BF360C" }}>
+              {critical.slice(0, 3).map(p => p.nazev).join(", ")}{critical.length > 3 ? ` a ${critical.length - 3} další` : ""}
+            </p>
+          </div>
+        </div>
+      )}
+
+      {byKategorie.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-4">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
+            <Package size={28} style={{ color: "var(--green-primary)" }} strokeWidth={1.5} />
+          </div>
+          <div className="text-center">
+            <p className="font-bold text-base mb-1" style={{ color: "var(--text-primary)" }}>Sklad je prázdný</p>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Přidejte položky které chcete inventarizovat.</p>
+          </div>
+          <button className="btn-primary" style={{ width: "auto", paddingLeft: 24, paddingRight: 24 }} onClick={() => setShowAdd(true)}>
+            <Plus size={16} /> Přidat položku
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {byKategorie.map(k => (
+            <div key={k.id}>
+              <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>
+                {k.emoji} {k.label}
+              </p>
+              <div className="card overflow-hidden">
+                {k.polozky.map((p, idx) => {
+                  const isCritical = critical.some(c => c.id === p.id);
+                  return (
+                    <div key={p.id} className="flex items-center gap-3 px-4 py-3"
+                      style={{ borderBottom: idx < k.polozky.length - 1 ? "1px solid var(--border)" : "none" }}>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{p.nazev}</p>
+                        <p className="text-xs" style={{ color: isCritical ? "#F57C00" : "var(--text-secondary)" }}>
+                          Min. {p.minZasoba} {p.jednotka}
+                          {p.dodavatel ? ` · ${p.dodavatel}` : ""}
+                          {isCritical ? " ⚠️" : ""}
+                        </p>
+                      </div>
+                      {p.cenaJednotka && (
+                        <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+                          {p.cenaJednotka} Kč/{p.jednotka}
+                        </span>
+                      )}
+                      <button onClick={() => removePolozka(p.id)}>
+                        <X size={15} style={{ color: "var(--text-tertiary)" }} />
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+          <button
+            onClick={() => setShowAdd(true)}
+            className="w-full py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
+            style={{ background: "white", color: "var(--green-primary)", border: "1.5px dashed var(--green-primary)" }}
+          >
+            <Plus size={16} /> Přidat položku
+          </button>
+        </div>
+      )}
+
+      {showAdd && <AddPolozkaModal onClose={() => setShowAdd(false)} />}
+    </div>
+  );
+}
+
+// ── Dodavatelé ────────────────────────────────────────────────────────────────
+function DodavateleView() {
+  const { dodavatele, addDodavatel, removeDodavatel } = useProvozStore();
+  const [showAdd, setShowAdd] = useState(false);
+  const [nazev, setNazev] = useState("");
+  const [telefon, setTelefon] = useState("");
+  const [email, setEmail] = useState("");
+  const [poznamka, setPoznamka] = useState("");
+
+  const save = () => {
+    if (!nazev.trim()) return;
+    addDodavatel({ nazev: nazev.trim(), telefon: telefon.trim() || undefined, email: email.trim() || undefined, poznamka: poznamka.trim() || undefined });
+    setNazev(""); setTelefon(""); setEmail(""); setPoznamka("");
+    setShowAdd(false);
+  };
+
+  return (
+    <div>
+      {dodavatele.length === 0 && !showAdd ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-4">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
+            <Truck size={28} style={{ color: "var(--green-primary)" }} strokeWidth={1.5} />
+          </div>
+          <div className="text-center">
+            <p className="font-bold text-base mb-1" style={{ color: "var(--text-primary)" }}>Žádní dodavatelé</p>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Přidejte dodavatele pro rychlý přístup ke kontaktům.</p>
+          </div>
+          <button className="btn-primary" style={{ width: "auto", paddingLeft: 24, paddingRight: 24 }} onClick={() => setShowAdd(true)}>
+            <Plus size={16} /> Přidat dodavatele
+          </button>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {dodavatele.map(d => (
+            <div key={d.id} className="card p-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{d.nazev}</p>
+                  {d.telefon && <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>📞 {d.telefon}</p>}
+                  {d.email && <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>✉️ {d.email}</p>}
+                  {d.poznamka && <p className="text-xs mt-0.5 italic" style={{ color: "var(--text-tertiary)" }}>{d.poznamka}</p>}
+                </div>
+                <div className="flex gap-2">
+                  {d.telefon && (
+                    <a href={`tel:${d.telefon}`}
+                      className="w-8 h-8 rounded-full flex items-center justify-center"
+                      style={{ background: "var(--green-light)" }}>
+                      <span style={{ fontSize: 14 }}>📞</span>
+                    </a>
+                  )}
+                  <button onClick={() => removeDodavatel(d.id)}
+                    className="w-8 h-8 rounded-full flex items-center justify-center"
+                    style={{ background: "#FDE8E8" }}>
+                    <Trash2 size={13} style={{ color: "#C0392B" }} />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {showAdd ? (
+            <div className="card p-4 space-y-3 animate-fade-in">
+              <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>Nový dodavatel</p>
+              {[
+                { label: "Název *", value: nazev, set: setNazev, placeholder: "Makro, Albert, řezník..." },
+                { label: "Telefon", value: telefon, set: setTelefon, placeholder: "+420 xxx xxx xxx" },
+                { label: "Email", value: email, set: setEmail, placeholder: "objednavky@..." },
+                { label: "Poznámka", value: poznamka, set: setPoznamka, placeholder: "Pondělí–Pátek do 10h..." },
+              ].map(f => (
+                <div key={f.label}>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{f.label}</label>
+                  <input value={f.value} onChange={e => f.set(e.target.value)} placeholder={f.placeholder}
+                    className="w-full px-3 py-2 rounded-xl text-sm outline-none"
+                    style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+                </div>
+              ))}
+              <div className="flex gap-2">
+                <button onClick={save} className="flex-1 py-2.5 rounded-2xl text-sm font-bold" style={{ background: "var(--green-primary)", color: "white" }}>
+                  Uložit
+                </button>
+                <button onClick={() => setShowAdd(false)} className="flex-1 py-2.5 rounded-2xl text-sm font-bold" style={{ background: "var(--border)", color: "var(--text-secondary)" }}>
+                  Zrušit
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setShowAdd(true)}
+              className="w-full py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
+              style={{ background: "white", color: "var(--green-primary)", border: "1.5px dashed var(--green-primary)" }}>
+              <Plus size={16} /> Přidat dodavatele
+            </button>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Hlavní view ───────────────────────────────────────────────────────────────
+type ProvozTab = "inventura" | "sklad" | "historie" | "dodavatele";
+
+export function ProvozView() {
+  const { polozky, inventury, vytvorInventuru, aktivniInventuraId, setAktivniInventura } = useProvozStore();
+  const [tab, setTab] = useState<ProvozTab>("inventura");
+  const [showNazevModal, setShowNazevModal] = useState(false);
+  const [novyNazev, setNovyNazev] = useState("");
+
+  const aktivniInventura = inventury.find(i => i.id === aktivniInventuraId && !i.zavrena);
+  const rozpracovane = inventury.filter(i => !i.zavrena && i.id !== aktivniInventuraId);
+
+  const handleVytvorit = () => {
+    if (!novyNazev.trim()) return;
+    vytvorInventuru(novyNazev.trim());
+    setNovyNazev("");
+    setShowNazevModal(false);
+    setTab("inventura");
+  };
+
+  const TABS: { id: ProvozTab; label: string; icon: React.ReactNode }[] = [
+    { id: "inventura", label: "Inventura", icon: <ClipboardList size={15} /> },
+    { id: "sklad", label: "Sklad", icon: <Package size={15} /> },
+    { id: "historie", label: "Historie", icon: <BarChart3 size={15} /> },
+    { id: "dodavatele", label: "Dodavatelé", icon: <Truck size={15} /> },
+  ];
+
+  return (
+    <div className="relative flex-1 overflow-y-auto">
+      <div className="px-5 pt-2 pb-24">
+
+        {/* Interní navigace */}
+        <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto", scrollbarWidth: "none" }}>
+          {TABS.map(t => (
+            <button key={t.id} onClick={() => setTab(t.id)}
+              style={{
+                flexShrink: 0, display: "flex", alignItems: "center", gap: 6,
+                padding: "8px 14px", borderRadius: 20, fontSize: 13, fontWeight: tab === t.id ? 700 : 500,
+                background: tab === t.id ? "var(--green-primary)" : "white",
+                color: tab === t.id ? "white" : "var(--text-secondary)",
+                boxShadow: "0 1px 4px rgba(0,0,0,0.08)", border: "none",
+                whiteSpace: "nowrap",
+              }}>
+              {t.icon} {t.label}
+            </button>
+          ))}
+        </div>
+
+        {/* INVENTURA TAB */}
+        {tab === "inventura" && (
+          <div>
+            {aktivniInventura ? (
+              <AktivniInventura inventura={aktivniInventura} />
+            ) : (
+              <div>
+                {/* Rozpracované */}
+                {rozpracovane.length > 0 && (
+                  <div className="mb-4">
+                    <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>
+                      Rozpracované
+                    </p>
+                    {rozpracovane.map(inv => (
+                      <button key={inv.id} onClick={() => setAktivniInventura(inv.id)}
+                        className="card w-full p-4 mb-2 flex items-center justify-between text-left">
+                        <div>
+                          <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{inv.nazev}</p>
+                          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{inv.datum} · {inv.zaznamy.length}/{polozky.length} položek</p>
+                        </div>
+                        <ChevronRight size={16} style={{ color: "var(--text-tertiary)" }} />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Start nové */}
+                {polozky.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-16 gap-4">
+                    <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
+                      <ClipboardList size={32} style={{ color: "var(--green-primary)" }} strokeWidth={1.5} />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold text-lg mb-1" style={{ color: "var(--text-primary)" }}>Nejprve nastavte sklad</p>
+                      <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                        Přejděte na záložku "Sklad" a přidejte položky které chcete inventarizovat.
+                      </p>
+                    </div>
+                    <button className="btn-secondary" onClick={() => setTab("sklad")}>
+                      <Package size={16} /> Nastavit sklad
+                    </button>
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-12 gap-4">
+                    <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
+                      <ClipboardList size={32} style={{ color: "var(--green-primary)" }} strokeWidth={1.5} />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-bold text-lg mb-1" style={{ color: "var(--text-primary)" }}>Spustit inventuru</p>
+                      <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+                        Projdete {polozky.length} položek a zadáte skutečné stavy.
+                      </p>
+                    </div>
+                    <button className="btn-primary" style={{ width: "auto", paddingLeft: 28, paddingRight: 28 }} onClick={() => setShowNazevModal(true)}>
+                      <ClipboardList size={16} /> Začít inventuru
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {tab === "sklad" && <SpravaSkladu />}
+        {tab === "historie" && <HistorieInventur />}
+        {tab === "dodavatele" && <DodavateleView />}
+      </div>
+
+      {/* Modal pro název inventury */}
+      {showNazevModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+          <div onClick={() => setShowNazevModal(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
+          <div className="relative rounded-t-3xl px-5 pt-5 pb-10 space-y-4 animate-slide-up"
+            style={{ background: "var(--bg-primary)", paddingBottom: "max(40px, env(safe-area-inset-bottom, 40px))" }}>
+            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Název inventury</h3>
+            <input
+              autoFocus value={novyNazev} onChange={e => setNovyNazev(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleVytvorit()}
+              placeholder="např. Týdenní inventura, Inventura alkoholu..."
+              className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
+              style={{ background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+            />
+            <button onClick={handleVytvorit} className="btn-primary" disabled={!novyNazev.trim()}>
+              <ClipboardList size={16} /> Spustit inventuru
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

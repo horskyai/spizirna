@@ -10,6 +10,7 @@ import { FoodLogView } from "@/components/FoodLogView";
 import { RecipesView } from "@/components/RecipesView";
 import { ShoppingView } from "@/components/ShoppingView";
 import { RecurringView } from "@/components/RecurringView";
+import { ProvozView } from "@/components/ProvozView";
 import { ProductSheet } from "@/components/ProductSheet";
 import { Onboarding } from "@/components/Onboarding";
 
@@ -64,6 +65,7 @@ export default function Home() {
         {activeTab === "recepty" && <RecipesView />}
         {activeTab === "nakup" && <ShoppingView />}
         {activeTab === "opakujici" && <RecurringView />}
+        {activeTab === "provoz" && <ProvozView />}
       </main>
 
       <TabBar />
