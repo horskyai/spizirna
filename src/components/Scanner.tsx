@@ -1,10 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Flashlight, X, Keyboard, ArrowLeft } from "lucide-react";
+import { Flashlight, X, Keyboard, ArrowLeft, Plus, ExternalLink } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { fetchProductByEAN } from "@/lib/openFoodFacts";
+import { AddProductManual } from "@/components/AddProductManual";
+
+const OPEN_DATABASES = [
+  { id: "food", label: "Open Food Facts", emoji: "🍎", desc: "Potraviny & nápoje", url: "https://world.openfoodfacts.org/cgi/product.pl?type=add&code=" },
+  { id: "beauty", label: "Open Beauty Facts", emoji: "💄", desc: "Kosmetika & drogerie", url: "https://world.openbeautyfacts.org/cgi/product.pl?type=add&code=" },
+  { id: "pet", label: "Open Pet Food Facts", emoji: "🐾", desc: "Krmiva pro zvířata", url: "https://world.openpetfoodfacts.org/cgi/product.pl?type=add&code=" },
+  { id: "products", label: "Open Products Facts", emoji: "🧴", desc: "Ostatní produkty", url: "https://world.openproductsfacts.org/cgi/product.pl?type=add&code=" },
+];
 
 type ScanState = "scanning" | "loading" | "found" | "notfound";
 
@@ -33,8 +41,21 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
   const [manualEAN, setManualEAN] = useState("");
   const [zxingReady, setZxingReady] = useState(false);
   const zxingRef = useRef<any>(null);
+  const [notFoundEAN, setNotFoundEAN] = useState<string | null>(null);
+  const [showNotFoundPanel, setShowNotFoundPanel] = useState(false);
+  const [showAddManual, setShowAddManual] = useState(false);
+  const [showDbPicker, setShowDbPicker] = useState(false);
 
   const isEmbedded = !!onScanned;
+
+  const resetScan = useCallback(() => {
+    setScanState("scanning");
+    scanStateRef.current = "scanning";
+    lastScannedRef.current = null;
+    setNotFoundEAN(null);
+    setShowNotFoundPanel(false);
+    setShowDbPicker(false);
+  }, []);
 
   // keep ref in sync with state for use inside rAF loop
   useEffect(() => { scanStateRef.current = scanState; }, [scanState]);
@@ -169,11 +190,10 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
               } else {
                 setScanState("notfound");
                 scanStateRef.current = "notfound";
+                setNotFoundEAN(code);
                 setTimeout(() => {
-                  setScanState("scanning");
-                  scanStateRef.current = "scanning";
-                  lastScannedRef.current = null;
-                }, 2500);
+                  setShowNotFoundPanel(true);
+                }, 600);
               }
             }
           }
@@ -219,7 +239,8 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
       openSheet("product", product);
     } else {
       setScanState("notfound");
-      setTimeout(() => { setScanState("scanning"); lastScannedRef.current = null; }, 2500);
+      setNotFoundEAN(ean);
+      setTimeout(() => { setShowNotFoundPanel(true); }, 600);
     }
   };
 
@@ -447,6 +468,132 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Produkt nenalezen — panel s možnostmi ── */}
+      {showNotFoundPanel && notFoundEAN && !showDbPicker && (
+        <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 110 }}>
+          <div
+            style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)" }}
+            onClick={resetScan}
+          />
+          <div
+            className="relative animate-slide-up rounded-t-3xl px-5 pt-5 pb-8 space-y-3"
+            style={{ background: "var(--bg-primary)", paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))" }}
+          >
+            <div className="flex justify-center mb-1">
+              <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
+            </div>
+
+            <div className="flex items-center gap-3 mb-2">
+              <div className="w-11 h-11 rounded-full flex items-center justify-center" style={{ background: "#FDE8E8" }}>
+                <X size={20} style={{ color: "#C0392B" }} />
+              </div>
+              <div>
+                <p className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Produkt nenalezen</p>
+                <p className="text-xs" style={{ color: "var(--text-secondary)" }}>EAN: {notFoundEAN}</p>
+              </div>
+            </div>
+
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+              Produkt není v žádné databázi. Co chceš udělat?
+            </p>
+
+            {/* Přidat ručně do Spižírny */}
+            <button
+              onClick={() => { setShowNotFoundPanel(false); setShowAddManual(true); }}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 12,
+                padding: "14px 16px", borderRadius: 18, textAlign: "left",
+                background: "var(--green-light)", border: "1.5px solid var(--green-primary)",
+              }}
+            >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "var(--green-primary)" }}>
+                <Plus size={18} color="white" />
+              </div>
+              <div>
+                <p className="font-bold text-sm" style={{ color: "var(--green-dark)" }}>Přidat ručně do Spižírny</p>
+                <p className="text-xs" style={{ color: "var(--green-primary)" }}>Jen pro tebe, uloženo lokálně</p>
+              </div>
+            </button>
+
+            {/* Přidat do veřejné databáze */}
+            <button
+              onClick={() => setShowDbPicker(true)}
+              style={{
+                width: "100%", display: "flex", alignItems: "center", gap: 12,
+                padding: "14px 16px", borderRadius: 18, textAlign: "left",
+                background: "#EEF4FF", border: "1.5px solid #4A6BC4",
+              }}
+            >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "#4A6BC4" }}>
+                <ExternalLink size={18} color="white" />
+              </div>
+              <div>
+                <p className="font-bold text-sm" style={{ color: "#1E3A8A" }}>Přidat do veřejné databáze</p>
+                <p className="text-xs" style={{ color: "#4A6BC4" }}>Pomůže všem uživatelům — Open*Facts</p>
+              </div>
+            </button>
+
+            <button onClick={resetScan} style={{ width: "100%", padding: "12px 0", borderRadius: 16, fontSize: 14, fontWeight: 600, color: "var(--text-secondary)", background: "var(--border)" }}>
+              Skenovat znovu
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Výběr databáze ── */}
+      {showDbPicker && notFoundEAN && (
+        <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 110 }}>
+          <div style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.55)" }} onClick={() => setShowDbPicker(false)} />
+          <div
+            className="relative animate-slide-up rounded-t-3xl px-5 pt-5 pb-8 space-y-3"
+            style={{ background: "var(--bg-primary)", paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))" }}
+          >
+            <div className="flex justify-center mb-1">
+              <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
+            </div>
+            <div className="flex items-center justify-between mb-2">
+              <p className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Vyberte databázi</p>
+              <button onClick={() => setShowDbPicker(false)}>
+                <X size={18} style={{ color: "var(--text-tertiary)" }} />
+              </button>
+            </div>
+            <p className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>
+              Otevře se web v prohlížeči kde produkt přidáte. EAN <b>{notFoundEAN}</b> bude předvyplněný.
+            </p>
+            {OPEN_DATABASES.map(db => (
+              <a
+                key={db.id}
+                href={`${db.url}${notFoundEAN}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={resetScan}
+                style={{
+                  display: "flex", alignItems: "center", gap: 12,
+                  padding: "13px 16px", borderRadius: 16,
+                  background: "white", border: "1.5px solid var(--border)",
+                  textDecoration: "none",
+                }}
+              >
+                <span style={{ fontSize: 24 }}>{db.emoji}</span>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{db.label}</p>
+                  <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0 }}>{db.desc}</p>
+                </div>
+                <ExternalLink size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
+              </a>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── Manuální přidání produktu ── */}
+      {showAddManual && (
+        <AddProductManual
+          prefillEAN={notFoundEAN ?? undefined}
+          onClose={() => { setShowAddManual(false); resetScan(); }}
+        />
       )}
 
     </div>

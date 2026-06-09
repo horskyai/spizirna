@@ -9,6 +9,7 @@ import { VoiceInput } from "@/components/VoiceInput";
 
 interface Props {
   onClose: () => void;
+  prefillEAN?: string;
 }
 
 const LOCATIONS: { id: StorageLocation; label: string; Icon: React.FC<{ size?: number }> }[] = [
@@ -26,7 +27,7 @@ const CATEGORIES = [
 
 const STORES = ["Lidl", "Albert", "Billa", "Kaufland", "Tesco", "Penny", "Rohlik", "Košík", "Jiný"];
 
-export function AddProductManual({ onClose }: Props) {
+export function AddProductManual({ onClose, prefillEAN }: Props) {
   const addItem = usePantryStore((s) => s.addItem);
 
   const [step, setStep] = useState<"basic" | "nutrition" | "pantry">("basic");
@@ -79,7 +80,7 @@ export function AddProductManual({ onClose }: Props) {
 
   const handleAdd = () => {
     const product: ProductInfo = {
-      ean_code: `manual-${Date.now()}`,
+      ean_code: prefillEAN ?? `manual-${Date.now()}`,
       product_name: name.trim(),
       brand: brand.trim(),
       category,
