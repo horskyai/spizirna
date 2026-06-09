@@ -259,7 +259,10 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
   }[scanState];
 
   return (
-    <div className="flex-1 relative overflow-hidden" style={{ background: "#000" }}>
+    <div
+      className="relative overflow-hidden"
+      style={{ background: "#000", width: "100%", height: "100%", ...(isEmbedded ? {} : { flex: 1 }) }}
+    >
       <video
         ref={videoRef}
         className="absolute inset-0 w-full h-full object-cover"

@@ -88,7 +88,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
   // Full-screen embedded scanner
   if (showScanner) {
     return (
-      <div style={{ position: "fixed", inset: 0, zIndex: 300 }}>
+      <div style={{ position: "fixed", inset: 0, zIndex: 300, display: "flex", flexDirection: "column" }}>
         <Scanner onScanned={handleEanScanned} onClose={() => setShowScanner(false)} />
       </div>
     );
