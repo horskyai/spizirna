@@ -525,6 +525,9 @@ function TodaySuggestionWidget() {
     });
   });
 
+  const [showDetail, setShowDetail] = useState(false);
+  const [cookStep, setCookStep] = useState(0);
+
   const handleCookNow = () => {
     recordCooked();
     setCookDone(true);
@@ -567,6 +570,7 @@ function TodaySuggestionWidget() {
             onClick={() => setRefreshKey(k => k + 1)}
             className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
             style={{ background: "rgba(255,255,255,0.15)" }}
+            title="Jiný návrh"
           >
             <RefreshCw size={14} color="white" />
           </button>
@@ -594,42 +598,126 @@ function TodaySuggestionWidget() {
               <span style={{ fontSize: 11, color: "rgba(255,255,255,0.65)" }}>{recipe.prep_time_min + recipe.cook_time_min} min</span>
             </div>
           )}
+          {recipe.servings > 0 && (
+            <div className="flex items-center gap-1">
+              <Users size={11} color="rgba(255,255,255,0.65)" />
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.65)" }}>{recipe.servings} porce</span>
+            </div>
+          )}
           {recipe.calories_per_serving && (
             <span style={{ fontSize: 11, color: "rgba(255,255,255,0.65)" }}>{recipe.calories_per_serving} kcal/porci</span>
           )}
         </div>
       </div>
 
+      {/* Rozbalovací detail — ingredience + postup */}
+      {showDetail && (
+        <div className="mx-4 mb-3 rounded-2xl overflow-hidden animate-fade-in" style={{ background: "rgba(0,0,0,0.18)" }}>
+          {/* Ingredience */}
+          {recipe.ingredients.length > 0 && (
+            <div className="px-4 pt-3 pb-2">
+              <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 8 }}>
+                Suroviny
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                {recipe.ingredients.map((ing, i) => {
+                  const STOP = new Set(["konzervovaná","konzervovaný","konzervované","čerstvý","čerstvá","čerstvé","sušený","sušená","mražený","mražená","mražené"]);
+                  const kw = (str: string) => str.toLowerCase().split(/[\s,()\/]+/).map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, "")).filter(w => w.length > 2 && !STOP.has(w));
+                  const ingWords = kw(ing.name);
+                  const inPantry = pantryItems.some((p) => {
+                    const pw = kw(p.product.product_name);
+                    return ingWords.some(iw => pw.some(pw2 => pw2.includes(iw) || iw.includes(pw2)));
+                  });
+                  return (
+                    <div key={i} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <span style={{ fontSize: 12, flexShrink: 0 }}>{inPantry ? "✓" : "○"}</span>
+                      <span style={{ fontSize: 13, color: inPantry ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.5)", flex: 1 }}>{ing.name}</span>
+                      <span style={{ fontSize: 12, color: "rgba(255,255,255,0.55)", flexShrink: 0 }}>{ing.quantity > 0 ? `${ing.quantity} ${ing.unit}` : ing.unit}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* Postup */}
+          {recipe.instructions.length > 0 && (
+            <div className="px-4 pt-2 pb-3" style={{ borderTop: "1px solid rgba(255,255,255,0.12)", marginTop: 6 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 8 }}>
+                Postup
+              </p>
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {recipe.instructions.map((step, i) => (
+                  <button
+                    key={i}
+                    onClick={() => setCookStep(i)}
+                    style={{
+                      display: "flex", alignItems: "flex-start", gap: 10, textAlign: "left",
+                      background: cookStep === i ? "rgba(255,255,255,0.18)" : "transparent",
+                      borderRadius: 12, padding: "8px 10px",
+                      border: `1px solid ${cookStep === i ? "rgba(255,255,255,0.3)" : "transparent"}`,
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    <span style={{
+                      width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                      background: cookStep > i ? "rgba(255,255,255,0.7)" : cookStep === i ? "white" : "rgba(255,255,255,0.2)",
+                      color: cookStep >= i ? "var(--green-dark)" : "rgba(255,255,255,0.7)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 11, fontWeight: 800,
+                    }}>
+                      {cookStep > i ? "✓" : i + 1}
+                    </span>
+                    <span style={{ fontSize: 13, color: cookStep === i ? "white" : "rgba(255,255,255,0.75)", lineHeight: 1.45 }}>{step}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Buttons */}
-      <div className="flex gap-2 px-4 pb-4">
-        {percent === 100 ? (
-          <button
-            onClick={handleCookNow}
-            className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
-            style={{ background: cookDone ? "rgba(255,255,255,0.3)" : "white", color: cookDone ? "white" : "var(--green-dark)" }}
-          >
-            {cookDone ? "✓ Výborně!" : <><ChefHat size={15} /> Uvařím teď</>}
-          </button>
-        ) : (
-          <>
+      <div className="px-4 pb-4 space-y-2">
+        {/* Zobrazit / skrýt recept */}
+        <button
+          onClick={() => setShowDetail(d => !d)}
+          className="w-full py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
+          style={{ background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.25)" }}
+        >
+          {showDetail ? <><ChevronUp size={15} /> Skrýt recept</> : <><ChevronDown size={15} /> Zobrazit recept</>}
+        </button>
+
+        <div className="flex gap-2">
+          {percent === 100 ? (
             <button
               onClick={handleCookNow}
               className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
-              style={{ background: "rgba(255,255,255,0.2)", color: "white", border: "1px solid rgba(255,255,255,0.3)" }}
+              style={{ background: cookDone ? "rgba(255,255,255,0.3)" : "white", color: cookDone ? "white" : "var(--green-dark)" }}
             >
-              <ChefHat size={15} /> Uvařím z toho co mám
+              {cookDone ? "✓ Výborně!" : <><ChefHat size={15} /> Uvařím teď</>}
             </button>
-            {missing.length > 0 && (
+          ) : (
+            <>
               <button
-                onClick={handleAddMissing}
+                onClick={handleCookNow}
                 className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
-                style={{ background: "white", color: "var(--green-dark)" }}
+                style={{ background: "rgba(255,255,255,0.2)", color: "white", border: "1px solid rgba(255,255,255,0.3)" }}
               >
-                <ShoppingCart size={15} /> Přidat {missing.length} na seznam
+                <ChefHat size={15} /> Uvařím z toho co mám
               </button>
-            )}
-          </>
-        )}
+              {missing.length > 0 && (
+                <button
+                  onClick={handleAddMissing}
+                  className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
+                  style={{ background: "white", color: "var(--green-dark)" }}
+                >
+                  <ShoppingCart size={15} /> +{missing.length} na seznam
+                </button>
+              )}
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
