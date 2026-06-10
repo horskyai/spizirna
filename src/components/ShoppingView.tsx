@@ -360,11 +360,17 @@ export function ShoppingView() {
             </div>
             <div className="text-center">
               <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>Seznam je prázdný</p>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Přidejte položky ručně nebo je přidejte z receptů.</p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)", lineHeight: 1.6 }}>
+                Přidejte položky ručně nebo je importujte z receptů.
+              </p>
             </div>
-            <button className="btn-primary" onClick={() => setShowAdd(true)}>
+            <button className="btn-primary" onClick={() => setShowAdd(true)}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", maxWidth: 280 }}>
               <Plus size={18} /> Přidat položku
             </button>
+            <p style={{ fontSize: 11, color: "var(--text-tertiary)", textAlign: "center" }}>
+              Tip: Po zaškrtnutí položky se automaticky přidá do spižírny.
+            </p>
           </div>
         </div>
         {showAdd && <AddItemModal onClose={() => setShowAdd(false)} />}
@@ -519,7 +525,7 @@ export function ShoppingView() {
             whiteSpace: "nowrap",
           }}
         >
-          <Check size={15} strokeWidth={3} /> {toast} přidáno do špizírny
+          <Check size={15} strokeWidth={3} /> {toast} přidáno do spižírny
         </div>
       )}
     </div>

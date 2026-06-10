@@ -44,6 +44,8 @@ export interface PantryItem {
   price_paid?: number;
   store?: string;
   notes?: string;
+  tags?: string[];
+  custom_image_url?: string;
 }
 
 export interface PriceRecord {

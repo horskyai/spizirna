@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { X, Plus, ChevronDown } from "lucide-react";
+import { useState, useRef } from "react";
+import { X, Plus, ChevronDown, Camera, Image, Tag } from "lucide-react";
 import { ProductInfo, StorageLocation } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG } from "@/components/LocationIcons";
@@ -19,7 +19,7 @@ const LOCATIONS: { id: StorageLocation; label: string; Icon: React.FC<{ size?: n
   { id: "linka", label: "Skříňka", Icon: SkrinskaSVG },
 ];
 
-const CATEGORIES = [
+const DEFAULT_CATEGORIES = [
   "Maso", "Ryby", "Mléčné výrobky", "Zelenina", "Ovoce",
   "Pekárenské výrobky", "Luštěniny", "Obiloviny", "Nápoje",
   "Omáčky a koření", "Sladkosti", "Mražené", "Konzervy", "Jiné",
@@ -27,8 +27,10 @@ const CATEGORIES = [
 
 const STORES = ["Lidl", "Albert", "Billa", "Kaufland", "Tesco", "Penny", "Rohlik", "Košík", "Jiný"];
 
+const SUGGESTED_TAGS = ["Bio", "Bez lepku", "Laktóza free", "Vegán", "Oblíbené", "Doma", "Práce", "Akce"];
+
 export function AddProductManual({ onClose, prefillEAN }: Props) {
-  const addItem = usePantryStore((s) => s.addItem);
+  const { addItem, customCategories, addCustomCategory } = usePantryStore();
 
   const [step, setStep] = useState<"basic" | "nutrition" | "pantry">("basic");
   const [added, setAdded] = useState(false);
@@ -41,6 +43,46 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
   const [volumeMl, setVolumeMl] = useState("");
   const [pieces, setPieces] = useState("");
   const [unit, setUnit] = useState<"g" | "ml" | "ks">("g");
+
+  // Foto
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
+
+  const handlePhotoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => setPhotoUrl(ev.target?.result as string);
+    reader.readAsDataURL(file);
+  };
+
+  // Vlastní kategorie
+  const [newCatInput, setNewCatInput] = useState("");
+  const allCategories = [...DEFAULT_CATEGORIES, ...customCategories];
+
+  const handleAddCategory = () => {
+    const cat = newCatInput.trim();
+    if (!cat || allCategories.includes(cat)) return;
+    addCustomCategory(cat);
+    setCategory(cat);
+    setNewCatInput("");
+  };
+
+  // Tagy
+  const [tags, setTags] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState("");
+
+  const toggleTag = (tag: string) => {
+    setTags(prev => prev.includes(tag) ? prev.filter(t => t !== tag) : [...prev, tag]);
+  };
+
+  const addTagFromInput = () => {
+    const t = tagInput.trim();
+    if (!t || tags.includes(t)) return;
+    setTags(prev => [...prev, t]);
+    setTagInput("");
+  };
 
   // Nutrition
   const [kcal, setKcal] = useState("");
@@ -85,7 +127,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
       brand: brand.trim(),
       category,
       subcategory: "",
-      image_url: "",
+      image_url: photoUrl ?? "",
       weight_g: weightG ? parseFloat(weightG) : undefined,
       volume_ml: volumeMl ? parseFloat(volumeMl) : undefined,
       pieces_count: pieces ? parseFloat(pieces) : undefined,
@@ -101,7 +143,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
       source: "user_added",
       verified: false,
     };
-    addItem(product, qty, location, price ? parseFloat(price) : undefined, store);
+    addItem(product, qty, location, price ? parseFloat(price) : undefined, store, tags, photoUrl ?? undefined);
     setAdded(true);
     setTimeout(onClose, 1000);
   };
@@ -142,19 +184,18 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
 
         {/* Step tabs */}
         <div className="flex px-5 gap-2 mb-4">
-          {(["basic", "nutrition", "pantry"] as const).map((s, i) => {
-            const labels = ["Základní info", "Výživa", "Do spižírny"];
-            const active = step === s;
-            const done =
-              (s === "basic" && (step === "nutrition" || step === "pantry")) ||
-              (s === "nutrition" && step === "pantry");
+          {([
+            { id: "basic", label: "Základní info" },
+            { id: "pantry", label: "Do spižírny" },
+          ] as const).map((s, i) => {
+            const active = step === s.id || (s.id === "pantry" && step === "nutrition");
+            const done = s.id === "basic" && (step === "nutrition" || step === "pantry");
             return (
               <button
-                key={s}
+                key={s.id}
                 onClick={() => {
-                  if (s === "basic") setStep("basic");
-                  if (s === "nutrition" && canProceedBasic) setStep("nutrition");
-                  if (s === "pantry" && canProceedBasic) setStep("pantry");
+                  if (s.id === "basic") setStep("basic");
+                  if (s.id === "pantry" && canProceedBasic) setStep("pantry");
                 }}
                 className="flex-1 py-2 rounded-full text-xs font-semibold transition-all"
                 style={{
@@ -162,10 +203,19 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                   color: active ? "white" : done ? "var(--green-dark)" : "var(--text-tertiary)",
                 }}
               >
-                {done ? "✓ " : `${i + 1}. `}{labels[i]}
+                {done ? "✓ " : `${i + 1}. `}{s.label}
               </button>
             );
           })}
+          {step === "nutrition" && (
+            <button
+              onClick={() => setStep("nutrition")}
+              className="flex-1 py-2 rounded-full text-xs font-semibold"
+              style={{ background: "var(--green-primary)", color: "white" }}
+            >
+              Výživa
+            </button>
+          )}
         </div>
 
         {/* Content */}
@@ -174,6 +224,45 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
           {/* ===== STEP: BASIC ===== */}
           {step === "basic" && (
             <div className="space-y-3">
+
+              {/* Foto */}
+              <div className="card p-4">
+                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>FOTKA PRODUKTU</p>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  {photoUrl ? (
+                    <div style={{ position: "relative", flexShrink: 0 }}>
+                      <img src={photoUrl} alt="" style={{ width: 72, height: 72, borderRadius: 12, objectFit: "cover", border: "1.5px solid var(--border)" }} />
+                      <button
+                        onClick={() => setPhotoUrl(null)}
+                        style={{ position: "absolute", top: -6, right: -6, width: 20, height: 20, borderRadius: "50%", background: "var(--red)", border: "2px solid white", display: "flex", alignItems: "center", justifyContent: "center" }}
+                      >
+                        <X size={10} color="white" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ width: 72, height: 72, borderRadius: 12, background: "var(--bg-primary)", border: "1.5px dashed var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <Image size={24} style={{ color: "var(--text-tertiary)" }} />
+                    </div>
+                  )}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 12, background: "var(--bg-primary)", border: "1.5px solid var(--border)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}
+                    >
+                      <Image size={15} style={{ color: "var(--green-primary)" }} /> Z galerie
+                    </button>
+                    <button
+                      onClick={() => cameraInputRef.current?.click()}
+                      style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 12, background: "var(--bg-primary)", border: "1.5px solid var(--border)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}
+                    >
+                      <Camera size={15} style={{ color: "var(--green-primary)" }} /> Vyfotit
+                    </button>
+                  </div>
+                </div>
+                <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoFile} style={{ display: "none" }} />
+                <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoFile} style={{ display: "none" }} />
+              </div>
+
               <div className="card p-4 space-y-3">
                 <div>
                   <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>NÁZEV PRODUKTU *</p>
@@ -201,8 +290,8 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
               {/* Category */}
               <div className="card p-4">
                 <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>KATEGORIE</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {CATEGORIES.map((cat) => (
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {allCategories.map((cat) => (
                     <button
                       key={cat}
                       onClick={() => setCategory(cat)}
@@ -216,6 +305,75 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                     </button>
                   ))}
                 </div>
+                {/* Přidat vlastní kategorii */}
+                <div style={{ display: "flex", gap: 6, marginTop: 6 }}>
+                  <input
+                    value={newCatInput}
+                    onChange={e => setNewCatInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && handleAddCategory()}
+                    placeholder="+ Vlastní kategorie..."
+                    className="flex-1 px-3 py-2 rounded-xl text-xs outline-none"
+                    style={{ background: "var(--bg-primary)", border: "1.5px dashed var(--border)", color: "var(--text-primary)" }}
+                  />
+                  {newCatInput.trim() && (
+                    <button
+                      onClick={handleAddCategory}
+                      style={{ padding: "6px 12px", borderRadius: 10, background: "var(--green-primary)", color: "white", fontSize: 12, fontWeight: 700 }}
+                    >
+                      Přidat
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Tagy */}
+              <div className="card p-4">
+                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>ŠTÍTKY (TAGY)</p>
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {SUGGESTED_TAGS.map(tag => (
+                    <button
+                      key={tag}
+                      onClick={() => toggleTag(tag)}
+                      style={{
+                        padding: "5px 11px", borderRadius: 99, fontSize: 11, fontWeight: 600,
+                        background: tags.includes(tag) ? "var(--green-primary)" : "var(--bg-primary)",
+                        color: tags.includes(tag) ? "white" : "var(--text-secondary)",
+                        border: `1px solid ${tags.includes(tag) ? "var(--green-primary)" : "var(--border)"}`,
+                      }}
+                    >
+                      {tags.includes(tag) ? "✓ " : ""}{tag}
+                    </button>
+                  ))}
+                </div>
+                <div style={{ display: "flex", gap: 6 }}>
+                  <input
+                    value={tagInput}
+                    onChange={e => setTagInput(e.target.value)}
+                    onKeyDown={e => e.key === "Enter" && addTagFromInput()}
+                    placeholder="+ Vlastní štítek..."
+                    style={{ flex: 1, padding: "6px 12px", borderRadius: 10, fontSize: 12, border: "1.5px dashed var(--border)", background: "var(--bg-primary)", outline: "none", color: "var(--text-primary)" }}
+                  />
+                  {tagInput.trim() && (
+                    <button
+                      onClick={addTagFromInput}
+                      style={{ padding: "6px 12px", borderRadius: 10, background: "var(--green-primary)", color: "white", fontSize: 12, fontWeight: 700 }}
+                    >
+                      Přidat
+                    </button>
+                  )}
+                </div>
+                {tags.length > 0 && (
+                  <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginTop: 8 }}>
+                    {tags.map(t => (
+                      <span key={t} style={{ display: "flex", alignItems: "center", gap: 4, padding: "4px 10px", borderRadius: 99, background: "var(--green-light)", fontSize: 11, fontWeight: 600, color: "var(--green-dark)" }}>
+                        <Tag size={9} /> {t}
+                        <button onClick={() => setTags(prev => prev.filter(x => x !== t))} style={{ marginLeft: 2 }}>
+                          <X size={9} />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               {/* Quantity/unit */}
@@ -251,19 +409,20 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
               </div>
 
               <button
-                onClick={() => setStep("nutrition")}
+                onClick={() => setStep("pantry")}
                 className="btn-primary"
                 disabled={!canProceedBasic}
+                style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
               >
-                Dál — Výživa
+                <Plus size={17} /> Přidat do spižírny
               </button>
               <button
-                onClick={() => setStep("pantry")}
+                onClick={() => setStep("nutrition")}
                 className="btn-secondary"
                 style={{ marginTop: 8 }}
                 disabled={!canProceedBasic}
               >
-                Přeskočit na spižírnu
+                Přidat také výživové hodnoty →
               </button>
             </div>
           )}

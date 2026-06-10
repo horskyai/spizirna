@@ -5,20 +5,24 @@ import { addDays } from "@/lib/dateUtils";
 
 interface PantryStore {
   items: PantryItem[];
-  addItem: (product: ProductInfo, quantity: number, location: StorageLocation, price?: number, store?: string) => void;
+  customCategories: string[];
+  addItem: (product: ProductInfo, quantity: number, location: StorageLocation, price?: number, store?: string, tags?: string[], customImageUrl?: string) => void;
   removeItem: (id: string) => void;
   updateItem: (id: string, changes: Partial<PantryItem>) => void;
   consumeItem: (id: string, amount: number) => void;
   getExpiringItems: (days: number) => PantryItem[];
   getItemsByLocation: (location: StorageLocation) => PantryItem[];
+  addCustomCategory: (cat: string) => void;
+  removeCustomCategory: (cat: string) => void;
 }
 
 export const usePantryStore = create<PantryStore>()(
   persist(
     (set, get) => ({
       items: [],
+      customCategories: [],
 
-      addItem: (product, quantity, location, price, store) => {
+      addItem: (product, quantity, location, price, store, tags, customImageUrl) => {
         const item: PantryItem = {
           id: crypto.randomUUID(),
           product,
@@ -31,9 +35,23 @@ export const usePantryStore = create<PantryStore>()(
           location,
           price_paid: price,
           store,
+          tags: tags?.length ? tags : undefined,
+          custom_image_url: customImageUrl,
         };
         set((s) => ({ items: [...s.items, item] }));
       },
+
+      addCustomCategory: (cat) =>
+        set((s) => ({
+          customCategories: s.customCategories.includes(cat)
+            ? s.customCategories
+            : [...s.customCategories, cat],
+        })),
+
+      removeCustomCategory: (cat) =>
+        set((s) => ({
+          customCategories: s.customCategories.filter((c) => c !== cat),
+        })),
 
       removeItem: (id) =>
         set((s) => ({ items: s.items.filter((i) => i.id !== id) })),

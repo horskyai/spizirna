@@ -11,7 +11,7 @@ const TABS_DOMACNOST = [
   { id: "recepty", label: "Recepty", Icon: BookOpen },
   { id: "skenovat", label: "Skenovat", Icon: ScanLine },
   { id: "nakup", label: "Nákup", Icon: ShoppingCart },
-  { id: "opakujici", label: "Zásoby", Icon: RefreshCw },
+  { id: "opakujici", label: "Opakování", Icon: RefreshCw },
 ] as const;
 
 const TABS_PROVOZ = [

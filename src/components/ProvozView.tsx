@@ -912,19 +912,34 @@ export function ProvozView() {
 
                 {/* Start nové */}
                 {polozky.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-16 gap-4">
-                    <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
-                      <ClipboardList size={32} style={{ color: "var(--green-primary)" }} strokeWidth={1.5} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                    <div style={{ textAlign: "center", padding: "16px 0 8px" }}>
+                      <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>Jak začít s Provozem?</p>
+                      <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>3 jednoduché kroky k první inventuře</p>
                     </div>
-                    <div className="text-center">
-                      <p className="font-bold text-lg mb-1" style={{ color: "var(--text-primary)" }}>Nejprve nastavte sklad</p>
-                      <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                        Přejděte na záložku "Sklad" a přidejte položky které chcete inventarizovat.
-                      </p>
-                    </div>
-                    <button className="btn-secondary" onClick={() => setTab("sklad")}>
-                      <Package size={16} /> Nastavit sklad
-                    </button>
+                    {[
+                      { step: 1, icon: <Package size={20} style={{ color: "var(--green-primary)" }} />, title: "Nastavte sklad", desc: "Přidejte položky, které chcete sledovat — suroviny, nápoje, zásoby.", action: () => setTab("sklad"), btn: "Přejít na Sklad →" },
+                      { step: 2, icon: <ClipboardList size={20} style={{ color: "#4A6BC4" }} />, title: "Spusťte inventuru", desc: "Projděte sklad a zadejte skutečné množství každé položky.", action: null, btn: null },
+                      { step: 3, icon: <FileText size={20} style={{ color: "#E87D35" }} />, title: "Exportujte výsledky", desc: "Stáhněte PDF nebo Excel report pro evidenci nebo účetnictví.", action: null, btn: null },
+                    ].map(({ step, icon, title, desc, action, btn }) => (
+                      <div key={step} style={{ display: "flex", gap: 14, padding: "14px 16px", background: "white", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1.5px solid var(--border)", opacity: step === 1 ? 1 : 0.55 }}>
+                        <div style={{ width: 38, height: 38, borderRadius: "50%", background: step === 1 ? "var(--green-light)" : "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                          {icon}
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-tertiary)" }}>KROK {step}</span>
+                          </div>
+                          <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 3 }}>{title}</p>
+                          <p style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{desc}</p>
+                          {action && btn && (
+                            <button onClick={action} style={{ marginTop: 8, padding: "6px 14px", borderRadius: 10, background: "var(--green-primary)", color: "white", fontSize: 12, fontWeight: 700 }}>
+                              {btn}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 ) : (
                   <div className="flex flex-col items-center justify-center py-12 gap-4">

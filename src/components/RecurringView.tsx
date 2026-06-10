@@ -303,6 +303,14 @@ export function RecurringView() {
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-2 pb-24 space-y-4">
 
+        {items.length > 0 && (
+          <div style={{ padding: "8px 4px 4px" }}>
+            <p style={{ fontSize: 11, color: "var(--text-tertiary)", lineHeight: 1.5 }}>
+              Pravidelné nákupy s automatickou připomínkou. Zaškrtnutím odešlete položku do nákupního seznamu.
+            </p>
+          </div>
+        )}
+
         <PantryPredictions />
 
         {due.length > 0 && (
@@ -333,16 +341,38 @@ export function RecurringView() {
         )}
 
         {items.length === 0 && (
-          <div className="flex flex-col items-center justify-center gap-5 py-16">
-            <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, paddingTop: 16, paddingBottom: 32 }}>
+            <div style={{ width: 80, height: 80, borderRadius: "50%", background: "var(--green-light)", display: "flex", alignItems: "center", justifyContent: "center" }}>
               <RefreshCw size={32} strokeWidth={1.5} style={{ color: "var(--green-primary)" }} />
             </div>
-            <div className="text-center">
-              <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>Žádné připomínky</p>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Přidej produkty které pravidelně kupuješ.</p>
+            <div style={{ textAlign: "center" }}>
+              <p style={{ fontSize: 18, fontWeight: 800, marginBottom: 8, color: "var(--text-primary)" }}>Pravidelné zásoby</p>
+              <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7, maxWidth: 280 }}>
+                Přidej položky, které kupuješ opakovaně — např. mléko každý týden, prací prášek každý měsíc. Aplikace ti připomene, až bude čas nakoupit.
+              </p>
             </div>
-            <button className="btn-primary" style={{ width: "auto", paddingLeft: 24, paddingRight: 24 }} onClick={() => setShowAdd(true)}>
-              <Plus size={18} /> Přidat připomínku
+            {/* Ukázkové karty */}
+            <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
+              {[
+                { emoji: "🥛", name: "Mléko", interval: "každý týden" },
+                { emoji: "🍞", name: "Chléb", interval: "každé 3 dny" },
+                { emoji: "🧴", name: "Prací prášek", interval: "každý měsíc" },
+              ].map(ex => (
+                <div key={ex.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "white", borderRadius: 14, border: "1.5px dashed var(--border)", opacity: 0.6 }}>
+                  <span style={{ fontSize: 22 }}>{ex.emoji}</span>
+                  <div>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>{ex.name}</p>
+                    <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: 0 }}>Připomínka {ex.interval}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <button
+              className="btn-primary"
+              style={{ width: "100%", maxWidth: 280, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+              onClick={() => setShowAdd(true)}
+            >
+              <Plus size={18} /> Přidat první zásobu
             </button>
           </div>
         )}

@@ -274,20 +274,33 @@ export function PantryView() {
 
   if (items.length === 0) {
     return (
-      <div className="relative flex-1 flex flex-col items-center justify-center gap-5 p-8">
-        <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
-          <RefrigeratorIcon size={32} strokeWidth={1.5} style={{ color: "var(--green-primary)" }} />
+      <div className="relative flex-1 flex flex-col items-center justify-center gap-4 p-8">
+        <div style={{ width: 88, height: 88, borderRadius: "50%", background: "var(--green-light)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <RefrigeratorIcon size={38} strokeWidth={1.4} style={{ color: "var(--green-primary)" }} />
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>Spižírna je prázdná</p>
-          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Naskenujte EAN kód nebo přidejte produkty ručně.</p>
+          <p className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Spižírna je prázdná</p>
+          <p className="text-sm" style={{ color: "var(--text-secondary)", lineHeight: 1.6 }}>
+            Naskenujte čárový kód z obalu potravin<br />nebo přidejte produkty ručně.
+          </p>
         </div>
-        <button className="btn-primary" onClick={() => setTab("skenovat")}>
-          <span style={{ fontSize: 16 }}>⊡</span> Naskenovat produkt
+        <button
+          className="btn-primary"
+          style={{ width: "100%", maxWidth: 280, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+          onClick={() => setTab("skenovat")}
+        >
+          <ScanLine size={18} /> Naskenovat první produkt
         </button>
-        <button className="btn-secondary" onClick={() => setShowManual(true)}>
-          <Plus size={16} /> Přidat ručně
+        <button
+          className="btn-secondary"
+          style={{ width: "100%", maxWidth: 280, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
+          onClick={() => setShowManual(true)}
+        >
+          <Plus size={18} /> Přidat ručně
         </button>
+        <p style={{ fontSize: 11, color: "var(--text-tertiary)", textAlign: "center", marginTop: 4 }}>
+          Tip: Naskenujte kód ze zadní strany obalu. Většina potravin se najde automaticky.
+        </p>
         {showManual && <AddProductManual onClose={() => setShowManual(false)} />}
       </div>
     );
