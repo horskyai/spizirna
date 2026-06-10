@@ -3,7 +3,8 @@
 import { useState, useCallback } from "react";
 import {
   ClipboardList, Plus, X, ChevronRight,
-  AlertTriangle, Check, Truck, Package, BarChart3, Trash2, ScanLine, Keyboard
+  AlertTriangle, Check, Truck, Package, BarChart3, Trash2, ScanLine, Keyboard,
+  FileText, Download, FileSpreadsheet
 } from "lucide-react";
 import {
   useProvozStore,
@@ -14,6 +15,154 @@ import {
 } from "@/store/provozStore";
 import { fetchProductByEAN } from "@/lib/openFoodFacts";
 import { Scanner } from "@/components/Scanner";
+
+// ── Export funkce ─────────────────────────────────────────────────────────────
+
+function exportCSV(inv: Inventura, polozky: InventuraPolozka[]) {
+  const rows = [
+    ["Název", "Kategorie", "Skutečný stav", "Jednotka", "Min. zásoba", "Cena/jedn.", "Hodnota", "Pod minimem"],
+  ];
+  inv.zaznamy.forEach(z => {
+    const p = polozky.find(p => p.id === z.polozkaId);
+    if (!p) return;
+    const kat = INVENTURA_KATEGORIE.find(k => k.id === p.kategorie);
+    const hodnota = p.cenaJednotka ? (z.skutecnyStav * p.cenaJednotka).toFixed(2) : "";
+    const podMin = z.skutecnyStav <= p.minZasoba ? "ANO" : "NE";
+    rows.push([
+      p.nazev,
+      kat?.label ?? p.kategorie,
+      String(z.skutecnyStav),
+      p.jednotka,
+      String(p.minZasoba),
+      p.cenaJednotka ? String(p.cenaJednotka) : "",
+      hodnota,
+      podMin,
+    ]);
+  });
+  const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(";")).join("\n");
+  const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `inventura-${inv.nazev.replace(/\s+/g, "-")}-${inv.datum}.csv`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function exportPDF(inv: Inventura, polozky: InventuraPolozka[]) {
+  const { jsPDF } = await import("jspdf");
+  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+
+  // Fonts — jsPDF default helvetica supports latin characters
+  const pageW = 210;
+  const margin = 14;
+  let y = 20;
+
+  // Header
+  doc.setFillColor(76, 175, 130);
+  doc.rect(0, 0, pageW, 14, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.text("INVENTURA", margin, 9);
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Vygenerovano: ${new Date().toLocaleDateString("cs-CZ")}`, pageW - margin, 9, { align: "right" });
+
+  // Title
+  doc.setTextColor(30, 30, 30);
+  doc.setFontSize(16);
+  doc.setFont("helvetica", "bold");
+  doc.text(inv.nazev, margin, y + 8);
+  y += 8;
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+  doc.setTextColor(100, 100, 100);
+  doc.text(`Datum: ${inv.datum}  |  Polozek: ${inv.zaznamy.length}`, margin, y + 6);
+  y += 12;
+
+  // Celková hodnota
+  let celkovaHodnota = 0;
+  inv.zaznamy.forEach(z => {
+    const p = polozky.find(p => p.id === z.polozkaId);
+    if (p?.cenaJednotka) celkovaHodnota += z.skutecnyStav * p.cenaJednotka;
+  });
+  if (celkovaHodnota > 0) {
+    doc.setFillColor(240, 248, 240);
+    doc.roundedRect(margin, y, pageW - margin * 2, 8, 2, 2, "F");
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "bold");
+    doc.text(`Celkova hodnota skladu: ${celkovaHodnota.toLocaleString("cs-CZ")} Kc`, margin + 3, y + 5.5);
+    y += 12;
+  }
+
+  // Tabulka — hlavička
+  const colW = [60, 28, 22, 22, 22, 28, 18];
+  const headers = ["Nazev", "Kategorie", "Stav", "Jednotka", "Min.", "Hodnota Kc", "OK?"];
+  doc.setFillColor(50, 50, 50);
+  doc.rect(margin, y, pageW - margin * 2, 7, "F");
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "bold");
+  let x = margin;
+  headers.forEach((h, i) => {
+    doc.text(h, x + 2, y + 4.8);
+    x += colW[i];
+  });
+  y += 7;
+
+  // Řádky
+  const zaznamy = inv.zaznamy.map(z => {
+    const p = polozky.find(p => p.id === z.polozkaId);
+    const kat = INVENTURA_KATEGORIE.find(k => k.id === p?.kategorie);
+    const podMin = p ? z.skutecnyStav <= p.minZasoba : false;
+    const hodnota = p?.cenaJednotka ? (z.skutecnyStav * p.cenaJednotka).toLocaleString("cs-CZ") : "";
+    return { z, p, kat, podMin, hodnota };
+  });
+
+  zaznamy.forEach((row, idx) => {
+    if (y > 270) {
+      doc.addPage();
+      y = 20;
+    }
+    const bg = row.podMin ? [255, 243, 224] : idx % 2 === 0 ? [252, 252, 252] : [255, 255, 255];
+    doc.setFillColor(bg[0], bg[1], bg[2]);
+    doc.rect(margin, y, pageW - margin * 2, 6.5, "F");
+
+    doc.setTextColor(30, 30, 30);
+    doc.setFontSize(7.5);
+    doc.setFont("helvetica", row.podMin ? "bold" : "normal");
+
+    x = margin;
+    const nazev = row.p?.nazev ?? row.z.polozkaId;
+    doc.text(nazev.length > 28 ? nazev.slice(0, 27) + "…" : nazev, x + 2, y + 4.3); x += colW[0];
+    doc.text(row.kat?.label ?? "", x + 2, y + 4.3); x += colW[1];
+    doc.text(String(row.z.skutecnyStav), x + 2, y + 4.3); x += colW[2];
+    doc.text(row.p?.jednotka ?? "", x + 2, y + 4.3); x += colW[3];
+    doc.text(row.p ? String(row.p.minZasoba) : "", x + 2, y + 4.3); x += colW[4];
+    doc.text(row.hodnota, x + 2, y + 4.3); x += colW[5];
+
+    if (row.podMin) {
+      doc.setTextColor(230, 81, 0);
+      doc.text("!", x + 2, y + 4.3);
+    } else {
+      doc.setTextColor(76, 175, 130);
+      doc.text("OK", x + 2, y + 4.3);
+    }
+    doc.setTextColor(30, 30, 30);
+    y += 6.5;
+  });
+
+  // Footer
+  doc.setFontSize(7);
+  doc.setTextColor(160, 160, 160);
+  doc.text("Spizirna — Provoz & Inventura", margin, 292);
+  doc.text(`Strana 1`, pageW - margin, 292, { align: "right" });
+
+  doc.save(`inventura-${inv.nazev.replace(/\s+/g, "-")}-${inv.datum}.pdf`);
+}
 
 // ── Formulář nové položky skladu ──────────────────────────────────────────────
 function AddPolozkaModal({ onClose }: { onClose: () => void }) {
@@ -456,11 +605,25 @@ function HistorieInventur() {
                   {podMin > 0 && <span style={{ fontSize: 11, color: "#F57C00", fontWeight: 600 }}>⚠️ {podMin} pod minimem</span>}
                 </div>
               </div>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 <ChevronRight size={16} style={{ color: "var(--text-tertiary)", transform: otevreno ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
                 <button
+                  onClick={e => { e.stopPropagation(); exportCSV(inv, polozky); }}
+                  style={{ width: 30, height: 30, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "#E8F5E9" }}
+                  title="Stáhnout CSV (Excel)"
+                >
+                  <FileSpreadsheet size={14} style={{ color: "#2E7D32" }} />
+                </button>
+                <button
+                  onClick={e => { e.stopPropagation(); exportPDF(inv, polozky); }}
+                  style={{ width: 30, height: 30, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "#FDE8E8" }}
+                  title="Stáhnout PDF"
+                >
+                  <FileText size={14} style={{ color: "#C0392B" }} />
+                </button>
+                <button
                   onClick={e => { e.stopPropagation(); removeInventura(inv.id); }}
-                  style={{ padding: 4 }}
+                  style={{ width: 30, height: 30, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--border)" }}
                 >
                   <Trash2 size={14} style={{ color: "var(--text-tertiary)" }} />
                 </button>
