@@ -5,7 +5,8 @@ import { X, Plus, ChevronDown, Camera, Image, Tag } from "lucide-react";
 import { ProductInfo, StorageLocation } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG } from "@/components/LocationIcons";
-import { VoiceInput } from "@/components/VoiceInput";
+import { VoiceInput, ParsedItem } from "@/components/VoiceInput";
+import { VoiceReviewModal, ReviewItem } from "@/components/VoiceReviewModal";
 
 interface Props {
   onClose: () => void;
@@ -101,13 +102,19 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
 
   const canProceedBasic = name.trim().length > 0;
 
-  const handleVoicePantry = (items: { name: string; quantity: number; unit: string }[]) => {
+  const [voiceReviewItems, setVoiceReviewItems] = useState<ParsedItem[] | null>(null);
+
+  const handleVoicePantry = (items: ParsedItem[]) => {
+    if (items.length > 0) setVoiceReviewItems(items);
+  };
+
+  const handleVoiceConfirm = (items: ReviewItem[]) => {
     items.forEach((item) => {
       const product: ProductInfo = {
         ean_code: `manual-${Date.now()}-${Math.random()}`,
         product_name: item.name,
         brand: "",
-        category: "Jiné",
+        category: item.category,
         subcategory: "",
         image_url: "",
         unit: (["g", "ml", "ks"].includes(item.unit) ? item.unit : "ks") as "g" | "ml" | "ks",
@@ -117,7 +124,9 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
       };
       addItem(product, item.quantity, location);
     });
-    if (items.length > 0) { setAdded(true); setTimeout(onClose, 800); }
+    setVoiceReviewItems(null);
+    setAdded(true);
+    setTimeout(onClose, 800);
   };
 
   const handleAdd = () => {
@@ -569,6 +578,14 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
           )}
         </div>
       </div>
+
+      {voiceReviewItems && (
+        <VoiceReviewModal
+          items={voiceReviewItems}
+          onConfirm={handleVoiceConfirm}
+          onClose={() => setVoiceReviewItems(null)}
+        />
+      )}
     </div>
   );
 }
