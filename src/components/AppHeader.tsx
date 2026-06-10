@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useModeStore } from "@/store/modeStore";
-import { Plus, Bell, AlertTriangle, UtensilsCrossed, ScanLine, PenLine, ClipboardList } from "lucide-react";
+import { Plus, Bell, AlertTriangle, UtensilsCrossed, ScanLine, PenLine, ClipboardList, Home, Briefcase } from "lucide-react";
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { daysUntil } from "@/lib/dateUtils";
@@ -21,7 +21,7 @@ const TITLES: Record<string, string> = {
 
 export function AppHeader() {
   const { activeTab, setTab } = useUIStore();
-  const { mode } = useModeStore();
+  const { mode, setMode } = useModeStore();
   const pantryItems = usePantryStore((s) => s.items);
   const expiringItems = useMemo(() => {
     const cutoff = new Date();
@@ -51,7 +51,23 @@ export function AppHeader() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <p className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>Dobrý den 👋</p>
-              <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)", lineHeight: 1.2 }}>Spižírna</h1>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)", lineHeight: 1.2 }}>Spižírna</h1>
+                <button
+                  onClick={() => setMode(mode === "domacnost" ? "provoz" : "domacnost")}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 4,
+                    padding: "3px 9px", borderRadius: 99, fontSize: 11, fontWeight: 700,
+                    background: mode === "provoz" ? "#EEF4FF" : "var(--green-light)",
+                    color: mode === "provoz" ? "#4A6BC4" : "var(--green-dark)",
+                    border: `1px solid ${mode === "provoz" ? "#C5D5F5" : "var(--green-primary)"}`,
+                  }}
+                  title="Přepnout plán"
+                >
+                  {mode === "provoz" ? <Briefcase size={11} /> : <Home size={11} />}
+                  {mode === "provoz" ? "Provoz" : "Domácnost"}
+                </button>
+              </div>
             </div>
             <div className="flex items-center gap-2">
               {expiringCount > 0 && (
