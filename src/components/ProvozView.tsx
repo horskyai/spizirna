@@ -50,118 +50,86 @@ function exportCSV(inv: Inventura, polozky: InventuraPolozka[]) {
 }
 
 async function exportPDF(inv: Inventura, polozky: InventuraPolozka[]) {
-  const { jsPDF } = await import("jspdf");
-  const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+  const [{ jsPDF }, html2canvas] = await Promise.all([
+    import("jspdf"),
+    import("html2canvas").then(m => m.default),
+  ]);
 
-  // Fonts — jsPDF default helvetica supports latin characters
-  const pageW = 210;
-  const margin = 14;
-  let y = 20;
-
-  // Header
-  doc.setFillColor(76, 175, 130);
-  doc.rect(0, 0, pageW, 14, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(11);
-  doc.setFont("helvetica", "bold");
-  doc.text("INVENTURA", margin, 9);
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.text(`Vygenerovano: ${new Date().toLocaleDateString("cs-CZ")}`, pageW - margin, 9, { align: "right" });
-
-  // Title
-  doc.setTextColor(30, 30, 30);
-  doc.setFontSize(16);
-  doc.setFont("helvetica", "bold");
-  doc.text(inv.nazev, margin, y + 8);
-  y += 8;
-
-  doc.setFontSize(9);
-  doc.setFont("helvetica", "normal");
-  doc.setTextColor(100, 100, 100);
-  doc.text(`Datum: ${inv.datum}  |  Polozek: ${inv.zaznamy.length}`, margin, y + 6);
-  y += 12;
-
-  // Celková hodnota
+  // Spočítej celkovou hodnotu
   let celkovaHodnota = 0;
   inv.zaznamy.forEach(z => {
     const p = polozky.find(p => p.id === z.polozkaId);
     if (p?.cenaJednotka) celkovaHodnota += z.skutecnyStav * p.cenaJednotka;
   });
-  if (celkovaHodnota > 0) {
-    doc.setFillColor(240, 248, 240);
-    doc.roundedRect(margin, y, pageW - margin * 2, 8, 2, 2, "F");
-    doc.setTextColor(30, 30, 30);
-    doc.setFontSize(9);
-    doc.setFont("helvetica", "bold");
-    doc.text(`Celkova hodnota skladu: ${celkovaHodnota.toLocaleString("cs-CZ")} Kc`, margin + 3, y + 5.5);
-    y += 12;
-  }
 
-  // Tabulka — hlavička
-  const colW = [60, 28, 22, 22, 22, 28, 18];
-  const headers = ["Nazev", "Kategorie", "Stav", "Jednotka", "Min.", "Hodnota Kc", "OK?"];
-  doc.setFillColor(50, 50, 50);
-  doc.rect(margin, y, pageW - margin * 2, 7, "F");
-  doc.setTextColor(255, 255, 255);
-  doc.setFontSize(8);
-  doc.setFont("helvetica", "bold");
-  let x = margin;
-  headers.forEach((h, i) => {
-    doc.text(h, x + 2, y + 4.8);
-    x += colW[i];
-  });
-  y += 7;
+  // Sestav HTML v paměti — použije systémový font prohlížeče, diakritika OK
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;background:#fff;font-family:system-ui,sans-serif;padding:32px;box-sizing:border-box;";
 
-  // Řádky
-  const zaznamy = inv.zaznamy.map(z => {
+  const rows = inv.zaznamy.map(z => {
     const p = polozky.find(p => p.id === z.polozkaId);
     const kat = INVENTURA_KATEGORIE.find(k => k.id === p?.kategorie);
     const podMin = p ? z.skutecnyStav <= p.minZasoba : false;
-    const hodnota = p?.cenaJednotka ? (z.skutecnyStav * p.cenaJednotka).toLocaleString("cs-CZ") : "";
-    return { z, p, kat, podMin, hodnota };
-  });
+    const hodnota = p?.cenaJednotka ? (z.skutecnyStav * p.cenaJednotka).toLocaleString("cs-CZ") + " Kč" : "—";
+    return `<tr style="background:${podMin ? "#FFF3E0" : ""}">
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;font-weight:${podMin ? "600" : "400"}">${p?.nazev ?? z.polozkaId}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;color:#666">${kat?.label ?? ""}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;font-weight:700;color:${podMin ? "#E65100" : "#1a1a1a"}">${z.skutecnyStav} ${p?.jednotka ?? ""}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;color:#666">${p?.minZasoba ?? ""} ${p?.jednotka ?? ""}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">${hodnota}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:center;font-weight:700;color:${podMin ? "#E65100" : "#4CAF82"}">${podMin ? "⚠️" : "✓"}</td>
+    </tr>`;
+  }).join("");
 
-  zaznamy.forEach((row, idx) => {
-    if (y > 270) {
-      doc.addPage();
-      y = 20;
+  container.innerHTML = `
+    <div style="background:#4CAF82;color:#fff;padding:12px 16px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center;margin-bottom:0">
+      <span style="font-size:13px;font-weight:700;letter-spacing:.05em">INVENTURA</span>
+      <span style="font-size:11px;opacity:.85">Spižírna — Provoz</span>
+    </div>
+    <div style="border:1px solid #e0e0e0;border-top:none;border-radius:0 0 10px 10px;padding:20px 20px 16px;margin-bottom:20px">
+      <h1 style="margin:0 0 4px;font-size:22px;color:#1a1a1a">${inv.nazev}</h1>
+      <p style="margin:0;font-size:12px;color:#888">Datum: ${inv.datum} &nbsp;·&nbsp; Počet položek: ${inv.zaznamy.length} &nbsp;·&nbsp; Vygenerováno: ${new Date().toLocaleDateString("cs-CZ")}</p>
+      ${celkovaHodnota > 0 ? `<div style="margin-top:12px;background:#F1FAF5;border:1px solid #4CAF82;border-radius:8px;padding:10px 14px;display:inline-block"><span style="font-size:13px;font-weight:700;color:#2E7D32">Celková hodnota skladu: ${celkovaHodnota.toLocaleString("cs-CZ")} Kč</span></div>` : ""}
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="background:#2d2d2d;color:#fff">
+          <th style="padding:8px;text-align:left;border-radius:6px 0 0 0">Název</th>
+          <th style="padding:8px;text-align:left">Kategorie</th>
+          <th style="padding:8px;text-align:right">Skutečný stav</th>
+          <th style="padding:8px;text-align:right">Min. zásoba</th>
+          <th style="padding:8px;text-align:right">Hodnota</th>
+          <th style="padding:8px;text-align:center;border-radius:0 6px 0 0">OK?</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="margin-top:16px;font-size:10px;color:#bbb;text-align:right">Spižírna &mdash; Provoz &amp; Inventura</p>
+  `;
+
+  document.body.appendChild(container);
+
+  try {
+    const canvas = await html2canvas(container, { scale: 2, useCORS: true, backgroundColor: "#fff" });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const pageW = 210;
+    const pageH = 297;
+    const imgW = pageW;
+    const imgH = (canvas.height * imgW) / canvas.width;
+
+    // Rozděl na stránky pokud je tabulka delší
+    let posY = 0;
+    while (posY < imgH) {
+      if (posY > 0) pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, -posY, imgW, imgH);
+      posY += pageH;
     }
-    const bg = row.podMin ? [255, 243, 224] : idx % 2 === 0 ? [252, 252, 252] : [255, 255, 255];
-    doc.setFillColor(bg[0], bg[1], bg[2]);
-    doc.rect(margin, y, pageW - margin * 2, 6.5, "F");
 
-    doc.setTextColor(30, 30, 30);
-    doc.setFontSize(7.5);
-    doc.setFont("helvetica", row.podMin ? "bold" : "normal");
-
-    x = margin;
-    const nazev = row.p?.nazev ?? row.z.polozkaId;
-    doc.text(nazev.length > 28 ? nazev.slice(0, 27) + "…" : nazev, x + 2, y + 4.3); x += colW[0];
-    doc.text(row.kat?.label ?? "", x + 2, y + 4.3); x += colW[1];
-    doc.text(String(row.z.skutecnyStav), x + 2, y + 4.3); x += colW[2];
-    doc.text(row.p?.jednotka ?? "", x + 2, y + 4.3); x += colW[3];
-    doc.text(row.p ? String(row.p.minZasoba) : "", x + 2, y + 4.3); x += colW[4];
-    doc.text(row.hodnota, x + 2, y + 4.3); x += colW[5];
-
-    if (row.podMin) {
-      doc.setTextColor(230, 81, 0);
-      doc.text("!", x + 2, y + 4.3);
-    } else {
-      doc.setTextColor(76, 175, 130);
-      doc.text("OK", x + 2, y + 4.3);
-    }
-    doc.setTextColor(30, 30, 30);
-    y += 6.5;
-  });
-
-  // Footer
-  doc.setFontSize(7);
-  doc.setTextColor(160, 160, 160);
-  doc.text("Spizirna — Provoz & Inventura", margin, 292);
-  doc.text(`Strana 1`, pageW - margin, 292, { align: "right" });
-
-  doc.save(`inventura-${inv.nazev.replace(/\s+/g, "-")}-${inv.datum}.pdf`);
+    pdf.save(`inventura-${inv.nazev.replace(/[\s/\\]/g, "-")}-${inv.datum}.pdf`);
+  } finally {
+    document.body.removeChild(container);
+  }
 }
 
 // ── Formulář nové položky skladu ──────────────────────────────────────────────
