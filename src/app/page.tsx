@@ -13,7 +13,6 @@ import { ShoppingView } from "@/components/ShoppingView";
 import { RecurringView } from "@/components/RecurringView";
 import { ProvozView } from "@/components/ProvozView";
 import { ProductSheet } from "@/components/ProductSheet";
-import { Onboarding } from "@/components/Onboarding";
 import { ModeSelect } from "@/components/ModeSelect";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
@@ -43,32 +42,15 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
 export default function Home() {
   const { activeTab, activeSheet, scannedProduct, closeSheet } = useUIStore();
   const { mode } = useModeStore();
-  const [showOnboarding, setShowOnboarding] = useState(false);
-  const [modeSelected, setModeSelected] = useState(true); // true = zkontrolováno
 
-  useEffect(() => {
-    // Zkontroluj localStorage synchronně aby nevznikl flash
+  // Zobraz ModeSelect (onboarding + výběr plánu) jen pokud plán ještě nebyl vybrán
+  const [modeSelected, setModeSelected] = useState(() => {
+    if (typeof window === "undefined") return true;
     const savedMode = localStorage.getItem("app-mode");
-    if (!savedMode || JSON.parse(savedMode)?.state?.mode === null) {
-      setModeSelected(false);
-    }
-  }, []);
+    return !!(savedMode && JSON.parse(savedMode)?.state?.mode !== null);
+  });
 
-  useEffect(() => {
-    if (mode !== null) {
-      setModeSelected(true);
-      if (!localStorage.getItem("onboarding-done")) {
-        setShowOnboarding(true);
-      }
-    }
-  }, [mode]);
-
-  const finishOnboarding = () => {
-    localStorage.setItem("onboarding-done", "1");
-    setShowOnboarding(false);
-  };
-
-  // Výběr režimu — první spuštění
+  // Výběr režimu — první spuštění (jen jednou)
   if (!modeSelected || mode === null) {
     return (
       <ErrorBoundary>
@@ -98,7 +80,6 @@ export default function Home() {
         <ProductSheet product={scannedProduct} onClose={() => closeSheet()} fromScanner={activeTab === "skenovat"} />
       )}
 
-      {showOnboarding && <Onboarding onDone={finishOnboarding} />}
     </div>
     </ErrorBoundary>
   );
