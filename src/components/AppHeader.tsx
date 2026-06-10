@@ -78,7 +78,7 @@ export function AppHeader() {
                 <UtensilsCrossed size={18} style={{ color: "var(--text-tertiary)" }} />
               </button>
 
-              {mode !== "provoz" && (
+              {mode === "provoz" && (
                 <button
                   onClick={() => setTab("provoz")}
                   className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
