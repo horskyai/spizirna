@@ -116,13 +116,13 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
         brand: "",
         category: item.category,
         subcategory: "",
-        image_url: "",
+        image_url: item.photoUrl ?? "",
         unit: (["g", "ml", "ks"].includes(item.unit) ? item.unit : "ks") as "g" | "ml" | "ks",
         allergens: [],
         source: "user_added",
         verified: false,
       };
-      addItem(product, item.quantity, location);
+      addItem(product, item.quantity, location, undefined, undefined, undefined, item.photoUrl ?? undefined);
     });
     setVoiceReviewItems(null);
     setAdded(true);
