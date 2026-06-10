@@ -98,12 +98,15 @@ export function TabBar() {
                 {badge && (
                   <span
                     style={{
-                      position: "absolute", top: 1, right: 1,
-                      width: 16, height: 16, borderRadius: "50%",
+                      position: "absolute", top: -2, right: -2,
+                      minWidth: 20, height: 20, borderRadius: 10,
+                      padding: "0 4px",
                       background: "var(--red)", color: "white",
-                      fontSize: 9, fontWeight: 700,
+                      fontSize: 11, fontWeight: 800,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      border: "2px solid var(--bg-primary)",
+                      border: "2.5px solid var(--bg-primary)",
+                      boxShadow: "0 2px 6px rgba(217,87,87,0.5)",
+                      lineHeight: 1,
                     }}
                   >
                     {badge > 9 ? "9+" : badge}
