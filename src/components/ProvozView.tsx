@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import {
   ClipboardList, Plus, X, ChevronRight,
   AlertTriangle, Check, Truck, Package, BarChart3, Trash2, ScanLine, Keyboard,
-  FileText, Download, FileSpreadsheet
+  FileText, Download, FileSpreadsheet, Pencil, Share2
 } from "lucide-react";
 import {
   useProvozStore,
@@ -509,6 +509,15 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
                       value={vstupy[polozka.id] ?? (zaznam !== undefined ? String(zaznam) : "")}
                       onChange={e => setVstupy(prev => ({ ...prev, [polozka.id]: e.target.value }))}
                       placeholder="0"
+                      onKeyDown={e => {
+                        if (e.key === "Enter") {
+                          handleUlozit(polozka);
+                          const inputs = document.querySelectorAll<HTMLInputElement>('input[type="number"][placeholder="0"]');
+                          const arr = Array.from(inputs);
+                          const idx = arr.indexOf(e.target as HTMLInputElement);
+                          if (idx >= 0 && idx < arr.length - 1) arr[idx + 1].focus();
+                        }
+                      }}
                       style={{ width: 70, textAlign: "center", padding: "8px 6px", borderRadius: 12, fontSize: 15, fontWeight: 700, border: "1.5px solid var(--border)", background: "white", outline: "none", color: "var(--text-primary)" }}
                     />
                     <span style={{ fontSize: 12, color: "var(--text-tertiary)", minWidth: 28 }}>{polozka.jednotka}</span>
@@ -590,6 +599,18 @@ function HistorieInventur() {
                   <FileText size={14} style={{ color: "#C0392B" }} />
                 </button>
                 <button
+                  onClick={e => {
+                    e.stopPropagation();
+                    const text = `📋 Inventura: ${inv.nazev}\n📅 ${inv.datum}\n📦 ${inv.zaznamy.length} položek${hodnota > 0 ? `\n💰 Hodnota: ${hodnota.toLocaleString("cs-CZ")} Kč` : ""}\n${zaznamy.filter(z => z.podMin).length > 0 ? `⚠️ ${zaznamy.filter(z => z.podMin).length} pod minimem` : ""}`;
+                    if (navigator.share) navigator.share({ title: inv.nazev, text });
+                    else window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+                  }}
+                  style={{ width: 30, height: 30, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "#E8F4FD" }}
+                  title="Sdílet"
+                >
+                  <Share2 size={14} style={{ color: "#1565C0" }} />
+                </button>
+                <button
                   onClick={e => { e.stopPropagation(); removeInventura(inv.id); }}
                   style={{ width: 30, height: 30, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--border)" }}
                 >
@@ -648,11 +669,95 @@ function HistorieInventur() {
   );
 }
 
+// ── Editace položky skladu ────────────────────────────────────────────────────
+function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onClose: () => void }) {
+  const { updatePolozka } = useProvozStore();
+  const [nazev, setNazev] = useState(polozka.nazev);
+  const [jednotka, setJednotka] = useState(polozka.jednotka);
+  const [minZasoba, setMinZasoba] = useState(String(polozka.minZasoba));
+  const [cena, setCena] = useState(polozka.cenaJednotka ? String(polozka.cenaJednotka) : "");
+  const [dodavatel, setDodavatel] = useState(polozka.dodavatel ?? "");
+  const JEDNOTKY = ["ks", "l", "dl", "ml", "kg", "g", "lahev", "balení", "porce"];
+
+  const save = () => {
+    updatePolozka(polozka.id, {
+      nazev: nazev.trim(),
+      jednotka,
+      minZasoba: parseFloat(minZasoba) || 1,
+      cenaJednotka: cena ? parseFloat(cena) : undefined,
+      dodavatel: dodavatel.trim() || undefined,
+    });
+    onClose();
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
+      <div className="relative rounded-t-3xl px-5 pt-5 pb-8 space-y-4 animate-slide-up"
+        style={{ background: "var(--bg-primary)", paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))", maxHeight: "90dvh", overflowY: "auto" }}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Upravit položku</h3>
+          <button onClick={onClose}><X size={20} style={{ color: "var(--text-tertiary)" }} /></button>
+        </div>
+        <div>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Název</label>
+          <input value={nazev} onChange={e => setNazev(e.target.value)} autoFocus
+            className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+            style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+        </div>
+        <div className="flex gap-3">
+          <div style={{ flex: 1 }}>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Jednotka</label>
+            <select value={jednotka} onChange={e => setJednotka(e.target.value)}
+              style={{ width: "100%", background: "white", border: "1.5px solid var(--border)", borderRadius: 12, padding: "10px 12px", fontSize: 14, outline: "none", color: "var(--text-primary)" }}>
+              {JEDNOTKY.map(j => <option key={j} value={j}>{j}</option>)}
+            </select>
+          </div>
+          <div style={{ flex: 1 }}>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Min. zásoba</label>
+            <input type="number" value={minZasoba} onChange={e => setMinZasoba(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none text-center"
+              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+          </div>
+        </div>
+        <div className="flex gap-3">
+          <div style={{ flex: 1 }}>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Cena/jedn. (Kč)</label>
+            <input type="number" value={cena} onChange={e => setCena(e.target.value)} placeholder="volitelné"
+              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Dodavatel</label>
+            <input value={dodavatel} onChange={e => setDodavatel(e.target.value)} placeholder="volitelné"
+              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+          </div>
+        </div>
+        <button onClick={save} className="btn-primary" disabled={!nazev.trim()}>
+          <Check size={16} /> Uložit změny
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── Správa skladu (seznam položek) ────────────────────────────────────────────
 function SpravaSkladu() {
-  const { polozky, removePolozka, getPolozkyCritical } = useProvozStore();
+  const { polozky, inventury, removePolozka, getPolozkyCritical } = useProvozStore();
   const [showAdd, setShowAdd] = useState(false);
+  const [editId, setEditId] = useState<string | null>(null);
   const critical = getPolozkyCritical();
+
+  // Vypočítej poslední stav každé položky
+  const posledniStav: Record<string, number> = {};
+  [...inventury].sort((a, b) => b.datum.localeCompare(a.datum)).forEach(inv => {
+    inv.zaznamy.forEach(z => {
+      if (posledniStav[z.polozkaId] === undefined) {
+        posledniStav[z.polozkaId] = z.skutecnyStav;
+      }
+    });
+  });
 
   const byKategorie = INVENTURA_KATEGORIE.map(k => ({
     ...k,
@@ -714,6 +819,14 @@ function SpravaSkladu() {
                           {p.cenaJednotka} Kč/{p.jednotka}
                         </span>
                       )}
+                      {posledniStav[p.id] !== undefined && (
+                        <span className="text-xs font-bold" style={{ color: posledniStav[p.id] <= p.minZasoba ? "#E65100" : "var(--green-primary)" }}>
+                          {posledniStav[p.id]} {p.jednotka}
+                        </span>
+                      )}
+                      <button onClick={() => setEditId(p.id)} style={{ marginRight: 4 }}>
+                        <Pencil size={14} style={{ color: "var(--text-tertiary)" }} />
+                      </button>
                       <button onClick={() => removePolozka(p.id)}>
                         <X size={15} style={{ color: "var(--text-tertiary)" }} />
                       </button>
@@ -734,6 +847,7 @@ function SpravaSkladu() {
       )}
 
       {showAdd && <AddPolozkaModal onClose={() => setShowAdd(false)} />}
+      {editId && <EditPolozkaModal polozka={polozky.find(p => p.id === editId)!} onClose={() => setEditId(null)} />}
     </div>
   );
 }
@@ -788,6 +902,13 @@ function DodavateleView() {
                       <span style={{ fontSize: 14 }}>📞</span>
                     </a>
                   )}
+                  {d.email && (
+                    <a href={`mailto:${d.email}`}
+                      className="w-8 h-8 rounded-full flex items-center justify-center"
+                      style={{ background: "#EEF4FF" }}>
+                      <span style={{ fontSize: 14 }}>✉️</span>
+                    </a>
+                  )}
                   <button onClick={() => removeDodavatel(d.id)}
                     className="w-8 h-8 rounded-full flex items-center justify-center"
                     style={{ background: "#FDE8E8" }}>
@@ -832,6 +953,31 @@ function DodavateleView() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Co dokoupit (kritické zásoby) ─────────────────────────────────────────────
+function CoDokoupit() {
+  const { polozky, getPolozkyCritical } = useProvozStore();
+  const critical = getPolozkyCritical();
+  if (critical.length === 0) return null;
+  return (
+    <div style={{ marginBottom: 16 }}>
+      <p style={{ fontSize: 11, fontWeight: 700, color: "#E65100", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
+        🛒 Co dokoupit ({critical.length})
+      </p>
+      <div style={{ background: "#FFF3E0", border: "1px solid #FFE0B2", borderRadius: 16, overflow: "hidden" }}>
+        {critical.map((p, idx) => (
+          <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", borderBottom: idx < critical.length - 1 ? "1px solid #FFE0B2" : "none" }}>
+            <div>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#BF360C", margin: 0 }}>{p.nazev}</p>
+              <p style={{ fontSize: 11, color: "#E65100", margin: 0 }}>Min. zásoba: {p.minZasoba} {p.jednotka}</p>
+            </div>
+            <AlertTriangle size={16} style={{ color: "#F57C00" }} />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
@@ -887,6 +1033,7 @@ export function ProvozView() {
         {/* INVENTURA TAB */}
         {tab === "inventura" && (
           <div>
+            <CoDokoupit />
             {aktivniInventura ? (
               <AktivniInventura inventura={aktivniInventura} />
             ) : (
