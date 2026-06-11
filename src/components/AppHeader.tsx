@@ -21,7 +21,7 @@ const TITLES: Record<string, string> = {
 
 export function AppHeader() {
   const { activeTab, setTab } = useUIStore();
-  const { mode, setMode } = useModeStore();
+  const { mode } = useModeStore();
   const pantryItems = usePantryStore((s) => s.items);
   const expiringItems = useMemo(() => {
     const cutoff = new Date();
@@ -53,8 +53,7 @@ export function AppHeader() {
               <p className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>Dobrý den 👋</p>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)", lineHeight: 1.2 }}>Moje spižírna</h1>
-                <button
-                  onClick={() => setMode(mode === "domacnost" ? "provoz" : "domacnost")}
+                <span
                   style={{
                     display: "flex", alignItems: "center", gap: 4,
                     padding: "3px 9px", borderRadius: 99, fontSize: 11, fontWeight: 700,
@@ -62,11 +61,10 @@ export function AppHeader() {
                     color: mode === "provoz" ? "#B85C00" : "var(--green-dark)",
                     border: `1px solid ${mode === "provoz" ? "#F59E42" : "var(--green-primary)"}`,
                   }}
-                  title="Přepnout plán"
                 >
                   {mode === "provoz" ? <Briefcase size={11} /> : <Home size={11} />}
-                  {mode === "provoz" ? "Provoz" : "Domácnost"}
-                </button>
+                  {mode === "provoz" ? "Provozovna" : "Domácnost"}
+                </span>
               </div>
             </div>
             <div className="flex items-center gap-2">
