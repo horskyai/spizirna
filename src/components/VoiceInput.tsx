@@ -36,7 +36,7 @@ const UNIT_ALIASES: Record<string, string> = {
   lístky: "listů", lístek: "listů",
 };
 
-function parseSpokenText(text: string): ParsedItem[] {
+export function parseSpokenText(text: string): ParsedItem[] {
   const results: ParsedItem[] = [];
 
   // Rozdělíme na položky podle: čárka, "a", "pak", "dále", "taky", "také"

@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Plus, Check, ShoppingCart, X, Share2, Lightbulb, ChevronDown, ChevronUp, Mic } from "lucide-react";
+import { useState, useMemo, useRef } from "react";
+import { Plus, Check, ShoppingCart, X, Share2, Lightbulb, ChevronDown, ChevronUp, Mic, MicOff, Loader } from "lucide-react";
 import { useShoppingStore, ShoppingMode } from "@/store/shoppingStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useRecurringStore } from "@/store/recurringStore";
@@ -9,7 +9,7 @@ import { useRecipeStore } from "@/store/recipeStore";
 import { useModeStore } from "@/store/modeStore";
 import { ShoppingItem } from "@/store/shoppingStore";
 import { ProductInfo } from "@/types";
-import { VoiceInput } from "@/components/VoiceInput";
+import { VoiceInput, parseSpokenText, ParsedItem } from "@/components/VoiceInput";
 
 const CATEGORIES = [
   { id: "ovoce-zelenina", label: "Ovoce a zelenina", emoji: "🥦" },
@@ -121,6 +121,116 @@ function AddItemModal({ onClose, mode }: { onClose: () => void; mode: ShoppingMo
         </div>
       </div>
     </div>
+  );
+}
+
+function VoiceFab({ onItems }: { onItems: (items: ParsedItem[]) => void }) {
+  const [state, setState] = useState<"idle" | "listening" | "processing">("idle");
+  const [transcript, setTranscript] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const start = () => {
+    setError(null);
+    setTranscript("");
+    const SpeechRecognition =
+      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setError("Prohlížeč nepodporuje hlasové zadávání. Zkuste Chrome nebo Safari.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "cs-CZ";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognitionRef.current = recognition;
+
+    recognition.onstart = () => setState("listening");
+    recognition.onresult = (event: any) => {
+      const result = event.results[event.results.length - 1];
+      const text = result[0].transcript;
+      setTranscript(text);
+      if (result.isFinal) {
+        setState("processing");
+        const items = parseSpokenText(text);
+        setTimeout(() => {
+          if (items.length > 0) {
+            onItems(items);
+          } else {
+            setError("Nerozuměl jsem. Zkuste to znovu.");
+          }
+          setState("idle");
+          setTranscript("");
+        }, 300);
+      }
+    };
+    recognition.onerror = (event: any) => {
+      setError(
+        event.error === "not-allowed"
+          ? "Přístup k mikrofonu byl odmítnut."
+          : "Nic jsem neslyšel. Zkuste znovu."
+      );
+      setState("idle");
+    };
+    recognition.onend = () => setState((s) => (s === "listening" ? "idle" : s));
+    recognition.start();
+  };
+
+  const stop = () => {
+    recognitionRef.current?.stop();
+    setState("idle");
+  };
+
+  const listening = state === "listening";
+
+  return (
+    <>
+      {(listening || error) && (
+        <div
+          onClick={() => setError(null)}
+          style={{
+            position: "fixed", right: 20,
+            bottom: "calc(158px + env(safe-area-inset-bottom, 0px))",
+            maxWidth: 280,
+            background: "rgba(0,0,0,0.78)", color: "white",
+            borderRadius: 14, padding: "10px 14px",
+            fontSize: 13, lineHeight: 1.45, zIndex: 60,
+          }}
+        >
+          {error
+            ? error
+            : transcript
+            ? `„${transcript}"`
+            : "Poslouchám… řekněte např. „2 kila brambor a mléko\""}
+        </div>
+      )}
+      <button
+        onClick={listening ? stop : start}
+        aria-label="Přidat hlasem"
+        style={{
+          position: "fixed",
+          right: 20,
+          bottom: "calc(92px + env(safe-area-inset-bottom, 0px))",
+          width: 56, height: 56, borderRadius: "50%",
+          background: listening
+            ? "linear-gradient(135deg, #F08A8A 0%, #D95757 100%)"
+            : "linear-gradient(135deg, #F7B267 0%, #E8862E 100%)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: listening
+            ? "0 8px 20px rgba(217,87,87,0.5)"
+            : "0 8px 20px rgba(232,134,46,0.45)",
+          zIndex: 50,
+          transition: "background 0.2s ease",
+        }}
+      >
+        {state === "processing"
+          ? <Loader size={22} color="white" className="animate-spin" />
+          : listening
+          ? <MicOff size={24} color="white" />
+          : <Mic size={24} color="white" />}
+      </button>
+    </>
   );
 }
 
@@ -297,6 +407,7 @@ export function ShoppingView() {
   const mode: ShoppingMode = appMode === "provoz" ? "provoz" : "domacnost";
 
   const { toggleItem, removeItem, removeChecked, clearAll, getItems } = useShoppingStore();
+  const addItems = useShoppingStore((s) => s.addItems);
   const items = getItems(mode);
 
   const addToPantry = usePantryStore((s) => s.addItem);
@@ -312,9 +423,15 @@ export function ShoppingView() {
       setJustChecked((prev) => new Set(prev).add(item.id));
       setTimeout(() => setJustChecked((prev) => { const s = new Set(prev); s.delete(item.id); return s; }), 400);
       addToPantry(shoppingItemToProduct(item), item.quantity, "spiz");
-      setToast(item.name);
+      setToast(`${item.name} přidáno do spižírny`);
       setTimeout(() => setToast(null), 3000);
     }
+  };
+
+  const handleVoiceAdd = (voiceItems: ParsedItem[]) => {
+    addItems(voiceItems.map((i) => ({ name: i.name, quantity: i.quantity, unit: i.unit, category: "ostatni" })), mode);
+    setToast(voiceItems.length === 1 ? `${voiceItems[0].name} přidáno na seznam` : `${voiceItems.length} položky přidány na seznam`);
+    setTimeout(() => setToast(null), 3000);
   };
 
   const unchecked = useMemo(() => items.filter((i) => !i.checked), [items]);
@@ -385,23 +502,7 @@ export function ShoppingView() {
           </div>
         </div>
 
-        {/* Hlasový FAB */}
-        <button
-          onClick={() => setShowAdd(true)}
-          aria-label="Přidat hlasem"
-          style={{
-            position: "fixed",
-            right: 20,
-            bottom: "calc(92px + env(safe-area-inset-bottom, 0px))",
-            width: 56, height: 56, borderRadius: "50%",
-            background: "linear-gradient(135deg, #F7B267 0%, #E8862E 100%)",
-            display: "flex", alignItems: "center", justifyContent: "center",
-            boxShadow: "0 8px 20px rgba(232,134,46,0.45)",
-            zIndex: 50,
-          }}
-        >
-          <Mic size={24} color="white" />
-        </button>
+        <VoiceFab onItems={handleVoiceAdd} />
 
         {showAdd && <AddItemModal onClose={() => setShowAdd(false)} mode={mode} />}
       </div>
@@ -550,23 +651,7 @@ export function ShoppingView() {
         )}
       </div>
 
-      {/* Hlasový FAB */}
-      <button
-        onClick={() => setShowAdd(true)}
-        aria-label="Přidat hlasem"
-        style={{
-          position: "fixed",
-          right: 20,
-          bottom: "calc(92px + env(safe-area-inset-bottom, 0px))",
-          width: 56, height: 56, borderRadius: "50%",
-          background: "linear-gradient(135deg, #F7B267 0%, #E8862E 100%)",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          boxShadow: "0 8px 20px rgba(232,134,46,0.45)",
-          zIndex: 50,
-        }}
-      >
-        <Mic size={24} color="white" />
-      </button>
+      <VoiceFab onItems={handleVoiceAdd} />
 
       {showAdd && <AddItemModal onClose={() => setShowAdd(false)} mode={mode} />}
 
@@ -591,7 +676,7 @@ export function ShoppingView() {
             whiteSpace: "nowrap",
           }}
         >
-          <Check size={15} strokeWidth={3} /> {toast} přidáno do spižírny
+          <Check size={15} strokeWidth={3} /> {toast}
         </div>
       )}
     </div>
