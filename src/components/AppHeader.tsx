@@ -58,9 +58,9 @@ export function AppHeader() {
                   style={{
                     display: "flex", alignItems: "center", gap: 4,
                     padding: "3px 9px", borderRadius: 99, fontSize: 11, fontWeight: 700,
-                    background: mode === "provoz" ? "#EEF4FF" : "var(--green-light)",
-                    color: mode === "provoz" ? "#4A6BC4" : "var(--green-dark)",
-                    border: `1px solid ${mode === "provoz" ? "#C5D5F5" : "var(--green-primary)"}`,
+                    background: mode === "provoz" ? "#FDEBD7" : "var(--green-light)",
+                    color: mode === "provoz" ? "#B85C00" : "var(--green-dark)",
+                    border: `1px solid ${mode === "provoz" ? "#F59E42" : "var(--green-primary)"}`,
                   }}
                   title="Přepnout plán"
                 >

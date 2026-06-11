@@ -965,7 +965,7 @@ function DodavateleView() {
                   {d.email && (
                     <a href={`mailto:${d.email}`}
                       className="w-8 h-8 rounded-full flex items-center justify-center"
-                      style={{ background: "#EEF4FF" }}>
+                      style={{ background: "#FDEBD7" }}>
                       <span style={{ fontSize: 14 }}>✉️</span>
                     </a>
                   )}
@@ -1126,7 +1126,7 @@ export function ProvozView() {
                     </div>
                     {[
                       { step: 1, icon: <Package size={20} style={{ color: "var(--green-primary)" }} />, title: "Nastavte sklad", desc: "Přidejte položky, které chcete sledovat — suroviny, nápoje, zásoby.", action: () => setTab("sklad"), btn: "Přejít na Sklad →" },
-                      { step: 2, icon: <ClipboardList size={20} style={{ color: "#4A6BC4" }} />, title: "Spusťte inventuru", desc: "Projděte sklad a zadejte skutečné množství každé položky.", action: null, btn: null },
+                      { step: 2, icon: <ClipboardList size={20} style={{ color: "#E8862E" }} />, title: "Spusťte inventuru", desc: "Projděte sklad a zadejte skutečné množství každé položky.", action: null, btn: null },
                       { step: 3, icon: <FileText size={20} style={{ color: "#E87D35" }} />, title: "Exportujte výsledky", desc: "Stáhněte PDF nebo Excel report pro evidenci nebo účetnictví.", action: null, btn: null },
                     ].map(({ step, icon, title, desc, action, btn }) => (
                       <div key={step} style={{ display: "flex", gap: 14, padding: "14px 16px", background: "white", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1.5px solid var(--border)", opacity: step === 1 ? 1 : 0.55 }}>
