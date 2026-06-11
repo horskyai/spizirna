@@ -7,7 +7,7 @@ import { getCurrentMode } from "@/store/modeStore";
 interface PantryStore {
   items: PantryItem[];
   customCategories: string[];
-  addItem: (product: ProductInfo, quantity: number, location: StorageLocation, price?: number, store?: string, tags?: string[], customImageUrl?: string) => void;
+  addItem: (product: ProductInfo, quantity: number, location: StorageLocation, price?: number, store?: string, tags?: string[], customImageUrl?: string, expiresAt?: string) => void;
   removeItem: (id: string) => void;
   updateItem: (id: string, changes: Partial<PantryItem>) => void;
   consumeItem: (id: string, amount: number) => void;
@@ -23,14 +23,16 @@ export const usePantryStore = create<PantryStore>()(
       items: [],
       customCategories: [],
 
-      addItem: (product, quantity, location, price, store, tags, customImageUrl) => {
+      addItem: (product, quantity, location, price, store, tags, customImageUrl, expiresAt) => {
         const item: PantryItem = {
           id: crypto.randomUUID(),
           product,
           quantity,
           unit: product.unit,
           purchased_at: new Date().toISOString(),
-          expires_at: product.typical_expiry_days
+          expires_at: expiresAt
+            ? new Date(expiresAt).toISOString()
+            : product.typical_expiry_days
             ? addDays(new Date(), product.typical_expiry_days).toISOString()
             : undefined,
           location,

@@ -6,6 +6,7 @@ import { ProductInfo, StorageLocation } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
 import { usePriceStore } from "@/store/priceStore";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG } from "@/components/LocationIcons";
+import { daysUntil } from "@/lib/dateUtils";
 
 interface Props {
   product: ProductInfo;
@@ -41,6 +42,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
   const [location, setLocation] = useState<StorageLocation>(existingItems[0]?.location ?? "lednice");
   const [price, setPrice] = useState("");
   const [store, setStore] = useState("Lidl");
+  const [expires, setExpires] = useState("");
   const [added, setAdded] = useState(false);
   const [addedToExisting, setAddedToExisting] = useState(false);
   const [editingNutrition, setEditingNutrition] = useState(false);
@@ -66,7 +68,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
   };
 
   const handleAdd = () => {
-    addItem(product, qty, location, price ? parseFloat(price) : undefined, store);
+    addItem(product, qty, location, price ? parseFloat(price) : undefined, store, undefined, undefined, expires || undefined);
     if (price) {
       addRecord({
         ean_code: product.ean_code,
@@ -393,6 +395,38 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Spotřebujte do */}
+              <div className="rounded-2xl p-4" style={{ background: "white" }}>
+                <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>SPOTŘEBUJTE DO (volitelné)</p>
+                <input
+                  type="date"
+                  value={expires}
+                  onChange={(e) => setExpires(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-xl text-sm font-medium outline-none"
+                  style={{ background: "var(--bg-primary)", color: expires ? "var(--text-primary)" : "var(--text-tertiary)", border: "1.5px solid var(--border)" }}
+                />
+                {expires && (() => {
+                  const d = daysUntil(expires);
+                  const cls = d < 0 ? "badge-danger" : d <= 1 ? "badge-warn" : "badge-ok";
+                  const txt = d < 0 ? "Toto datum už prošlo" : d === 0 ? "Spotřebujte dnes" : d === 1 ? "Spotřebujte zítra" : `Vydrží ještě ${d} dní`;
+                  return (
+                    <div className="mt-2.5 flex items-center gap-2 flex-wrap">
+                      <span className={`text-xs font-semibold ${cls}`} style={{ padding: "4px 10px", borderRadius: 10 }}>{txt}</span>
+                      {d >= 0 && d <= 3 && (
+                        <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                          Tip: v Receptech najdeš, co z toho uvařit
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
+                {!expires && (
+                  <p className="text-xs mt-2" style={{ color: "var(--text-tertiary)" }}>
+                    Zadejte datum z obalu — připomeneme vám, než potravina projde.
+                  </p>
+                )}
               </div>
 
               {/* Price */}
