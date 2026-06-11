@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
 import { Providers } from "@/components/Providers";
+import { SplashScreen } from "@/components/SplashScreen";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
@@ -37,6 +38,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="cs" className={plusJakarta.variable}>
       <body style={{ fontFamily: "var(--font-jakarta), -apple-system, sans-serif" }}>
+        <SplashScreen />
         <Providers>
           <div style={{ height: "100dvh", display: "flex", flexDirection: "column", overflow: "hidden" }}>
             {children}
