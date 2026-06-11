@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { Plus, Trash2, ChevronRight, Pencil, X, RefrigeratorIcon, ScanLine, Bell, Minus, Flame, Search } from "lucide-react";
+import { useState } from "react";
+import { Plus, Trash2, ChevronRight, Pencil, X, RefrigeratorIcon, ScanLine, Minus, Search } from "lucide-react";
 import { usePantryStore } from "@/store/pantryStore";
 import { useUIStore } from "@/store/uiStore";
 import { useGamificationStore } from "@/store/gamificationStore";
@@ -10,14 +10,6 @@ import { daysUntil, formatDateShort } from "@/lib/dateUtils";
 import { cn } from "@/lib/cn";
 import { AddProductManual } from "@/components/AddProductManual";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG, VseSVG } from "@/components/LocationIcons";
-
-function getSeasonalTip(): { emoji: string; title: string; text: string } {
-  const month = new Date().getMonth(); // 0=leden
-  if (month >= 2 && month <= 4) return { emoji: "🌷", title: "Jaro v kuchyni", text: "Sezóna chřestu, ředkviček a jahod — přidejte je do spižírny!" };
-  if (month >= 5 && month <= 7) return { emoji: "☀️", title: "Léto plné chutí", text: "Rajčata, okurky a paprika jsou teď nejlepší. Ideální čas na saláty." };
-  if (month >= 8 && month <= 10) return { emoji: "🍂", title: "Podzimní hojnost", text: "Dýně, jablka a houby patří do vaší spižírny. Čas na dušení." };
-  return { emoji: "❄️", title: "Zimní pohoda", text: "Zásobte se luštěninami a kořenovou zeleninou na teplé polévky." };
-}
 
 const LOCATION_LABELS: Record<StorageLocation, { label: string; Icon: React.FC<{ size?: number }> }> = {
   lednice: { label: "Lednice", Icon: LedniceSVG },
@@ -252,20 +244,10 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
 export function PantryView() {
   const { items, removeItem } = usePantryStore();
   const { setTab } = useUIStore();
-  const { streak, getScore, getLevel } = useGamificationStore();
   const [filter, setFilter] = useState<StorageLocation | "vse">("vse");
   const [search, setSearch] = useState("");
   const [showManual, setShowManual] = useState(false);
-  const [showStreakDetail, setShowStreakDetail] = useState(false);
-  const seasonalTip = getSeasonalTip();
-  const score = getScore();
-  const level = getLevel();
 
-  const expiring = useMemo(() => {
-    const cutoff = new Date();
-    cutoff.setDate(cutoff.getDate() + 3);
-    return items.filter((i) => i.expires_at && new Date(i.expires_at) <= cutoff);
-  }, [items]);
   const byLocation = filter === "vse" ? items : items.filter(i => i.location === filter);
   const filtered = search.trim()
     ? byLocation.filter(i => i.product.product_name.toLowerCase().includes(search.trim().toLowerCase()))
@@ -331,123 +313,6 @@ export function PantryView() {
               <X size={15} style={{ color: "var(--text-tertiary)" }} />
             </button>
           )}
-        </div>
-
-        {/* Hero card */}
-        <div className="hero-card mb-5" style={{ padding: "20px 16px 16px" }}>
-          {/* Top row: count + streak */}
-          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 12 }}>
-            <div>
-              <p style={{ fontSize: 11, fontWeight: 600, color: "rgba(255,255,255,0.65)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 2 }}>
-                Celkem v spižírně
-              </p>
-              <p style={{ fontSize: 38, fontWeight: 700, lineHeight: 1, color: "white", letterSpacing: "-1px" }}>
-                {items.length}
-              </p>
-              <p style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 2 }}>
-                {expiring.length > 0 ? `${expiring.length} brzy vyprší` : "Vše v pořádku ✓"}
-              </p>
-            </div>
-            {/* Streak + level badge */}
-            <button
-              onClick={() => setShowStreakDetail(s => !s)}
-              style={{ background: "rgba(255,255,255,0.15)", borderRadius: 16, padding: "10px 14px", border: "1px solid rgba(255,255,255,0.2)", textAlign: "center", minWidth: 80 }}
-            >
-              <div style={{ fontSize: 20, lineHeight: 1 }}>{streak > 0 ? "🔥" : "💤"}</div>
-              <div style={{ fontSize: 16, fontWeight: 800, color: "white", lineHeight: 1.2 }}>{streak}</div>
-              <div style={{ fontSize: 10, color: "rgba(255,255,255,0.65)", fontWeight: 600 }}>dní v řadě</div>
-            </button>
-          </div>
-
-          {/* Score bar */}
-          <div style={{ marginBottom: 14 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", fontWeight: 600 }}>
-                {level.emoji} {level.label}
-              </span>
-              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>
-                {score} bodů
-                {level.next !== Infinity && ` / ${level.next}`}
-              </span>
-            </div>
-            <div style={{ height: 4, borderRadius: 4, background: "rgba(255,255,255,0.2)", overflow: "hidden" }}>
-              <div style={{
-                height: "100%",
-                borderRadius: 4,
-                background: "rgba(255,255,255,0.85)",
-                width: level.next === Infinity ? "100%" : `${Math.min(100, (score / level.next) * 100)}%`,
-                transition: "width 0.6s ease",
-              }} />
-            </div>
-          </div>
-
-          {/* Quick actions row */}
-          <div style={{ display: "flex", gap: 10 }}>
-            <button
-              onClick={() => setTab("skenovat")}
-              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 14, fontSize: 13, fontWeight: 600, color: "white", background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.25)" }}
-            >
-              <ScanLine size={14} /> Skenovat
-            </button>
-            <button
-              onClick={() => setShowManual(true)}
-              style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 14, fontSize: 13, fontWeight: 600, color: "white", background: "rgba(255,255,255,0.18)", border: "1px solid rgba(255,255,255,0.25)" }}
-            >
-              <Plus size={14} /> Přidat ručně
-            </button>
-          </div>
-        </div>
-
-        {/* Streak detail panel */}
-        {showStreakDetail && (
-          <div className="rounded-2xl p-4 mb-4 animate-fade-in" style={{ background: "white", border: "1.5px solid var(--border)" }}>
-            <div className="flex items-center gap-2 mb-3">
-              <Flame size={16} style={{ color: "#F57C00" }} />
-              <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>Vaše statistiky</p>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              {[
-                { label: "Dní v řadě", value: streak, emoji: "🔥" },
-                { label: "Score", value: score, emoji: "⭐" },
-                { label: "Level", value: level.label, emoji: level.emoji },
-                { label: "Další level za", value: level.next === Infinity ? "Max!" : `${Math.max(0, level.next - score)} b.`, emoji: "🎯" },
-              ].map((stat) => (
-                <div key={stat.label} className="rounded-xl p-3 text-center" style={{ background: "var(--bg-primary)" }}>
-                  <div style={{ fontSize: 20 }}>{stat.emoji}</div>
-                  <div className="font-bold text-sm mt-0.5" style={{ color: "var(--text-primary)" }}>{stat.value}</div>
-                  <div style={{ fontSize: 10, color: "var(--text-tertiary)", fontWeight: 600 }}>{stat.label}</div>
-                </div>
-              ))}
-            </div>
-            <p style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 10, textAlign: "center" }}>
-              Skenujte, vařte a zachraňte potraviny před expirací pro body 💚
-            </p>
-          </div>
-        )}
-
-        {/* Expiry alerts */}
-        {expiring.length > 0 && (
-          <div className="rounded-2xl p-3.5 mb-4 flex items-start gap-3" style={{ background: "#FFF8EC", border: "1px solid #FFE0B2" }}>
-            <Bell size={16} style={{ color: "#F57C00", flexShrink: 0, marginTop: 1 }} />
-            <div>
-              <p className="text-sm font-semibold" style={{ color: "#E65100" }}>
-                {expiring.length} {expiring.length === 1 ? "produkt vyprší" : "produkty vyprší"} brzy!
-              </p>
-              <p className="text-xs mt-0.5" style={{ color: "#BF360C" }}>
-                {expiring.map(i => i.product.product_name).slice(0, 2).join(", ")}
-                {expiring.length > 2 ? ` a ${expiring.length - 2} další` : ""}
-              </p>
-            </div>
-          </div>
-        )}
-
-        {/* Sezónní tip */}
-        <div className="rounded-2xl p-3.5 mb-4 flex items-start gap-3" style={{ background: "var(--green-light)", border: "1px solid var(--green-primary)" }}>
-          <span style={{ fontSize: 20, flexShrink: 0 }}>{seasonalTip.emoji}</span>
-          <div>
-            <p className="text-sm font-bold" style={{ color: "var(--green-dark)" }}>{seasonalTip.title}</p>
-            <p className="text-xs mt-0.5" style={{ color: "var(--green-dark)", opacity: 0.8 }}>{seasonalTip.text}</p>
-          </div>
         </div>
 
         {/* Filter pills */}

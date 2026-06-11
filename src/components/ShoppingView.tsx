@@ -384,6 +384,25 @@ export function ShoppingView() {
             </p>
           </div>
         </div>
+
+        {/* Hlasový FAB */}
+        <button
+          onClick={() => setShowAdd(true)}
+          aria-label="Přidat hlasem"
+          style={{
+            position: "fixed",
+            right: 20,
+            bottom: "calc(92px + env(safe-area-inset-bottom, 0px))",
+            width: 56, height: 56, borderRadius: "50%",
+            background: "linear-gradient(135deg, #F7B267 0%, #E8862E 100%)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 8px 20px rgba(232,134,46,0.45)",
+            zIndex: 50,
+          }}
+        >
+          <Mic size={24} color="white" />
+        </button>
+
         {showAdd && <AddItemModal onClose={() => setShowAdd(false)} mode={mode} />}
       </div>
     );
