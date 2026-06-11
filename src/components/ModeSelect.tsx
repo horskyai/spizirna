@@ -3,40 +3,62 @@
 import { useState } from "react";
 import { useModeStore, AppMode } from "@/store/modeStore";
 import {
-  ChefHat, Home, ClipboardList, Check,
+  Home, ClipboardList, Check,
   ScanLine, BookOpen, ShoppingCart, RefreshCw,
-  Package, Truck, Sparkles, ChevronRight
+  Package, Truck, Sparkles, FileText
 } from "lucide-react";
 
+// ── Štítky plánů ──────────────────────────────────────────────────────────────
+type Plan = "domacnost" | "provoz";
+
+const PLAN_CHIP: Record<Plan, { label: string; bg: string; color: string }> = {
+  domacnost: { label: "Domácnost", bg: "var(--green-light)", color: "var(--green-dark)" },
+  provoz: { label: "Provozovna", bg: "#FDEBD7", color: "#B85C00" },
+};
+
 // ── Slides onboardingu ────────────────────────────────────────────────────────
-const SLIDES = [
+const SLIDES: { img: string; title: string; text: string; plans: Plan[] }[] = [
   {
-    emoji: "👋",
+    img: "/icon-192.png",
     title: "Vítej ve Spižírně!",
     text: "Chytrá správa potravin pro domácnost i profesionální provoz. Nikdy víc prošlé jídlo ani chybějící zásoby.",
-    color: "var(--green-light)",
-    accent: "var(--green-primary)",
+    plans: ["domacnost", "provoz"],
   },
   {
-    emoji: "📷",
+    img: "/tabs/spizirna.png",
+    title: "Přehled zásob",
+    text: "Vidíš, co máš v lednici, mrazáku i spíži — včetně množství a data spotřeby. Aplikace tě upozorní, než něco projde.",
+    plans: ["domacnost", "provoz"],
+  },
+  {
+    img: "/tabs/skenovat.png",
     title: "Skenuj EAN kódem",
-    text: "Naskenuj čárový kód z obalu. Aplikace produkt automaticky najde v databázi a doplní vše za tebe.",
-    color: "#FFF8E1",
-    accent: "#F9A825",
+    text: "Naskenuj čárový kód z obalu. Aplikace produkt automaticky najde v databázi a doplní název, nutriční hodnoty i alergeny za tebe.",
+    plans: ["domacnost", "provoz"],
   },
   {
-    emoji: "🍽️",
-    title: "Recepty & nákup",
-    text: "Stovky receptů s postupem. Aplikace zjistí co máš doma a sestaví nákupní seznam za tebe.",
-    color: "#FDE8F0",
-    accent: "#E91E8C",
+    img: "/tabs/recepty.png",
+    title: "Recepty z toho, co máš",
+    text: "Stovky českých receptů s postupem. Aplikace porovná suroviny s tvojí spižírnou a chybějící položky pošle rovnou do nákupního seznamu.",
+    plans: ["domacnost", "provoz"],
   },
   {
-    emoji: "📊",
-    title: "Provoz & inventura",
-    text: "Pro restaurace a jídelny: přesná inventura skladu, správa dodavatelů a export do PDF nebo Excelu.",
-    color: "#EEF4FF",
-    accent: "#4A6BC4",
+    img: "/tabs/nakup.png",
+    title: "Nákupní seznam s hlasem",
+    text: "Nadiktuj nákup hlasem — „dvě kila brambor a mléko“ — a aplikace položky roztřídí podle kategorií. V obchodě jen odškrtáváš.",
+    plans: ["domacnost", "provoz"],
+  },
+  {
+    img: "/tabs/opakovani.png",
+    title: "Opakované nákupy",
+    text: "Granule, káva, prací prášek… Aplikace si pamatuje, jak často je kupuješ, a včas připomene, že docházejí.",
+    plans: ["domacnost"],
+  },
+  {
+    img: "/tabs/provoz.png",
+    title: "Inventura & dodavatelé",
+    text: "Pro restaurace a jídelny: přesná inventura skladu s minimálními zásobami, správa dodavatelů a export do PDF nebo Excelu.",
+    plans: ["provoz"],
   },
 ];
 
@@ -45,7 +67,7 @@ const DOMACNOST_FEATURES = [
   { icon: <ScanLine size={14} />, text: "Spižírna & skenování EAN" },
   { icon: <BookOpen size={14} />, text: "Recepty s postupem vaření" },
   { icon: <ShoppingCart size={14} />, text: "Nákupní seznam s hlasem" },
-  { icon: <RefreshCw size={14} />, text: "Zásoby & připomínky" },
+  { icon: <RefreshCw size={14} />, text: "Opakované nákupy & připomínky" },
   { icon: <Sparkles size={14} />, text: "Gamifikace & streak" },
 ];
 
@@ -54,8 +76,32 @@ const PROVOZ_FEATURES = [
   { icon: <BookOpen size={14} />, text: "Recepty s postupem vaření" },
   { icon: <Package size={14} />, text: "Inventura skladu" },
   { icon: <Truck size={14} />, text: "Správa dodavatelů" },
-  { icon: <ChevronRight size={14} />, text: "Export PDF & Excel" },
+  { icon: <FileText size={14} />, text: "Export PDF & Excel" },
 ];
+
+// ── Pomocné chipy ─────────────────────────────────────────────────────────────
+function PlanChips({ plans }: { plans: Plan[] }) {
+  return (
+    <div style={{ display: "flex", gap: 6, justifyContent: "center", marginTop: 14 }}>
+      {plans.map((p) => {
+        const chip = PLAN_CHIP[p];
+        return (
+          <span
+            key={p}
+            style={{
+              fontSize: 11, fontWeight: 700,
+              background: chip.bg, color: chip.color,
+              padding: "4px 12px", borderRadius: 99,
+              letterSpacing: "0.02em",
+            }}
+          >
+            {chip.label}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
 
 // ── Hlavní komponenta ─────────────────────────────────────────────────────────
 export function ModeSelect({ onDone }: { onDone: () => void }) {
@@ -85,13 +131,14 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
 
       {/* Logo nahoře */}
       <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 10, padding: "12px 20px 0" }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: 10,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)",
-        }}>
-          <ChefHat size={18} color="white" />
-        </div>
+        <img
+          src="/icon-192.png"
+          alt=""
+          width={36}
+          height={36}
+          draggable={false}
+          style={{ borderRadius: 10 }}
+        />
         <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>Spižírna</span>
       </div>
 
@@ -113,17 +160,18 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
 
         {/* ── ONBOARDING SLIDE ── */}
         {!isChoosing && (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0 }}>
-            {/* Emoji box */}
-            <div style={{
-              width: 96, height: 96, borderRadius: 26,
-              background: current.color,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 46, marginBottom: 24,
-              boxShadow: `0 8px 24px ${current.accent}30`,
-            }}>
-              {current.emoji}
-            </div>
+          <div key={slide} className="animate-fade-in" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0 }}>
+            <img
+              src={current.img}
+              alt=""
+              width={104}
+              height={104}
+              draggable={false}
+              style={{
+                borderRadius: 26, marginBottom: 24,
+                boxShadow: "0 8px 24px rgba(0,0,0,0.14)",
+              }}
+            />
 
             <h1 style={{
               fontSize: 24, fontWeight: 800, color: "var(--text-primary)",
@@ -138,6 +186,8 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
             }}>
               {current.text}
             </p>
+
+            <PlanChips plans={current.plans} />
           </div>
         )}
 
@@ -169,10 +219,10 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
               >
                 <div style={{
                   width: 40, height: 40, borderRadius: 12, marginBottom: 8,
-                  background: "var(--green-light)",
+                  background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  <Home size={20} style={{ color: "var(--green-primary)" }} />
+                  <Home size={20} color="white" />
                 </div>
                 <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 2px" }}>Domácnost</p>
                 <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: "0 0 8px" }}>Pro rodiny</p>
@@ -196,14 +246,15 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                 </div>
                 <div style={{
                   marginTop: 10, padding: "8px 0", borderRadius: 12,
-                  background: "var(--green-primary)", textAlign: "center",
+                  background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)",
+                  textAlign: "center",
                   fontSize: 12, fontWeight: 700, color: "white",
                 }}>
                   Vybrat
                 </div>
               </button>
 
-              {/* Provoz */}
+              {/* Provozovna */}
               <button
                 onClick={() => handleSelect("provoz")}
                 onTouchStart={e => { e.currentTarget.style.transform = "scale(0.97)"; }}
@@ -211,9 +262,9 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                 style={{
                   flex: 1, display: "flex", flexDirection: "column",
                   background: "white", borderRadius: 20,
-                  border: "2px solid #4A6BC4",
+                  border: "2px solid #F59E42",
                   padding: "14px 12px", textAlign: "left",
-                  boxShadow: "0 4px 16px rgba(74,107,196,0.15)",
+                  boxShadow: "0 4px 16px rgba(245,158,66,0.18)",
                   cursor: "pointer", transition: "transform 0.15s",
                   overflow: "hidden",
                 }}
@@ -221,18 +272,18 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
                   <div style={{
                     width: 40, height: 40, borderRadius: 12,
-                    background: "#EEF4FF",
+                    background: "linear-gradient(135deg, #F7B267 0%, #E8862E 100%)",
                     display: "flex", alignItems: "center", justifyContent: "center",
                   }}>
-                    <ClipboardList size={20} style={{ color: "#4A6BC4" }} />
+                    <ClipboardList size={20} color="white" />
                   </div>
-                  <span style={{ fontSize: 9, fontWeight: 700, color: "white", background: "#4A6BC4", padding: "2px 7px", borderRadius: 99, letterSpacing: "0.04em" }}>
+                  <span style={{ fontSize: 9, fontWeight: 700, color: "white", background: "#E8862E", padding: "2px 7px", borderRadius: 99, letterSpacing: "0.04em" }}>
                     PRO FIRMY
                   </span>
                 </div>
-                <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 2px" }}>Provoz</p>
+                <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 2px" }}>Provozovna</p>
                 <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: "0 0 8px" }}>Restaurace & bary</p>
-                <p style={{ fontSize: 18, fontWeight: 800, color: "#4A6BC4", margin: "0 0 10px", lineHeight: 1 }}>
+                <p style={{ fontSize: 18, fontWeight: 800, color: "#E8862E", margin: "0 0 10px", lineHeight: 1 }}>
                   199 Kč<span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)" }}>/měs</span>
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
@@ -240,9 +291,9 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                     <div key={f.text} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
                       <div style={{
                         width: 15, height: 15, borderRadius: "50%", flexShrink: 0, marginTop: 1,
-                        background: "#EEF4FF",
+                        background: "#FDEBD7",
                         display: "flex", alignItems: "center", justifyContent: "center",
-                        color: "#4A6BC4",
+                        color: "#E8862E",
                       }}>
                         <Check size={9} strokeWidth={3} />
                       </div>
@@ -252,7 +303,8 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                 </div>
                 <div style={{
                   marginTop: 10, padding: "8px 0", borderRadius: 12,
-                  background: "#4A6BC4", textAlign: "center",
+                  background: "linear-gradient(135deg, #F7B267 0%, #E8862E 100%)",
+                  textAlign: "center",
                   fontSize: 12, fontWeight: 700, color: "white",
                 }}>
                   Vybrat
