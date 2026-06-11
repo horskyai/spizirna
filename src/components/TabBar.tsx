@@ -47,29 +47,7 @@ export function TabBar() {
           const badge = id === "nakup" && shoppingCount > 0 ? shoppingCount
             : id === "opakujici" && dueCount > 0 ? dueCount
             : null;
-
-          if (isCenter) {
-            return (
-              <button
-                key={id}
-                onClick={() => setTab(id)}
-                style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginBottom: 2 }}
-              >
-                <div
-                  style={{
-                    width: 58, height: 58, borderRadius: "50%",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    background: "white",
-                    border: active ? "2.5px solid var(--green-primary)" : "2.5px solid var(--green-light)",
-                    boxShadow: "0 6px 20px rgba(76,175,130,0.45)",
-                  }}
-                >
-                  <img src={icon} alt="" width={48} height={48} draggable={false} />
-                </div>
-                <span style={{ fontSize: 10, fontWeight: 600, color: "var(--green-primary)" }}>{label}</span>
-              </button>
-            );
-          }
+          const size = isCenter ? 58 : 46;
 
           return (
             <button
@@ -77,34 +55,25 @@ export function TabBar() {
               onClick={() => setTab(id)}
               style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginBottom: 2 }}
             >
-              <div
-                style={{
-                  width: 48, height: 48, borderRadius: "50%",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                  background: "white",
-                  border: active ? "2px solid var(--green-primary)" : "2px solid transparent",
-                  boxShadow: active
-                    ? "0 4px 14px rgba(76,175,130,0.4)"
-                    : "0 2px 8px rgba(0,0,0,0.10)",
-                  transition: "all 0.2s ease",
-                  position: "relative",
-                }}
-              >
+              <div style={{ position: "relative" }}>
                 <img
                   src={icon}
                   alt=""
-                  width={40}
-                  height={40}
+                  width={size}
+                  height={size}
                   draggable={false}
                   style={{
-                    filter: active ? "none" : "grayscale(1) opacity(0.55)",
-                    transition: "filter 0.2s ease",
+                    filter: active || isCenter
+                      ? "drop-shadow(0 5px 14px rgba(76,175,130,0.5))"
+                      : "grayscale(1) opacity(0.5)",
+                    transform: active ? "translateY(-3px) scale(1.05)" : "none",
+                    transition: "filter 0.2s ease, transform 0.2s ease",
                   }}
                 />
                 {badge && (
                   <span
                     style={{
-                      position: "absolute", top: -2, right: -2,
+                      position: "absolute", top: -6, right: -6,
                       minWidth: 20, height: 20, borderRadius: 10,
                       padding: "0 4px",
                       background: "var(--red)", color: "white",
