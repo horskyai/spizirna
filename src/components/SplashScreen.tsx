@@ -33,7 +33,7 @@ export function SplashScreen() {
         alignItems: "center",
         justifyContent: "center",
         gap: 22,
-        background: "linear-gradient(170deg, #0C1810 0%, #122319 100%)",
+        background: "linear-gradient(170deg, #1C1207 0%, #2C1B0C 100%)",
         opacity: fading ? 0 : 1,
         transition: `opacity ${FADE_MS}ms ease`,
         pointerEvents: fading ? "none" : "auto",
