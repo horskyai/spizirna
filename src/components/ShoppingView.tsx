@@ -144,7 +144,7 @@ function SmartSuggestionsWidget({ mode }: { mode: ShoppingMode }) {
   const pantryItems = usePantryStore((s) => s.items);
   const { recipes } = useRecipeStore();
   const addItems = useShoppingStore((s) => s.addItems);
-  const [collapsed, setCollapsed] = useState(false);
+  const [collapsed, setCollapsed] = useState(true);
   const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
 
   const suggestions = useMemo(() => {
