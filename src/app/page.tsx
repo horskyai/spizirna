@@ -43,6 +43,15 @@ export default function Home() {
   const { activeTab, activeSheet, scannedProduct, closeSheet } = useUIStore();
   const { mode } = useModeStore();
 
+  // Úplný reset aplikace: otevřením /?reset se smažou všechna lokální data
+  // a appka začne od splash screenu a onboardingu jako při první instalaci
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).has("reset")) {
+      localStorage.clear();
+      window.location.replace("/");
+    }
+  }, []);
+
   // Zobraz ModeSelect (onboarding + výběr plánu) jen pokud plán ještě nebyl vybrán
   const [modeSelected, setModeSelected] = useState(() => {
     if (typeof window === "undefined") return true;
