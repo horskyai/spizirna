@@ -4,22 +4,21 @@ import { useUIStore } from "@/store/uiStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useRecurringStore } from "@/store/recurringStore";
 import { useModeStore } from "@/store/modeStore";
-import { ShoppingBag, ScanLine, BookOpen, ShoppingCart, RefreshCw, ClipboardList } from "lucide-react";
 
 const TABS_DOMACNOST = [
-  { id: "spizirna", label: "Spižírna", Icon: ShoppingBag },
-  { id: "recepty", label: "Recepty", Icon: BookOpen },
-  { id: "skenovat", label: "Skenovat", Icon: ScanLine },
-  { id: "nakup", label: "Nákup", Icon: ShoppingCart },
-  { id: "opakujici", label: "Opakování", Icon: RefreshCw },
+  { id: "spizirna", label: "Spižírna", icon: "/tabs/spizirna.png" },
+  { id: "recepty", label: "Recepty", icon: "/tabs/recepty.png" },
+  { id: "skenovat", label: "Skenovat", icon: "/tabs/skenovat.png" },
+  { id: "nakup", label: "Nákup", icon: "/tabs/nakup.png" },
+  { id: "opakujici", label: "Opakování", icon: "/tabs/opakovani.png" },
 ] as const;
 
 const TABS_PROVOZ = [
-  { id: "spizirna", label: "Spižírna", Icon: ShoppingBag },
-  { id: "recepty", label: "Recepty", Icon: BookOpen },
-  { id: "skenovat", label: "Skenovat", Icon: ScanLine },
-  { id: "nakup", label: "Nákup", Icon: ShoppingCart },
-  { id: "provoz", label: "Provoz", Icon: ClipboardList },
+  { id: "spizirna", label: "Spižírna", icon: "/tabs/spizirna.png" },
+  { id: "recepty", label: "Recepty", icon: "/tabs/recepty.png" },
+  { id: "skenovat", label: "Skenovat", icon: "/tabs/skenovat.png" },
+  { id: "nakup", label: "Nákup", icon: "/tabs/nakup.png" },
+  { id: "provoz", label: "Provoz", icon: "/tabs/provoz.png" },
 ] as const;
 
 export function TabBar() {
@@ -42,7 +41,7 @@ export function TabBar() {
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around" }}>
-        {TABS.map(({ id, label, Icon }) => {
+        {TABS.map(({ id, label, icon }) => {
           const active = activeTab === id;
           const isCenter = id === "skenovat";
           const badge = id === "nakup" && shoppingCount > 0 ? shoppingCount
@@ -60,11 +59,12 @@ export function TabBar() {
                   style={{
                     width: 58, height: 58, borderRadius: "50%",
                     display: "flex", alignItems: "center", justifyContent: "center",
-                    background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)",
+                    background: "white",
+                    border: active ? "2.5px solid var(--green-primary)" : "2.5px solid var(--green-light)",
                     boxShadow: "0 6px 20px rgba(76,175,130,0.45)",
                   }}
                 >
-                  <Icon size={24} color="white" strokeWidth={1.8} />
+                  <img src={icon} alt="" width={40} height={40} draggable={false} />
                 </div>
                 <span style={{ fontSize: 10, fontWeight: 600, color: "var(--green-primary)" }}>{label}</span>
               </button>
@@ -81,9 +81,8 @@ export function TabBar() {
                 style={{
                   width: 48, height: 48, borderRadius: "50%",
                   display: "flex", alignItems: "center", justifyContent: "center",
-                  background: active
-                    ? "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)"
-                    : "white",
+                  background: "white",
+                  border: active ? "2px solid var(--green-primary)" : "2px solid transparent",
                   boxShadow: active
                     ? "0 4px 14px rgba(76,175,130,0.4)"
                     : "0 2px 8px rgba(0,0,0,0.10)",
@@ -91,10 +90,16 @@ export function TabBar() {
                   position: "relative",
                 }}
               >
-                <Icon
-                  size={20}
-                  strokeWidth={active ? 2.2 : 1.6}
-                  style={{ color: active ? "white" : "var(--text-tertiary)" }}
+                <img
+                  src={icon}
+                  alt=""
+                  width={32}
+                  height={32}
+                  draggable={false}
+                  style={{
+                    filter: active ? "none" : "grayscale(1) opacity(0.55)",
+                    transition: "filter 0.2s ease",
+                  }}
                 />
                 {badge && (
                   <span
