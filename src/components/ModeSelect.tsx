@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useModeStore, AppMode } from "@/store/modeStore";
 import {
-  Home, ClipboardList, Check,
+  Check,
   ScanLine, BookOpen, ShoppingCart, RefreshCw,
   Package, Truck, Sparkles, FileText
 } from "lucide-react";
@@ -25,37 +25,37 @@ const SLIDES: { img: string; title: string; text: string; plans: Plan[] }[] = [
     plans: ["domacnost", "provoz"],
   },
   {
-    img: "/tabs/spizirna.png",
+    img: "/onboarding/zasoby.png",
     title: "Přehled zásob",
     text: "Vidíš, co máš v lednici, mrazáku i spíži — včetně množství a data spotřeby. Aplikace tě upozorní, než něco projde.",
     plans: ["domacnost", "provoz"],
   },
   {
-    img: "/tabs/skenovat.png",
+    img: "/onboarding/skener.png",
     title: "Skenuj EAN kódem",
     text: "Naskenuj čárový kód z obalu. Aplikace produkt automaticky najde v databázi a doplní název, nutriční hodnoty i alergeny za tebe.",
     plans: ["domacnost", "provoz"],
   },
   {
-    img: "/tabs/recepty.png",
+    img: "/onboarding/recepty.png",
     title: "Recepty z toho, co máš",
     text: "Stovky českých receptů s postupem. Aplikace porovná suroviny s tvojí spižírnou a chybějící položky pošle rovnou do nákupního seznamu.",
     plans: ["domacnost", "provoz"],
   },
   {
-    img: "/tabs/nakup.png",
+    img: "/onboarding/nakup-hlas.png",
     title: "Nákupní seznam s hlasem",
     text: "Nadiktuj nákup hlasem — „dvě kila brambor a mléko“ — a aplikace položky roztřídí podle kategorií. V obchodě jen odškrtáváš.",
     plans: ["domacnost", "provoz"],
   },
   {
-    img: "/tabs/opakovani.png",
+    img: "/onboarding/opakovani.png",
     title: "Opakované nákupy",
     text: "Granule, káva, prací prášek… Aplikace si pamatuje, jak často je kupuješ, a včas připomene, že docházejí.",
     plans: ["domacnost"],
   },
   {
-    img: "/tabs/provoz.png",
+    img: "/onboarding/inventura.png",
     title: "Inventura & dodavatelé",
     text: "Pro restaurace a jídelny: přesná inventura skladu s minimálními zásobami, správa dodavatelů a export do PDF nebo Excelu.",
     plans: ["provoz"],
@@ -217,13 +217,14 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                   overflow: "hidden",
                 }}
               >
-                <div style={{
-                  width: 40, height: 40, borderRadius: 12, marginBottom: 8,
-                  background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)",
-                  display: "flex", alignItems: "center", justifyContent: "center",
-                }}>
-                  <Home size={20} color="white" />
-                </div>
+                <img
+                  src="/onboarding/domacnost.png"
+                  alt=""
+                  width={44}
+                  height={44}
+                  draggable={false}
+                  style={{ borderRadius: 12, marginBottom: 8 }}
+                />
                 <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 2px" }}>Domácnost</p>
                 <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: "0 0 8px" }}>Pro rodiny</p>
                 <p style={{ fontSize: 18, fontWeight: 800, color: "var(--green-primary)", margin: "0 0 10px", lineHeight: 1 }}>
@@ -270,13 +271,14 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                 }}
               >
                 <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
-                  <div style={{
-                    width: 40, height: 40, borderRadius: 12,
-                    background: "linear-gradient(135deg, #F7B267 0%, #E8862E 100%)",
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                  }}>
-                    <ClipboardList size={20} color="white" />
-                  </div>
+                  <img
+                    src="/onboarding/provozovna.png"
+                    alt=""
+                    width={44}
+                    height={44}
+                    draggable={false}
+                    style={{ borderRadius: 12 }}
+                  />
                   <span style={{ fontSize: 9, fontWeight: 700, color: "white", background: "#E8862E", padding: "2px 7px", borderRadius: 99, letterSpacing: "0.04em" }}>
                     PRO FIRMY
                   </span>
