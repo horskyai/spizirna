@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from "react";
 
-const MIN_DISPLAY_MS = 1100;
-const FADE_MS = 450;
+const MIN_DISPLAY_MS = 2300;
+const FADE_MS = 500;
+const APP_NAME = "Spižírna";
 
 export function SplashScreen() {
   const [fading, setFading] = useState(false);
@@ -31,28 +32,34 @@ export function SplashScreen() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        gap: 20,
-        background: "linear-gradient(160deg, var(--hero-bg) 0%, var(--hero-card) 100%)",
+        gap: 22,
+        background: "linear-gradient(170deg, #0C1810 0%, #122319 100%)",
         opacity: fading ? 0 : 1,
         transition: `opacity ${FADE_MS}ms ease`,
         pointerEvents: fading ? "none" : "auto",
       }}
     >
-      <img
-        src="/icon-192.png"
-        alt=""
-        width={104}
-        height={104}
-        className="splash-icon"
-        style={{ borderRadius: 26, boxShadow: "0 12px 40px rgba(0,0,0,0.3)" }}
-      />
-      <div style={{ color: "white", fontSize: 26, fontWeight: 800, letterSpacing: "-0.02em" }}>
-        Spižírna
+      <div style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div className="splash-glow" />
+        <div
+          className="splash-zoom"
+          style={{
+            position: "relative",
+            borderRadius: 28,
+            overflow: "hidden",
+            boxShadow: "0 16px 50px rgba(0,0,0,0.5)",
+          }}
+        >
+          <img src="/icon-192.png" alt="" width={112} height={112} draggable={false} />
+          <div className="splash-shine" />
+        </div>
       </div>
-      <div className="flex gap-2" style={{ marginTop: 4 }}>
-        <span className="splash-dot" />
-        <span className="splash-dot" style={{ animationDelay: "0.15s" }} />
-        <span className="splash-dot" style={{ animationDelay: "0.3s" }} />
+      <div style={{ color: "white", fontSize: 28, fontWeight: 800, letterSpacing: "0.04em" }}>
+        {APP_NAME.split("").map((ch, i) => (
+          <span key={i} className="splash-letter" style={{ animationDelay: `${1.05 + i * 0.07}s` }}>
+            {ch}
+          </span>
+        ))}
       </div>
     </div>
   );
