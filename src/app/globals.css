@@ -339,7 +339,7 @@ button:disabled {
 }
 
 .btn-primary {
-  background: var(--green-primary);
+  background: linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%);
   color: white;
   border-radius: var(--radius-full);
   font-weight: 600;
@@ -349,13 +349,14 @@ button:disabled {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  box-shadow: 0 6px 18px rgba(76,175,130,0.35);
   transition: all 0.15s ease;
   cursor: pointer;
   border: none;
   outline: none;
   width: 100%;
 }
-.btn-primary:active { transform: scale(0.97); background: var(--green-dark); }
+.btn-primary:active { transform: scale(0.97); filter: brightness(0.92); }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
 .btn-secondary {
