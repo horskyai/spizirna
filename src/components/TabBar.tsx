@@ -63,11 +63,11 @@ export function TabBar() {
                   height={size}
                   draggable={false}
                   style={{
-                    filter: active || isCenter
-                      ? "drop-shadow(0 5px 14px rgba(76,175,130,0.5))"
-                      : "grayscale(1) opacity(0.5)",
+                    borderRadius: "24%",
+                    filter: active || isCenter ? "none" : "grayscale(1) opacity(0.5)",
+                    boxShadow: active || isCenter ? "0 5px 14px rgba(76,175,130,0.45)" : "none",
                     transform: active ? "translateY(-3px) scale(1.05)" : "none",
-                    transition: "filter 0.2s ease, transform 0.2s ease",
+                    transition: "filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease",
                   }}
                 />
                 {badge && (
