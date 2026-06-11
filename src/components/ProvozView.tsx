@@ -20,7 +20,7 @@ import { Scanner } from "@/components/Scanner";
 
 function exportCSV(inv: Inventura, polozky: InventuraPolozka[]) {
   const rows = [
-    ["Název", "Kategorie", "Skutečný stav", "Jednotka", "Min. zásoba", "Cena/jedn.", "Hodnota", "Pod minimem"],
+    ["Název", "Kategorie", "Skutečný stav", "Jednotka", "Min. zásoba", "Cena/jedn.", "Hodnota", "Pod minimem", "Min. trvanlivost do"],
   ];
   inv.zaznamy.forEach(z => {
     const p = polozky.find(p => p.id === z.polozkaId);
@@ -37,6 +37,7 @@ function exportCSV(inv: Inventura, polozky: InventuraPolozka[]) {
       p.cenaJednotka ? String(p.cenaJednotka) : "",
       hodnota,
       podMin,
+      p.minTrvanlivost ?? "",
     ]);
   });
   const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(";")).join("\n");
@@ -71,12 +72,16 @@ async function exportPDF(inv: Inventura, polozky: InventuraPolozka[]) {
     const kat = INVENTURA_KATEGORIE.find(k => k.id === p?.kategorie);
     const podMin = p ? z.skutecnyStav <= p.minZasoba : false;
     const hodnota = p?.cenaJednotka ? (z.skutecnyStav * p.cenaJednotka).toLocaleString("cs-CZ") + " Kč" : "—";
+    const trv = p?.minTrvanlivost ? new Date(p.minTrvanlivost).toLocaleDateString("cs-CZ") : "—";
+    const trvExpired = p?.minTrvanlivost && new Date(p.minTrvanlivost) < new Date();
+    const trvSoon = p?.minTrvanlivost && !trvExpired && (new Date(p.minTrvanlivost).getTime() - Date.now()) < 7 * 86400000;
     return `<tr style="background:${podMin ? "#FFF3E0" : ""}">
       <td style="padding:6px 8px;border-bottom:1px solid #eee;font-weight:${podMin ? "600" : "400"}">${p?.nazev ?? z.polozkaId}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #eee;color:#666">${kat?.label ?? ""}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;font-weight:700;color:${podMin ? "#E65100" : "#1a1a1a"}">${z.skutecnyStav} ${p?.jednotka ?? ""}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;color:#666">${p?.minZasoba ?? ""} ${p?.jednotka ?? ""}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">${hodnota}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:center;color:${trvExpired ? "#C62828" : trvSoon ? "#E65100" : "#666"};font-weight:${trvExpired || trvSoon ? "700" : "400"}">${trv}${trvExpired ? " ⚠️" : ""}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:center;font-weight:700;color:${podMin ? "#E65100" : "#4CAF82"}">${podMin ? "⚠️" : "✓"}</td>
     </tr>`;
   }).join("");
@@ -99,6 +104,7 @@ async function exportPDF(inv: Inventura, polozky: InventuraPolozka[]) {
           <th style="padding:8px;text-align:right">Skutečný stav</th>
           <th style="padding:8px;text-align:right">Min. zásoba</th>
           <th style="padding:8px;text-align:right">Hodnota</th>
+          <th style="padding:8px;text-align:center">Min. trvanlivost</th>
           <th style="padding:8px;text-align:center;border-radius:0 6px 0 0">OK?</th>
         </tr>
       </thead>
@@ -132,6 +138,22 @@ async function exportPDF(inv: Inventura, polozky: InventuraPolozka[]) {
   }
 }
 
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function trvanlivostStatus(datum?: string): { label: string; color: string; bg: string } | null {
+  if (!datum) return null;
+  const dnes = new Date();
+  dnes.setHours(0, 0, 0, 0);
+  const exp = new Date(datum);
+  const diffDni = Math.round((exp.getTime() - dnes.getTime()) / 86400000);
+  if (diffDni < 0) return { label: `Vypršelo před ${Math.abs(diffDni)} dny`, color: "#C62828", bg: "#FFEBEE" };
+  if (diffDni === 0) return { label: "Vyprší dnes!", color: "#E65100", bg: "#FFF3E0" };
+  if (diffDni <= 3) return { label: `Vyprší za ${diffDni} ${diffDni === 1 ? "den" : diffDni <= 4 ? "dny" : "dní"}`, color: "#E65100", bg: "#FFF3E0" };
+  if (diffDni <= 7) return { label: `Vyprší za ${diffDni} dní`, color: "#F9A825", bg: "#FFFDE7" };
+  const d = exp.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
+  return { label: `Min. trvanlivost: ${d}`, color: "var(--text-secondary)", bg: "transparent" };
+}
+
 // ── Formulář nové položky skladu ──────────────────────────────────────────────
 function AddPolozkaModal({ onClose }: { onClose: () => void }) {
   const { addPolozka } = useProvozStore();
@@ -141,6 +163,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
   const [minZasoba, setMinZasoba] = useState("1");
   const [cena, setCena] = useState("");
   const [dodavatel, setDodavatel] = useState("");
+  const [minTrvanlivost, setMinTrvanlivost] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [scanLoading, setScanLoading] = useState(false);
   const [eanInput, setEanInput] = useState("");
@@ -198,6 +221,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
       minZasoba: parseFloat(minZasoba) || 1,
       cenaJednotka: cena ? parseFloat(cena) : undefined,
       dodavatel: dodavatel.trim() || undefined,
+      minTrvanlivost: minTrvanlivost || undefined,
     });
     onClose();
   };
@@ -360,6 +384,13 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
                   style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
               </div>
             </div>
+
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Min. trvanlivost do</label>
+              <input type="date" value={minTrvanlivost} onChange={e => setMinTrvanlivost(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+                style={{ border: "1.5px solid var(--border)", background: "white", color: minTrvanlivost ? "var(--text-primary)" : "var(--text-tertiary)" }} />
+            </div>
           </>
         )}
 
@@ -502,6 +533,13 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
                         {polozka.cenaJednotka ? ` · ${(zaznam * polozka.cenaJednotka).toLocaleString("cs-CZ")} Kč` : ""}
                       </p>
                     )}
+                    {(() => {
+                      const s = trvanlivostStatus(polozka.minTrvanlivost);
+                      if (!s) return null;
+                      return (
+                        <p style={{ fontSize: 11, color: s.color, marginTop: 2 }}>🗓 {s.label}</p>
+                      );
+                    })()}
                   </div>
                   <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                     <input
@@ -646,6 +684,11 @@ function HistorieInventur() {
                             {z.podMin ? " — pod minimem!" : ""}
                           </p>
                         )}
+                        {(() => {
+                          const s = trvanlivostStatus(z.polozka?.minTrvanlivost);
+                          if (!s) return null;
+                          return <p style={{ fontSize: 11, color: s.color, margin: 0 }}>🗓 {s.label}</p>;
+                        })()}
                       </div>
                       <div style={{ textAlign: "right", flexShrink: 0 }}>
                         <p style={{ fontSize: 15, fontWeight: 700, color: z.podMin ? "#E65100" : "var(--text-primary)", margin: 0 }}>
@@ -677,6 +720,7 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
   const [minZasoba, setMinZasoba] = useState(String(polozka.minZasoba));
   const [cena, setCena] = useState(polozka.cenaJednotka ? String(polozka.cenaJednotka) : "");
   const [dodavatel, setDodavatel] = useState(polozka.dodavatel ?? "");
+  const [minTrvanlivost, setMinTrvanlivost] = useState(polozka.minTrvanlivost ?? "");
   const JEDNOTKY = ["ks", "l", "dl", "ml", "kg", "g", "lahev", "balení", "porce"];
 
   const save = () => {
@@ -686,6 +730,7 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
       minZasoba: parseFloat(minZasoba) || 1,
       cenaJednotka: cena ? parseFloat(cena) : undefined,
       dodavatel: dodavatel.trim() || undefined,
+      minTrvanlivost: minTrvanlivost || undefined,
     });
     onClose();
   };
@@ -733,6 +778,12 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
               className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
               style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
           </div>
+        </div>
+        <div>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Min. trvanlivost do</label>
+          <input type="date" value={minTrvanlivost} onChange={e => setMinTrvanlivost(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+            style={{ border: "1.5px solid var(--border)", background: "white", color: minTrvanlivost ? "var(--text-primary)" : "var(--text-tertiary)" }} />
         </div>
         <button onClick={save} className="btn-primary" disabled={!nazev.trim()}>
           <Check size={16} /> Uložit změny
@@ -813,6 +864,15 @@ function SpravaSkladu() {
                           {p.dodavatel ? ` · ${p.dodavatel}` : ""}
                           {isCritical ? " ⚠️" : ""}
                         </p>
+                        {(() => {
+                          const s = trvanlivostStatus(p.minTrvanlivost);
+                          if (!s) return null;
+                          return (
+                            <p className="text-xs font-semibold mt-0.5" style={{ color: s.color }}>
+                              🗓 {s.label}
+                            </p>
+                          );
+                        })()}
                       </div>
                       {p.cenaJednotka && (
                         <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>

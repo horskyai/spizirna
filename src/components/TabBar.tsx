@@ -25,7 +25,8 @@ const TABS_PROVOZ = [
 export function TabBar() {
   const { activeTab, setTab } = useUIStore();
   const { mode } = useModeStore();
-  const shoppingCount = useShoppingStore((s) => s.items.filter((i) => !i.checked).length);
+  const shoppingMode = mode === "provoz" ? "provoz" : "domacnost";
+  const shoppingCount = useShoppingStore((s) => s.getItems(shoppingMode).filter((i) => !i.checked).length);
   const dueCount = useRecurringStore((s) => s.getDueItems().length);
 
   const TABS = mode === "provoz" ? TABS_PROVOZ : TABS_DOMACNOST;

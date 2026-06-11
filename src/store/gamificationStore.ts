@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { getCurrentMode } from "@/store/modeStore";
 
 export interface GamificationStore {
   streak: number;
@@ -118,6 +119,6 @@ export const useGamificationStore = create<GamificationStore>()(
         return { label: "Legendární hospodář", emoji: "⭐", next: Infinity };
       },
     }),
-    { name: "gamification-store" }
+    { name: `gamification-store-${getCurrentMode()}` }
   )
 );

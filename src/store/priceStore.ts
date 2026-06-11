@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { PriceRecord } from "@/types";
+import { getCurrentMode } from "@/store/modeStore";
 
 interface PriceStore {
   records: PriceRecord[];
@@ -26,6 +27,6 @@ export const usePriceStore = create<PriceStore>()(
         return history.reduce((best, r) => (!best || r.price < best.price ? r : best), null as PriceRecord | null);
       },
     }),
-    { name: "price-store" }
+    { name: `price-store-${getCurrentMode()}` }
   )
 );

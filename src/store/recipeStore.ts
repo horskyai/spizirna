@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { Recipe } from "@/types";
 import { DEFAULT_RECIPES } from "@/data/defaultRecipes";
+import { getCurrentMode } from "@/store/modeStore";
 
 const SEED_VERSION = 3;
 
@@ -33,7 +34,7 @@ export const useRecipeStore = create<RecipeStore>()(
         set((s) => ({ recipes: s.recipes.filter((r) => r.id !== id) })),
     }),
     {
-      name: "recipe-store",
+      name: `recipe-store-${getCurrentMode()}`,
       onRehydrateStorage: () => (state) => {
         if (state && state.seedVersion < SEED_VERSION) {
           const existing = new Set(state.recipes.map((r) => r.name));

@@ -1,6 +1,8 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
+export type ShoppingMode = "domacnost" | "provoz";
+
 export interface ShoppingItem {
   id: string;
   name: string;
@@ -14,54 +16,75 @@ export interface ShoppingItem {
 }
 
 interface ShoppingStore {
-  items: ShoppingItem[];
-  addItem: (item: Omit<ShoppingItem, "id" | "checked">) => void;
-  addItems: (items: Omit<ShoppingItem, "id" | "checked">[]) => void;
-  toggleItem: (id: string) => void;
-  removeItem: (id: string) => void;
-  removeChecked: () => void;
-  clearAll: () => void;
+  domacnostItems: ShoppingItem[];
+  provozItems: ShoppingItem[];
+
+  // Vždy pracuje s položkami daného módu
+  addItem: (item: Omit<ShoppingItem, "id" | "checked">, mode: ShoppingMode) => void;
+  addItems: (items: Omit<ShoppingItem, "id" | "checked">[], mode: ShoppingMode) => void;
+  toggleItem: (id: string, mode: ShoppingMode) => void;
+  removeItem: (id: string, mode: ShoppingMode) => void;
+  removeChecked: (mode: ShoppingMode) => void;
+  clearAll: (mode: ShoppingMode) => void;
+
+  // Selector helper — vrátí položky pro daný mód
+  getItems: (mode: ShoppingMode) => ShoppingItem[];
+}
+
+function itemsKey(mode: ShoppingMode): "domacnostItems" | "provozItems" {
+  return mode === "domacnost" ? "domacnostItems" : "provozItems";
 }
 
 export const useShoppingStore = create<ShoppingStore>()(
   persist(
     (set, get) => ({
-      items: [],
+      domacnostItems: [],
+      provozItems: [],
 
-      addItem: (item) => {
-        // Merge if same name already exists
-        const existing = get().items.find(
+      getItems: (mode) => get()[itemsKey(mode)],
+
+      addItem: (item, mode) => {
+        const key = itemsKey(mode);
+        const existing = get()[key].find(
           (i) => i.name.toLowerCase() === item.name.toLowerCase() && !i.checked
         );
         if (existing) {
           set((s) => ({
-            items: s.items.map((i) =>
+            [key]: s[key].map((i) =>
               i.id === existing.id ? { ...i, quantity: i.quantity + item.quantity } : i
             ),
           }));
         } else {
           set((s) => ({
-            items: [...s.items, { ...item, id: crypto.randomUUID(), checked: false }],
+            [key]: [...s[key], { ...item, id: crypto.randomUUID(), checked: false }],
           }));
         }
       },
 
-      addItems: (items) => {
-        items.forEach((item) => get().addItem(item));
+      addItems: (items, mode) => {
+        items.forEach((item) => get().addItem(item, mode));
       },
 
-      toggleItem: (id) =>
+      toggleItem: (id, mode) => {
+        const key = itemsKey(mode);
         set((s) => ({
-          items: s.items.map((i) => (i.id === id ? { ...i, checked: !i.checked } : i)),
-        })),
+          [key]: s[key].map((i) => (i.id === id ? { ...i, checked: !i.checked } : i)),
+        }));
+      },
 
-      removeItem: (id) =>
-        set((s) => ({ items: s.items.filter((i) => i.id !== id) })),
+      removeItem: (id, mode) => {
+        const key = itemsKey(mode);
+        set((s) => ({ [key]: s[key].filter((i) => i.id !== id) }));
+      },
 
-      removeChecked: () =>
-        set((s) => ({ items: s.items.filter((i) => !i.checked) })),
+      removeChecked: (mode) => {
+        const key = itemsKey(mode);
+        set((s) => ({ [key]: s[key].filter((i) => !i.checked) }));
+      },
 
-      clearAll: () => set({ items: [] }),
+      clearAll: (mode) => {
+        set({ [itemsKey(mode)]: [] });
+      },
     }),
     { name: "shopping-store" }
   )

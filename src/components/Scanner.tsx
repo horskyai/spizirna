@@ -534,9 +534,16 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
               </div>
               <div>
                 <p className="font-bold text-sm" style={{ color: "#1E3A8A" }}>Přidat do veřejné databáze</p>
-                <p className="text-xs" style={{ color: "#4A6BC4" }}>Pomůže všem uživatelům — Open*Facts</p>
+                <p className="text-xs" style={{ color: "#4A6BC4" }}>Otevře web — pomůže všem uživatelům</p>
               </div>
             </button>
+
+            {/* Info pro uživatele */}
+            <div style={{ background: "#FFFDE7", border: "1px solid #FDD835", borderRadius: 14, padding: "10px 14px" }}>
+              <p style={{ fontSize: 12, color: "#6D4C00", margin: 0, lineHeight: 1.5 }}>
+                💡 <b>Produkt chybí v databázi?</b> Přidáním do Open Food Facts pomůžeš ostatním uživatelům najít ho příště automaticky. Stačí vytvořit bezplatný účet na webu.
+              </p>
+            </div>
 
             <button onClick={resetScan} style={{ width: "100%", padding: "12px 0", borderRadius: 16, fontSize: 14, fontWeight: 600, color: "var(--text-secondary)", background: "var(--border)" }}>
               Skenovat znovu
@@ -563,7 +570,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
               </button>
             </div>
             <p className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>
-              Otevře se web v prohlížeči kde produkt přidáte. EAN <b>{notFoundEAN}</b> bude předvyplněný.
+              Otevře se web v prohlížeči — EAN <b>{notFoundEAN}</b> bude předvyplněný. Pro přidání je potřeba bezplatná registrace na daném webu.
             </p>
             {OPEN_DATABASES.map(db => (
               <a

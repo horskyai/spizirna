@@ -5,6 +5,7 @@ import { Plus, Bell, BellOff, Check, Trash2, RefreshCw, ShoppingCart, ChevronDow
 import { useRecurringStore, RecurringItem } from "@/store/recurringStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { usePantryStore } from "@/store/pantryStore";
+import { useModeStore } from "@/store/modeStore";
 
 const UNITS = ["ks", "g", "kg", "ml", "l", "balení", "lžíce", "hrnek"];
 const INTERVALS = [
@@ -152,6 +153,8 @@ function AddRecurringModal({ onClose }: { onClose: () => void }) {
 function RecurringCard({ item }: { item: RecurringItem }) {
   const { updateItem, removeItem, markPurchased } = useRecurringStore();
   const addShoppingItem = useShoppingStore((s) => s.addItem);
+  const appMode = useModeStore((s) => s.mode);
+  const shoppingMode = appMode === "provoz" ? "provoz" : "domacnost";
   const [expanded, setExpanded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
@@ -169,7 +172,7 @@ function RecurringCard({ item }: { item: RecurringItem }) {
     : `Za ${days} ${days === 1 ? "den" : days < 5 ? "dny" : "dní"}`;
 
   const handleAddToShopping = () => {
-    addShoppingItem({ name: item.name, quantity: item.quantity, unit: item.unit });
+    addShoppingItem({ name: item.name, quantity: item.quantity, unit: item.unit }, shoppingMode);
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
   };
@@ -246,6 +249,8 @@ function PantryPredictions() {
   const pantryItems = usePantryStore((s) => s.items);
   const { predictDaysLeft, recordConsumption } = useRecurringStore();
   const addShoppingItem = useShoppingStore((s) => s.addItem);
+  const appMode = useModeStore((s) => s.mode);
+  const shoppingMode = appMode === "provoz" ? "provoz" : "domacnost";
 
   const predictions = useMemo(() => {
     return pantryItems
@@ -275,7 +280,7 @@ function PantryPredictions() {
               </p>
             </div>
             <button
-              onClick={() => addShoppingItem({ name: item.product.product_name, quantity: item.quantity, unit: item.unit })}
+              onClick={() => addShoppingItem({ name: item.product.product_name, quantity: item.quantity, unit: item.unit }, shoppingMode)}
               className="px-3 py-1.5 rounded-xl text-xs font-semibold flex-shrink-0"
               style={{ background: "#FEF3E2", color: "#B85C00" }}
             >

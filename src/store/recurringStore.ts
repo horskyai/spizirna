@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { getCurrentMode } from "@/store/modeStore";
 
 export interface RecurringItem {
   id: string;
@@ -124,6 +125,6 @@ export const useRecurringStore = create<RecurringStore>()(
         return Math.floor(currentQty / dailyRate);
       },
     }),
-    { name: "recurring-store" }
+    { name: `recurring-store-${getCurrentMode()}` }
   )
 );

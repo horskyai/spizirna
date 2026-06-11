@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { PantryItem, ProductInfo, StorageLocation } from "@/types";
 import { addDays } from "@/lib/dateUtils";
+import { getCurrentMode } from "@/store/modeStore";
 
 interface PantryStore {
   items: PantryItem[];
@@ -87,6 +88,6 @@ export const usePantryStore = create<PantryStore>()(
       getItemsByLocation: (location) =>
         get().items.filter((i) => i.location === location),
     }),
-    { name: "pantry-store" }
+    { name: `pantry-store-${getCurrentMode()}` }
   )
 );

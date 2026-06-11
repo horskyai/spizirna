@@ -6,6 +6,7 @@ import { Recipe } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useUIStore } from "@/store/uiStore";
+import { useModeStore } from "@/store/modeStore";
 import { useRecipeStore } from "@/store/recipeStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
@@ -18,6 +19,8 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
   const pantryItems = usePantryStore((s) => s.items);
   const addItems = useShoppingStore((s) => s.addItems);
   const setTab = useUIStore((s) => s.setTab);
+  const appMode = useModeStore((s) => s.mode);
+  const shoppingMode = appMode === "provoz" ? "provoz" : "domacnost";
   const [addedToCart, setAddedToCart] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -87,7 +90,7 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
       recipe_id: recipe.id,
       recipe_name: recipe.name,
       ean_code: ing.ean_code,
-    })));
+    })), shoppingMode);
     setAddedToCart(true);
     setTimeout(() => { setAddedToCart(false); setTab("nakup"); }, 800);
   };
@@ -329,6 +332,8 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
   const consumeItem = usePantryStore((s) => s.consumeItem);
   const pantryItems = usePantryStore((s) => s.items);
   const addItems = useShoppingStore((s) => s.addItems);
+  const appMode = useModeStore((s) => s.mode);
+  const shoppingMode = appMode === "provoz" ? "provoz" : "domacnost";
   const [done, setDone] = useState(false);
   const [addedMissing, setAddedMissing] = useState(false);
   const ratio = portions / recipe.servings;
@@ -365,7 +370,7 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
       unit: ing.unit,
       recipe_id: recipe.id,
       recipe_name: recipe.name,
-    })));
+    })), shoppingMode);
     setAddedMissing(true);
   };
 
@@ -468,6 +473,8 @@ function TodaySuggestionWidget() {
   const { recipes } = useRecipeStore();
   const recordCooked = useGamificationStore((s) => s.recordCooked);
   const addItems = useShoppingStore((s) => s.addItems);
+  const appMode = useModeStore((s) => s.mode);
+  const shoppingMode = appMode === "provoz" ? "provoz" : "domacnost";
   const [refreshKey, setRefreshKey] = useState(0);
   const [cookDone, setCookDone] = useState(false);
 
@@ -541,7 +548,7 @@ function TodaySuggestionWidget() {
       unit: ing.unit,
       recipe_id: recipe.id,
       recipe_name: recipe.name,
-    })));
+    })), shoppingMode);
   };
 
   return (

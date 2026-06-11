@@ -2,10 +2,11 @@
 
 import { useState, useMemo } from "react";
 import { Plus, Check, ShoppingCart, X, Share2, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
-import { useShoppingStore } from "@/store/shoppingStore";
+import { useShoppingStore, ShoppingMode } from "@/store/shoppingStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useRecurringStore } from "@/store/recurringStore";
 import { useRecipeStore } from "@/store/recipeStore";
+import { useModeStore } from "@/store/modeStore";
 import { ShoppingItem } from "@/store/shoppingStore";
 import { ProductInfo } from "@/types";
 import { VoiceInput } from "@/components/VoiceInput";
@@ -21,7 +22,7 @@ const CATEGORIES = [
   { id: "ostatni", label: "Ostatní", emoji: "🛒" },
 ];
 
-function AddItemModal({ onClose }: { onClose: () => void }) {
+function AddItemModal({ onClose, mode }: { onClose: () => void; mode: ShoppingMode }) {
   const addItem = useShoppingStore((s) => s.addItem);
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("1");
@@ -32,13 +33,13 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
 
   const handleAdd = () => {
     if (!name.trim()) return;
-    addItem({ name: name.trim(), quantity: parseFloat(quantity) || 1, unit, category });
+    addItem({ name: name.trim(), quantity: parseFloat(quantity) || 1, unit, category }, mode);
     setName("");
     setQuantity("1");
   };
 
   const handleVoice = (items: { name: string; quantity: number; unit: string }[]) => {
-    items.forEach((item) => addItem({ name: item.name, quantity: item.quantity, unit: item.unit, category }));
+    items.forEach((item) => addItem({ name: item.name, quantity: item.quantity, unit: item.unit, category }, mode));
     if (items.length > 0) onClose();
   };
 
@@ -88,7 +89,6 @@ function AddItemModal({ onClose }: { onClose: () => void }) {
             </select>
           </div>
 
-          {/* Kategorie */}
           <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>KATEGORIE</p>
           <div className="grid grid-cols-2 gap-2">
             {CATEGORIES.map((cat) => (
@@ -139,7 +139,7 @@ function shoppingItemToProduct(item: ShoppingItem): ProductInfo {
   };
 }
 
-function SmartSuggestionsWidget() {
+function SmartSuggestionsWidget({ mode }: { mode: ShoppingMode }) {
   const recurringItems = useRecurringStore((s) => s.items);
   const pantryItems = usePantryStore((s) => s.items);
   const { recipes } = useRecipeStore();
@@ -150,7 +150,6 @@ function SmartSuggestionsWidget() {
   const suggestions = useMemo(() => {
     const results: { id: string; name: string; reason: string; quantity: number; unit: string; category: string }[] = [];
 
-    // 1. Zásoby z recurring store které brzy dojdou (do 3 dnů)
     const now = new Date();
     const soon = new Date(now);
     soon.setDate(soon.getDate() + 3);
@@ -168,7 +167,6 @@ function SmartSuggestionsWidget() {
       }
     });
 
-    // 2. Pantry položky s malým množstvím (quantity <= 1)
     pantryItems.forEach((item) => {
       if (item.quantity <= 1) {
         const alreadySuggested = results.some(r => r.name.toLowerCase().includes(item.product.product_name.toLowerCase().slice(0, 5)));
@@ -185,7 +183,6 @@ function SmartSuggestionsWidget() {
       }
     });
 
-    // 3. Časté ingredience z receptů co nemáš
     const COMMON_INGREDIENTS = [
       { name: "Vejce", unit: "ks", quantity: 6, category: "mlecne", keywords: ["vejce"] },
       { name: "Mléko", unit: "l", quantity: 1, category: "mlecne", keywords: ["mléko"] },
@@ -224,7 +221,7 @@ function SmartSuggestionsWidget() {
   if (suggestions.length === 0) return null;
 
   const handleAdd = (id: string, name: string, quantity: number, unit: string, category: string) => {
-    addItems([{ name, quantity, unit, category }]);
+    addItems([{ name, quantity, unit, category }], mode);
     setAddedIds((prev) => new Set(prev).add(id));
   };
 
@@ -232,7 +229,7 @@ function SmartSuggestionsWidget() {
     const toAdd = suggestions
       .filter((s) => !addedIds.has(s.id))
       .map((s) => ({ name: s.name, quantity: s.quantity, unit: s.unit, category: s.category }));
-    addItems(toAdd);
+    addItems(toAdd, mode);
     setAddedIds(new Set(suggestions.map((s) => s.id)));
   };
 
@@ -296,7 +293,12 @@ function SmartSuggestionsWidget() {
 }
 
 export function ShoppingView() {
-  const { items, toggleItem, removeItem, removeChecked, clearAll } = useShoppingStore();
+  const appMode = useModeStore((s) => s.mode);
+  const mode: ShoppingMode = appMode === "provoz" ? "provoz" : "domacnost";
+
+  const { toggleItem, removeItem, removeChecked, clearAll, getItems } = useShoppingStore();
+  const items = getItems(mode);
+
   const addToPantry = usePantryStore((s) => s.addItem);
   const [showAdd, setShowAdd] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
@@ -304,7 +306,7 @@ export function ShoppingView() {
 
   const handleCheck = (item: ShoppingItem) => {
     const wasChecked = item.checked;
-    toggleItem(item.id);
+    toggleItem(item.id, mode);
     if (!wasChecked) {
       setJustChecked((prev) => new Set(prev).add(item.id));
       setTimeout(() => setJustChecked((prev) => { const s = new Set(prev); s.delete(item.id); return s; }), 400);
@@ -324,7 +326,6 @@ export function ShoppingView() {
       acc[key].push(item);
       return acc;
     }, {});
-    // Recipes first, "Přidáno ručně" last
     const keys = Object.keys(byRecipe).sort((a, b) =>
       a === "Přidáno ručně" ? 1 : b === "Přidáno ručně" ? -1 : 0
     );
@@ -353,7 +354,7 @@ export function ShoppingView() {
     return (
       <div className="relative flex-1 overflow-y-auto">
         <div className="px-5 pt-2 pb-24">
-          <SmartSuggestionsWidget />
+          <SmartSuggestionsWidget mode={mode} />
           <div className="flex flex-col items-center justify-center gap-5 py-12">
             <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
               <ShoppingCart size={32} strokeWidth={1.5} style={{ color: "var(--green-primary)" }} />
@@ -373,7 +374,7 @@ export function ShoppingView() {
             </p>
           </div>
         </div>
-        {showAdd && <AddItemModal onClose={() => setShowAdd(false)} />}
+        {showAdd && <AddItemModal onClose={() => setShowAdd(false)} mode={mode} />}
       </div>
     );
   }
@@ -381,22 +382,19 @@ export function ShoppingView() {
   return (
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-2 pb-24 space-y-4">
-        {/* Smart suggestions */}
-        <SmartSuggestionsWidget />
+        <SmartSuggestionsWidget mode={mode} />
 
-        {/* Summary */}
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>
             {unchecked.length} položek zbývá
           </p>
           {checked.length > 0 && (
-            <button onClick={removeChecked} className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: "#FDE8E8", color: "#C0392B" }}>
+            <button onClick={() => removeChecked(mode)} className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: "#FDE8E8", color: "#C0392B" }}>
               Odebrat hotové ({checked.length})
             </button>
           )}
         </div>
 
-        {/* Groups */}
         {groups.map(({ name, items: groupItems, isManual }) => (
           <div key={name}>
             <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>
@@ -431,7 +429,7 @@ export function ShoppingView() {
                         {cat && <span style={{ color: "var(--text-tertiary)" }}> · {cat.emoji} {cat.label}</span>}
                       </p>
                     </div>
-                    <button onClick={() => removeItem(item.id)}>
+                    <button onClick={() => removeItem(item.id, mode)}>
                       <X size={14} style={{ color: "var(--text-tertiary)" }} />
                     </button>
                   </div>
@@ -441,7 +439,6 @@ export function ShoppingView() {
           </div>
         ))}
 
-        {/* Checked items */}
         {checked.length > 0 && (
           <div>
             <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>
@@ -462,7 +459,7 @@ export function ShoppingView() {
                     <Check size={12} color="white" strokeWidth={3} />
                   </button>
                   <p className="text-sm flex-1" style={{ color: "var(--text-secondary)", textDecoration: "line-through" }}>{item.name}</p>
-                  <button onClick={() => removeItem(item.id)}>
+                  <button onClick={() => removeItem(item.id, mode)}>
                     <X size={14} style={{ color: "var(--text-tertiary)" }} />
                   </button>
                 </div>
@@ -471,7 +468,6 @@ export function ShoppingView() {
           </div>
         )}
 
-        {/* Add more + share */}
         <div className="flex gap-2">
           <button
             onClick={() => setShowAdd(true)}
@@ -493,7 +489,7 @@ export function ShoppingView() {
 
         {items.length > 0 && (
           <button
-            onClick={clearAll}
+            onClick={() => clearAll(mode)}
             className="w-full py-2.5 rounded-2xl text-xs font-medium"
             style={{ color: "var(--text-tertiary)" }}
           >
@@ -502,7 +498,7 @@ export function ShoppingView() {
         )}
       </div>
 
-      {showAdd && <AddItemModal onClose={() => setShowAdd(false)} />}
+      {showAdd && <AddItemModal onClose={() => setShowAdd(false)} mode={mode} />}
 
       {toast && (
         <div

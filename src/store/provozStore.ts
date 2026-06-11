@@ -30,6 +30,7 @@ export interface InventuraPolozka {
   minZasoba: number; // minimální zásoba — pod tím upozornit
   cenaJednotka?: number; // cena za jednotku pro výpočet hodnoty skladu
   dodavatel?: string;
+  minTrvanlivost?: string; // YYYY-MM-DD
 }
 
 export interface InventuraZaznam {

@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { FoodLogEntry, FoodLogItem, NutritionGoal } from "@/types";
+import { getCurrentMode } from "@/store/modeStore";
 
 interface FoodLogStore {
   entries: FoodLogEntry[];
@@ -48,6 +49,6 @@ export const useFoodLogStore = create<FoodLogStore>()(
 
       setGoal: (goal) => set({ goal }),
     }),
-    { name: "food-log-store" }
+    { name: `food-log-store-${getCurrentMode()}` }
   )
 );
