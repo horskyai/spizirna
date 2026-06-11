@@ -64,7 +64,7 @@ export function TabBar() {
                     boxShadow: "0 6px 20px rgba(76,175,130,0.45)",
                   }}
                 >
-                  <img src={icon} alt="" width={40} height={40} draggable={false} />
+                  <img src={icon} alt="" width={48} height={48} draggable={false} />
                 </div>
                 <span style={{ fontSize: 10, fontWeight: 600, color: "var(--green-primary)" }}>{label}</span>
               </button>
@@ -93,8 +93,8 @@ export function TabBar() {
                 <img
                   src={icon}
                   alt=""
-                  width={32}
-                  height={32}
+                  width={40}
+                  height={40}
                   draggable={false}
                   style={{
                     filter: active ? "none" : "grayscale(1) opacity(0.55)",
