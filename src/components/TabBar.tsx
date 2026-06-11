@@ -4,21 +4,22 @@ import { useUIStore } from "@/store/uiStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useRecurringStore } from "@/store/recurringStore";
 import { useModeStore } from "@/store/modeStore";
+import { Home, ChefHat, Scan, ShoppingCart, RefreshCw, ClipboardList } from "lucide-react";
 
 const TABS_DOMACNOST = [
-  { id: "spizirna", label: "Spižírna", icon: "/tabs/spizirna.png" },
-  { id: "recepty", label: "Recepty", icon: "/tabs/recepty.png" },
-  { id: "skenovat", label: "Skenovat", icon: "/tabs/skenovat.png" },
-  { id: "nakup", label: "Nákup", icon: "/tabs/nakup.png" },
-  { id: "opakujici", label: "Opakování", icon: "/tabs/opakovani.png" },
+  { id: "spizirna", Icon: Home },
+  { id: "recepty", Icon: ChefHat },
+  { id: "skenovat", Icon: Scan },
+  { id: "nakup", Icon: ShoppingCart },
+  { id: "opakujici", Icon: RefreshCw },
 ] as const;
 
 const TABS_PROVOZ = [
-  { id: "spizirna", label: "Spižírna", icon: "/tabs/spizirna.png" },
-  { id: "recepty", label: "Recepty", icon: "/tabs/recepty.png" },
-  { id: "skenovat", label: "Skenovat", icon: "/tabs/skenovat.png" },
-  { id: "nakup", label: "Nákup", icon: "/tabs/nakup.png" },
-  { id: "provoz", label: "Provoz", icon: "/tabs/provoz.png" },
+  { id: "spizirna", Icon: Home },
+  { id: "recepty", Icon: ChefHat },
+  { id: "skenovat", Icon: Scan },
+  { id: "nakup", Icon: ShoppingCart },
+  { id: "provoz", Icon: ClipboardList },
 ] as const;
 
 export function TabBar() {
@@ -33,54 +34,54 @@ export function TabBar() {
   return (
     <nav
       style={{
-        background: "var(--bg-primary)",
+        background: "white",
+        borderTop: "1px solid var(--border)",
         paddingBottom: "env(safe-area-inset-bottom, 12px)",
-        paddingTop: 8,
-        paddingLeft: 12,
-        paddingRight: 12,
+        paddingTop: 10,
+        paddingLeft: 16,
+        paddingRight: 16,
       }}
     >
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around" }}>
-        {TABS.map(({ id, label, icon }) => {
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-around" }}>
+        {TABS.map(({ id, Icon }) => {
           const active = activeTab === id;
-          const isCenter = id === "skenovat";
           const badge = id === "nakup" && shoppingCount > 0 ? shoppingCount
             : id === "opakujici" && dueCount > 0 ? dueCount
             : null;
-          const size = isCenter ? 58 : 46;
 
           return (
             <button
               key={id}
               onClick={() => setTab(id)}
-              style={{ position: "relative", display: "flex", flexDirection: "column", alignItems: "center", gap: 4, marginBottom: 2 }}
+              style={{ position: "relative", display: "flex", alignItems: "center", justifyContent: "center", padding: 2 }}
             >
-              <div style={{ position: "relative" }}>
-                <img
-                  src={icon}
-                  alt=""
-                  width={size}
-                  height={size}
-                  draggable={false}
-                  style={{
-                    borderRadius: "24%",
-                    filter: active || isCenter ? "none" : "grayscale(1) opacity(0.5)",
-                    boxShadow: active || isCenter ? "0 5px 14px rgba(76,175,130,0.45)" : "none",
-                    transform: active ? "translateY(-3px) scale(1.05)" : "none",
-                    transition: "filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease",
-                  }}
+              <div
+                style={{
+                  width: 46, height: 46, borderRadius: 15,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  background: active
+                    ? "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)"
+                    : "transparent",
+                  boxShadow: active ? "0 5px 14px rgba(76,175,130,0.45)" : "none",
+                  transition: "background 0.15s ease, box-shadow 0.15s ease",
+                  position: "relative",
+                }}
+              >
+                <Icon
+                  size={22}
+                  strokeWidth={active ? 2.2 : 1.8}
+                  style={{ color: active ? "white" : "var(--text-secondary)" }}
                 />
                 {badge && (
                   <span
                     style={{
-                      position: "absolute", top: -6, right: -6,
-                      minWidth: 20, height: 20, borderRadius: 10,
+                      position: "absolute", top: -4, right: -4,
+                      minWidth: 19, height: 19, borderRadius: 10,
                       padding: "0 4px",
                       background: "var(--red)", color: "white",
-                      fontSize: 11, fontWeight: 800,
+                      fontSize: 10, fontWeight: 800,
                       display: "flex", alignItems: "center", justifyContent: "center",
-                      border: "2.5px solid var(--bg-primary)",
-                      boxShadow: "0 2px 6px rgba(217,87,87,0.5)",
+                      border: "2px solid white",
                       lineHeight: 1,
                     }}
                   >
@@ -88,9 +89,6 @@ export function TabBar() {
                   </span>
                 )}
               </div>
-              <span style={{ fontSize: 10, fontWeight: active ? 600 : 500, color: active ? "var(--green-primary)" : "var(--text-tertiary)" }}>
-                {label}
-              </span>
             </button>
           );
         })}

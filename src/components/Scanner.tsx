@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Flashlight, X, Keyboard, ArrowLeft, Plus, ExternalLink } from "lucide-react";
+import { Flashlight, X, Keyboard, ArrowLeft, Plus, ExternalLink, Camera } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { fetchProductByEAN } from "@/lib/openFoodFacts";
@@ -252,7 +252,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
   }[scanState];
 
   const stateLabel = {
-    scanning: zxingReady ? "Namiřte kameru na čárový kód" : "Inicializace skeneru...",
+    scanning: zxingReady ? "Namiřte na čárový kód" : "Inicializace skeneru...",
     loading: "Načítám produkt...",
     found: "Produkt nalezen!",
     notfound: "Produkt nebyl nalezen v databázi",
@@ -284,6 +284,10 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
       {/* Scan frame */}
       <div className="absolute inset-0 flex items-center justify-center" style={{ pointerEvents: "none" }}>
         <div className="relative" style={{ width: 272, height: 168 }}>
+          {/* Zelený nádech ve výřezu */}
+          {scanState === "scanning" && (
+            <div className="absolute" style={{ inset: 4, background: "rgba(76,175,130,0.16)", borderRadius: 14 }} />
+          )}
           {/* Corner brackets */}
           {[
             { cls: "top-0 left-0", borders: "border-t-2 border-l-2 rounded-tl-xl" },
@@ -339,14 +343,45 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
         </div>
       </div>
 
-      {/* Status pill */}
-      <div className="absolute bottom-28 left-0 right-0 flex justify-center">
-        <div
-          className="px-4 py-2.5 rounded-full"
-          style={{ background: "rgba(0,0,0,0.65)", backdropFilter: "blur(8px)" }}
+      {/* Status text */}
+      <div className="absolute left-0 right-0 flex justify-center" style={{ bottom: 132 }}>
+        <p
+          className="text-white text-center"
+          style={{ fontSize: 18, fontWeight: 700, textShadow: "0 2px 10px rgba(0,0,0,0.7)", padding: "0 24px" }}
         >
-          <p className="text-white text-sm font-medium text-center">{stateLabel}</p>
-        </div>
+          {stateLabel}
+        </p>
+      </div>
+
+      {/* Spodní ovládání — foto tlačítko + Zadat ručně */}
+      <div
+        className="absolute left-0 right-0 flex items-center justify-center"
+        style={{ bottom: "calc(28px + env(safe-area-inset-bottom, 0px))" }}
+      >
+        <button
+          onClick={resetScan}
+          aria-label="Skenovat znovu"
+          style={{
+            width: 64, height: 64, borderRadius: "50%",
+            background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)",
+            border: "3px solid rgba(255,255,255,0.85)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 8px 24px rgba(0,0,0,0.4)",
+          }}
+        >
+          <Camera size={26} color="white" />
+        </button>
+        <button
+          onClick={() => setShowManualInput(true)}
+          style={{
+            position: "absolute", right: 28,
+            color: "#F7B267", fontSize: 14, fontWeight: 700,
+            textDecoration: "underline", textUnderlineOffset: 3,
+            textShadow: "0 1px 6px rgba(0,0,0,0.6)",
+          }}
+        >
+          Zadat ručně
+        </button>
       </div>
 
       {/* Error state */}
@@ -385,25 +420,19 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
       </div>
 
       {/* Top controls */}
-      <div className="absolute top-4 right-4 flex flex-col gap-2">
+      <div className="absolute top-4 right-4">
         <button
           onClick={toggleTorch}
-          className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
+          className="flex items-center justify-center transition-all"
           style={{
-            background: torchOn ? "rgba(255,255,255,0.9)" : "rgba(0,0,0,0.45)",
-            backdropFilter: "blur(8px)",
+            width: 44, height: 44, borderRadius: 14,
+            background: torchOn
+              ? "rgba(255,255,255,0.9)"
+              : "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)",
+            boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
           }}
         >
-          <Flashlight size={18} style={{ color: torchOn ? "#1A1A1A" : "white" }} />
-        </button>
-
-        <button
-          onClick={() => setShowManualInput(true)}
-          className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
-          style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)" }}
-          title="Zadat EAN ručně"
-        >
-          <Keyboard size={18} style={{ color: "white" }} />
+          <Flashlight size={19} style={{ color: torchOn ? "#1A1A1A" : "white" }} />
         </button>
       </div>
 

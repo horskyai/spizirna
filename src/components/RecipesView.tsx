@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Clock, Users, ChevronDown, ChevronUp, CheckCircle, XCircle, ShoppingCart, ChefHat, AlertCircle, Plus, Trash2, BookOpen, Sparkles, RefreshCw } from "lucide-react";
+import { Clock, Users, ChevronDown, ChevronUp, Check, ShoppingCart, ChefHat, AlertCircle, Plus, Trash2, BookOpen, Sparkles, RefreshCw } from "lucide-react";
 import { Recipe } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
 import { useShoppingStore } from "@/store/shoppingStore";
@@ -181,32 +181,49 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
           {/* Ingredients */}
           {recipe.ingredients.length > 0 && (
             <div className="p-4">
-              <p className="text-xs font-semibold uppercase mb-3" style={{ color: "var(--text-tertiary)", letterSpacing: "0.05em" }}>Suroviny</p>
+              <p className="text-base font-bold mb-3" style={{ color: "var(--text-primary)" }}>Ingredience</p>
               <div className="space-y-2">
                 {ingredientsWithStatus.map((ing, i) => (
-                  <div key={i} className="flex items-center gap-2.5">
-                    {ing.available
-                      ? <CheckCircle size={15} style={{ color: "var(--green-primary)", flexShrink: 0 }} />
-                      : ing.partial
-                      ? <div className="w-4 h-4 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: "#E8B84B" }}>
-                          <span style={{ fontSize: 9, color: "white", fontWeight: 700 }}>!</span>
-                        </div>
-                      : <XCircle size={15} style={{ color: "#D95757", flexShrink: 0 }} />
-                    }
+                  <div
+                    key={i}
+                    className="flex items-center gap-2.5"
+                    style={{ background: "var(--bg-primary)", borderRadius: 14, padding: "10px 12px" }}
+                  >
+                    {ing.available ? (
+                      <div style={{
+                        width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                        background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <Check size={12} color="white" strokeWidth={3} />
+                      </div>
+                    ) : ing.partial ? (
+                      <div style={{
+                        width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                        background: "linear-gradient(135deg, #F7B267 0%, #E8862E 100%)",
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <span style={{ fontSize: 11, color: "white", fontWeight: 800 }}>!</span>
+                      </div>
+                    ) : (
+                      <div style={{
+                        width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                        border: "2px solid var(--border)", background: "white",
+                      }} />
+                    )}
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm" style={{ color: ing.available ? "var(--text-primary)" : ing.partial ? "#B85C00" : "#D95757" }}>
-                        {ing.name}
+                      <span className="text-sm font-semibold" style={{ color: ing.available ? "var(--text-primary)" : "var(--text-secondary)" }}>
+                        {ing.name}, {ing.quantity} {ing.unit}
                       </span>
-                      {ing.isLinked && ing.linked_product_name && ing.linked_product_name !== ing.name && (
-                        <span className="text-xs ml-1" style={{ color: "var(--text-tertiary)" }}>
-                          → {ing.linked_product_name}
-                        </span>
+                      {ing.partial && (
+                        <span className="text-xs ml-1" style={{ color: "#B85C00", fontWeight: 600 }}>(chybí {ing.missing})</span>
                       )}
                     </div>
-                    <span className="text-xs flex-shrink-0" style={{ color: "var(--text-secondary)" }}>
-                      {ing.quantity} {ing.unit}
-                      {ing.partial && <span style={{ color: "#E8B84B" }}> (chybí {ing.missing})</span>}
-                    </span>
+                    {!ing.available && (
+                      <span className="text-xs font-bold flex items-center gap-1 flex-shrink-0" style={{ color: "#E8862E" }}>
+                        Chybí mi <ShoppingCart size={13} />
+                      </span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -265,7 +282,7 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
               >
                 {addedToCart
                   ? "✓ Přidáno na nákupní seznam"
-                  : <><ShoppingCart size={16} /> Přidat {missing.length} chybějících na seznam</>
+                  : <><ShoppingCart size={16} /> Přidat chybějící do nákupu ({missing.length})</>
                 }
               </button>
             )}

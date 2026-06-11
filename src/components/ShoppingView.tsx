@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Check, ShoppingCart, X, Share2, Lightbulb, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Check, ShoppingCart, X, Share2, Lightbulb, ChevronDown, ChevronUp, Mic } from "lucide-react";
 import { useShoppingStore, ShoppingMode } from "@/store/shoppingStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useRecurringStore } from "@/store/recurringStore";
@@ -301,6 +301,7 @@ export function ShoppingView() {
 
   const addToPantry = usePantryStore((s) => s.addItem);
   const [showAdd, setShowAdd] = useState(false);
+  const [view, setView] = useState<"vse" | "kategorie">("vse");
   const [toast, setToast] = useState<string | null>(null);
   const [justChecked, setJustChecked] = useState<Set<string>>(new Set());
 
@@ -320,6 +321,15 @@ export function ShoppingView() {
   const checked = useMemo(() => items.filter((i) => i.checked), [items]);
 
   const groups = useMemo(() => {
+    if (view === "kategorie") {
+      return CATEGORIES
+        .map((cat) => ({
+          name: cat.label,
+          items: unchecked.filter((i) => (i.category || "ostatni") === cat.id),
+          isManual: false,
+        }))
+        .filter((g) => g.items.length > 0);
+    }
     const byRecipe = unchecked.reduce<Record<string, typeof unchecked>>((acc, item) => {
       const key = item.recipe_name || "Přidáno ručně";
       acc[key] = acc[key] || [];
@@ -330,7 +340,7 @@ export function ShoppingView() {
       a === "Přidáno ručně" ? 1 : b === "Přidáno ručně" ? -1 : 0
     );
     return keys.map((k) => ({ name: k, items: byRecipe[k], isManual: k === "Přidáno ručně" }));
-  }, [unchecked]);
+  }, [unchecked, view]);
 
   const shareList = () => {
     const lines: string[] = ["🛒 Nákupní seznam ze Spižírny\n"];
@@ -384,6 +394,25 @@ export function ShoppingView() {
       <div className="px-5 pt-2 pb-24 space-y-4">
         <SmartSuggestionsWidget mode={mode} />
 
+        {/* Segmentový přepínač Vše | Kategorie */}
+        <div style={{ display: "flex", background: "#E7E4DC", borderRadius: 14, padding: 4 }}>
+          {(["vse", "kategorie"] as const).map((v) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              style={{
+                flex: 1, padding: "8px 0", borderRadius: 11, fontSize: 13, fontWeight: 700,
+                background: view === v ? "white" : "transparent",
+                color: view === v ? "var(--text-primary)" : "var(--text-secondary)",
+                boxShadow: view === v ? "0 2px 6px rgba(0,0,0,0.08)" : "none",
+                transition: "all 0.15s ease",
+              }}
+            >
+              {v === "vse" ? "Vše" : "Kategorie"}
+            </button>
+          ))}
+        </div>
+
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>
             {unchecked.length} položek zbývá
@@ -397,9 +426,13 @@ export function ShoppingView() {
 
         {groups.map(({ name, items: groupItems, isManual }) => (
           <div key={name}>
-            <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>
-              {isManual ? "🛒 Přidáno ručně" : `📖 ${name}`}
-            </p>
+            {view === "kategorie" ? (
+              <p className="text-base font-bold mb-2 px-1" style={{ color: "var(--text-primary)" }}>{name}</p>
+            ) : (
+              <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>
+                {isManual ? "🛒 Přidáno ručně" : `📖 ${name}`}
+              </p>
+            )}
             <div className="card overflow-hidden">
               {groupItems.map((item, idx) => {
                 const cat = CATEGORIES.find((c) => c.id === item.category);
@@ -497,6 +530,24 @@ export function ShoppingView() {
           </button>
         )}
       </div>
+
+      {/* Hlasový FAB */}
+      <button
+        onClick={() => setShowAdd(true)}
+        aria-label="Přidat hlasem"
+        style={{
+          position: "fixed",
+          right: 20,
+          bottom: "calc(92px + env(safe-area-inset-bottom, 0px))",
+          width: 56, height: 56, borderRadius: "50%",
+          background: "linear-gradient(135deg, #F7B267 0%, #E8862E 100%)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 8px 20px rgba(232,134,46,0.45)",
+          zIndex: 50,
+        }}
+      >
+        <Mic size={24} color="white" />
+      </button>
 
       {showAdd && <AddItemModal onClose={() => setShowAdd(false)} mode={mode} />}
 

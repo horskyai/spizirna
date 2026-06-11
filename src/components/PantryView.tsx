@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Plus, Trash2, ChevronRight, Pencil, X, RefrigeratorIcon, ScanLine, Bell, Minus, Flame, Star } from "lucide-react";
+import { Plus, Trash2, ChevronRight, Pencil, X, RefrigeratorIcon, ScanLine, Bell, Minus, Flame, Search } from "lucide-react";
 import { usePantryStore } from "@/store/pantryStore";
 import { useUIStore } from "@/store/uiStore";
 import { useGamificationStore } from "@/store/gamificationStore";
@@ -29,10 +29,10 @@ const LOCATION_LABELS: Record<StorageLocation, { label: string; Icon: React.FC<{
 function ExpiryBadge({ expiresAt }: { expiresAt?: string }) {
   if (!expiresAt) return null;
   const days = daysUntil(expiresAt);
-  const cls = days <= 1 ? "badge-danger" : days <= 3 ? "badge-warn" : "badge-ok";
-  const label = days < 0 ? "Prošlé!" : days === 0 ? "Dnes" : days === 1 ? "Zítra" : `Za ${days} dní`;
+  const cls = days < 0 ? "badge-danger" : days <= 1 ? "badge-warn" : "badge-ok";
+  const label = days < 0 ? "Prošlé" : days === 0 ? "Spotřebujte dnes" : days === 1 ? "Spotřebujte zítra" : `Spotřebujte do ${days} dní`;
   return (
-    <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${cls}`}>{label}</span>
+    <span className={`text-xs font-semibold ${cls}`} style={{ padding: "4px 10px", borderRadius: 10, whiteSpace: "nowrap" }}>{label}</span>
   );
 }
 
@@ -254,6 +254,7 @@ export function PantryView() {
   const { setTab } = useUIStore();
   const { streak, getScore, getLevel } = useGamificationStore();
   const [filter, setFilter] = useState<StorageLocation | "vse">("vse");
+  const [search, setSearch] = useState("");
   const [showManual, setShowManual] = useState(false);
   const [showStreakDetail, setShowStreakDetail] = useState(false);
   const seasonalTip = getSeasonalTip();
@@ -265,7 +266,10 @@ export function PantryView() {
     cutoff.setDate(cutoff.getDate() + 3);
     return items.filter((i) => i.expires_at && new Date(i.expires_at) <= cutoff);
   }, [items]);
-  const filtered = filter === "vse" ? items : items.filter(i => i.location === filter);
+  const byLocation = filter === "vse" ? items : items.filter(i => i.location === filter);
+  const filtered = search.trim()
+    ? byLocation.filter(i => i.product.product_name.toLowerCase().includes(search.trim().toLowerCase()))
+    : byLocation;
 
   const filters: { id: StorageLocation | "vse"; label: string; Icon: React.FC<{ size?: number }> }[] = [
     { id: "vse", label: "Vše", Icon: VseSVG },
@@ -309,6 +313,26 @@ export function PantryView() {
   return (
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-0 pb-4">
+        {/* Search */}
+        <div
+          className="flex items-center gap-2.5 mb-4"
+          style={{ background: "white", borderRadius: 16, padding: "12px 14px", boxShadow: "var(--shadow)" }}
+        >
+          <Search size={17} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Hledat potraviny..."
+            style={{ border: "none", outline: "none", background: "transparent", fontSize: 14, width: "100%", color: "var(--text-primary)" }}
+          />
+          {search && (
+            <button onClick={() => setSearch("")} style={{ flexShrink: 0, display: "flex" }}>
+              <X size={15} style={{ color: "var(--text-tertiary)" }} />
+            </button>
+          )}
+        </div>
+
         {/* Hero card */}
         <div className="hero-card mb-5" style={{ padding: "20px 16px 16px" }}>
           {/* Top row: count + streak */}

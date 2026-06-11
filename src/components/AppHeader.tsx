@@ -52,7 +52,7 @@ export function AppHeader() {
             <div>
               <p className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>Dobrý den 👋</p>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)", lineHeight: 1.2 }}>Spižírna</h1>
+                <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)", lineHeight: 1.2 }}>Moje spižírna</h1>
                 <button
                   onClick={() => setMode(mode === "domacnost" ? "provoz" : "domacnost")}
                   style={{

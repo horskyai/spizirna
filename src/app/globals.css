@@ -3,7 +3,7 @@
    ============================================ */
 
 :root {
-  --bg-primary: #F7F7F8;
+  --bg-primary: #F1EFE8;
   --bg-card: #FFFFFF;
   --bg-white: #FFFFFF;
   --green-primary: #4CAF82;
@@ -403,9 +403,9 @@ input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; }
 }
 
 /* ============ EXPIRY BADGES ============ */
-.badge-ok { background: #E8F0E4; color: #4A6B3F; }
-.badge-warn { background: #FEF3E2; color: #B85C00; }
-.badge-danger { background: #FDE8E8; color: #C0392B; }
+.badge-ok { background: linear-gradient(135deg, #4CAF82 0%, #2E7D5A 100%); color: white; }
+.badge-warn { background: linear-gradient(135deg, #F7B267 0%, #E8862E 100%); color: white; }
+.badge-danger { background: #E05B5B; color: white; }
 
 /* ============ SCROLLBAR ============ */
 ::-webkit-scrollbar { width: 0; height: 0; }
