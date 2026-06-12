@@ -13,7 +13,7 @@ import {
   InventuraPolozka,
   Inventura,
 } from "@/store/provozStore";
-import { fetchProductByEAN } from "@/lib/openFoodFacts";
+import { lookupProductByEAN } from "@/lib/productLookup";
 import { Scanner } from "@/components/Scanner";
 
 // ── Export funkce ─────────────────────────────────────────────────────────────
@@ -174,7 +174,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
     setShowScanner(false);
     setScanLoading(true);
     try {
-      const product = await fetchProductByEAN(ean);
+      const product = await lookupProductByEAN(ean);
       if (product) {
         setNazev(product.product_name || ean);
         if (product.unit === "ml") {
@@ -194,7 +194,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
     if (!eanInput.trim()) return;
     setScanLoading(true);
     try {
-      const product = await fetchProductByEAN(eanInput.trim());
+      const product = await lookupProductByEAN(eanInput.trim());
       if (product) {
         setNazev(product.product_name || eanInput.trim());
         if (product.unit === "ml") {

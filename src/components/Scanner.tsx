@@ -4,7 +4,7 @@ import { useEffect, useRef, useState, useCallback } from "react";
 import { Flashlight, X, Keyboard, ArrowLeft, Plus, ExternalLink, Camera } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import { useGamificationStore } from "@/store/gamificationStore";
-import { fetchProductByEAN } from "@/lib/openFoodFacts";
+import { lookupProductByEAN } from "@/lib/productLookup";
 import { AddProductManual } from "@/components/AddProductManual";
 
 const OPEN_DATABASES = [
@@ -181,7 +181,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
               scanStateRef.current = "found";
               onScanned(code);
             } else {
-              const product = await fetchProductByEAN(code);
+              const product = await lookupProductByEAN(code);
               if (product) {
                 setScanState("found");
                 scanStateRef.current = "found";
@@ -233,7 +233,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
     setShowManualInput(false);
     setManualEAN("");
     setScanState("loading");
-    const product = await fetchProductByEAN(ean);
+    const product = await lookupProductByEAN(ean);
     if (product) {
       setScanState("found");
       openSheet("product", product);
