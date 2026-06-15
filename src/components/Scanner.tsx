@@ -480,10 +480,11 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
                   { n: "1", t: "Namiřte na čárový kód", d: "Podržte telefon nad čárovým kódem na obalu (najdete ho většinou na zadní straně). Kód udržte v zeleném rámečku." },
                   { n: "2", t: "Počkejte na zaměření", d: "Aplikace kód přečte sama, nemusíte nic mačkat. Ve špatném světle si posviťte tlačítkem baterky vpravo nahoře." },
                   { n: "3", t: "Produkt se najde", d: "Pokud je kód v databázi, načte se název i výživové hodnoty. Vše už máte předvyplněné — jen potvrdíte." },
-                  { n: "4", t: "Když se nenajde", d: "Některé produkty v databázi nejsou. Pak ťukněte na „Zadat ručně“ dole a doplníte údaje (i s vlastní fotkou). Příště už si je aplikace pamatuje." },
+                  { n: "4", t: "Když se nenajde", d: "Některé produkty v databázi nejsou. Pak ťukněte na „Zadat ručně“ dole a doplníte údaje (i s vlastní fotkou). Příště už si je aplikace pamatuje — nemusíte se nikam přihlašovat." },
+                  { n: "★", t: "Chcete pomoct ostatním?", d: "U nenalezeného produktu můžete zvolit „Přidat do veřejné databáze“ — výrobek pak najdou i ostatní lidé na celém světě. K tomu je potřeba bezplatná registrace na webu Open Food Facts. Je to dobrovolné." },
                 ].map((s) => (
                   <div key={s.n} className="flex gap-3">
-                    <div style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 13 }}>
+                    <div style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, background: s.n === "★" ? "linear-gradient(135deg, #F7B267 0%, #E8862E 100%)" : "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 13 }}>
                       {s.n}
                     </div>
                     <div>
