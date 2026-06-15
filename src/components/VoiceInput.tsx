@@ -167,14 +167,17 @@ export function parseSpokenText(text: string): ParsedItem[] {
   return results;
 }
 
-// Hezčí jednotky: 1000+ g → kg, 1000+ ml → l (1200 g → 1.2 kg)
+// Hezčí jednotky: 1000+ g → kg, 1000+ ml → l (1200 g → 1.2 kg).
+// Kusy se zaokrouhlí na celá čísla (nákupní seznam nemá "3,4 ks").
 function normalizeUnit(quantity: number, unit: string): { quantity: number; unit: string } {
   if (unit === "g" && quantity >= 1000) return { quantity: round2(quantity / 1000), unit: "kg" };
   if (unit === "ml" && quantity >= 1000) return { quantity: round2(quantity / 1000), unit: "l" };
   if (unit === "dkg" && quantity >= 100) return { quantity: round2(quantity / 100), unit: "kg" };
-  return { quantity, unit };
+  if (unit === "ks") return { quantity: Math.max(1, Math.round(quantity)), unit };
+  return { quantity: round2(quantity), unit };
 }
 
+// Zaokrouhlí na 2 desetinná místa a zbaví plovoucí nepřesnosti (3.4000000000000004 → 3.4)
 function round2(n: number): number {
   return Math.round(n * 100) / 100;
 }

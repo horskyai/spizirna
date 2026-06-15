@@ -234,6 +234,11 @@ function VoiceFab({ onItems }: { onItems: (items: ParsedItem[]) => void }) {
   );
 }
 
+// Hezké zobrazení množství: zbaví plovoucí nepřesnosti (3.4000000000000004 → 3.4)
+function fmtQty(n: number): string {
+  return String(Math.round(n * 100) / 100);
+}
+
 function shoppingItemToProduct(item: ShoppingItem): ProductInfo {
   return {
     ean_code: item.ean_code || "",
@@ -578,7 +583,7 @@ export function ShoppingView() {
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{item.name}</p>
                       <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-                        {item.quantity} {item.unit}
+                        {fmtQty(item.quantity)} {item.unit}
                         {cat && <span style={{ color: "var(--text-tertiary)" }}> · {cat.emoji} {cat.label}</span>}
                       </p>
                     </div>
