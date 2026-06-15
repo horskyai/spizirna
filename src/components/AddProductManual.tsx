@@ -4,7 +4,7 @@ import { useState, useRef } from "react";
 import { X, Plus, ChevronDown, Camera, Image, Tag } from "lucide-react";
 import { ProductInfo, StorageLocation } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
-import { useProductCatalogStore } from "@/store/productCatalogStore";
+import { rememberProduct } from "@/lib/productLookup";
 import { daysUntil } from "@/lib/dateUtils";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG } from "@/components/LocationIcons";
 import { VoiceInput, ParsedItem } from "@/components/VoiceInput";
@@ -153,8 +153,9 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
       source: "user_added",
       verified: false,
     };
-    // Zapamatuj si produkt podle EAN — příští sken stejného kódu ho najde okamžitě
-    useProductCatalogStore.getState().saveProduct(product);
+    // Zapamatuj produkt podle EAN do lokálního i sdíleného katalogu —
+    // příští sken ho najde okamžitě, i ostatním uživatelům
+    rememberProduct(product);
     addItem(product, qty, location, price ? parseFloat(price) : undefined, store, tags, photoUrl ?? undefined, expires || undefined);
     setAdded(true);
     setTimeout(onClose, 1000);
