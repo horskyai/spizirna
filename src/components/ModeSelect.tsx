@@ -196,7 +196,7 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
           <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
             <div style={{ textAlign: "center", padding: "16px 0 14px" }}>
               <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 3px" }}>Vyberte svůj plán</p>
-              <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0 }}>14 dní zdarma · Zrušit kdykoli</p>
+              <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0 }}>Testovací verze · Zdarma</p>
             </div>
 
             {/* Dvě karty vedle sebe */}
@@ -228,7 +228,7 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                 <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 2px" }}>Domácnost</p>
                 <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: "0 0 8px" }}>Pro rodiny</p>
                 <p style={{ fontSize: 18, fontWeight: 800, color: "var(--green-primary)", margin: "0 0 10px", lineHeight: 1 }}>
-                  99 Kč<span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)" }}>/měs</span>
+                  Zdarma<span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)" }}> · testovací</span>
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
                   {DOMACNOST_FEATURES.map(f => (
@@ -286,7 +286,7 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                 <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 2px" }}>Provozovna</p>
                 <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: "0 0 8px" }}>Restaurace & bary</p>
                 <p style={{ fontSize: 18, fontWeight: 800, color: "#E8862E", margin: "0 0 10px", lineHeight: 1 }}>
-                  199 Kč<span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)" }}>/měs</span>
+                  Zdarma<span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)" }}> · testovací</span>
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
                   {PROVOZ_FEATURES.map(f => (
@@ -315,7 +315,7 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
             </div>
 
             <p style={{ fontSize: 10, color: "var(--text-tertiary)", textAlign: "center", marginTop: 10, lineHeight: 1.5 }}>
-              Po 14 dnech zdarma se aktivuje platba. Plán lze změnit v nastavení.
+              Testovací verze je zdarma. Plán lze změnit v nastavení.
             </p>
           </div>
         )}
