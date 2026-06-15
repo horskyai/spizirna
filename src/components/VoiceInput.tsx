@@ -9,23 +9,29 @@ export interface ParsedItem {
   unit: string;
 }
 
-// Převod mluvených čísel na číslice
+// Převod mluvených čísel na číslice (vč. hovorových / zkomolených tvarů,
+// jak je často přepíše hlasové rozpoznávání — bez diakritiky apod.)
 const NUMBERS: Record<string, number> = {
-  jeden: 1, jedna: 1, jedno: 1, "jednu": 1, jednou: 1,
-  dva: 2, dvě: 2, dve: 2, dvakrát: 2,
-  tři: 3, čtyři: 4, pět: 5, šest: 6, sedm: 7, osm: 8, devět: 9, deset: 10,
-  jedenáct: 11, dvanáct: 12, třináct: 13, čtrnáct: 14, patnáct: 15,
-  šestnáct: 16, sedmnáct: 17, osmnáct: 18, devatenáct: 19, dvacet: 20,
-  třicet: 30, čtyřicet: 40, padesát: 50, šedesát: 60, sedmdesát: 70,
-  osmdesát: 80, devadesát: 90,
-  dvěstě: 200, třista: 300, čtyřista: 400, pětset: 500, šestset: 600,
-  půl: 0.5, "půlka": 0.5, čtvrt: 0.25,
+  jeden: 1, jedna: 1, jedno: 1, jednu: 1, jednou: 1,
+  dva: 2, dvě: 2, dve: 2, dvakrát: 2, dvakrat: 2,
+  tři: 3, tri: 3, čtyři: 4, ctyri: 4, pět: 5, pet: 5,
+  šest: 6, sest: 6, sedm: 7, osm: 8, devět: 9, devet: 9, deset: 10,
+  jedenáct: 11, jedenact: 11, dvanáct: 12, dvanact: 12, dvanácet: 12, dvanacet: 12,
+  třináct: 13, trinact: 13, čtrnáct: 14, ctrnact: 14, patnáct: 15, patnact: 15,
+  šestnáct: 16, sestnact: 16, sedmnáct: 17, sedmnact: 17, osmnáct: 18, osmnact: 18,
+  devatenáct: 19, devatenact: 19, dvacet: 20, dvacít: 20, dvacit: 20,
+  třicet: 30, tricet: 30, čtyřicet: 40, ctyricet: 40, padesát: 50, padesat: 50,
+  šedesát: 60, sedesat: 60, sedmdesát: 70, sedmdesat: 70,
+  osmdesát: 80, osmdesat: 80, devadesát: 90, devadesat: 90,
+  dvěstě: 200, dveste: 200, třista: 300, trista: 300, čtyřista: 400, ctyrista: 400,
+  pětset: 500, petset: 500, šestset: 600, sestset: 600,
+  půl: 0.5, půlka: 0.5, pul: 0.5, pulka: 0.5, čtvrt: 0.25, ctvrt: 0.25,
 };
 
 // Násobky pro skládání čísel typu "pět set", "dvě stě", "tři tisíce"
 const SCALES: Record<string, number> = {
-  set: 100, sto: 100, stě: 100, sta: 100,
-  tisíc: 1000, tisíce: 1000, tisíců: 1000,
+  set: 100, sto: 100, stě: 100, ste: 100, sta: 100, stovek: 100,
+  tisíc: 1000, tisic: 1000, tisíce: 1000, tisice: 1000, tisíců: 1000, tisicu: 1000,
 };
 
 const UNIT_ALIASES: Record<string, string> = {
@@ -91,18 +97,30 @@ export function parseSpokenText(text: string): ParsedItem[] {
     let unit = "ks";
     let hasUnit = false;
 
-    // 1) Množství — číslo, případně skládané se škálou ("pět" + "set" = 500)
+    // 1) Množství — číslo, skládané se škálou ("pět set" = 500) i sčítané
+    //    s navazujícími čísly ("dvacet pět" = 25, "sto dvacet" = 120)
     const t = tokens[i];
     if (t?.kind === "num") {
       quantity = t.value;
       hasQuantity = true;
       i++;
-      // skládání: "pět set", "dvě stě", "tři tisíce"
-      let next = tokens[i];
-      while (next?.kind === "scale") {
-        quantity *= next.value;
+      // násobení škálou: "pět set", "dvě stě", "tři tisíce"
+      while (tokens[i]?.kind === "scale") {
+        quantity *= (tokens[i] as Extract<typeof tokens[number], { kind: "scale" }>).value;
         i++;
-        next = tokens[i];
+      }
+      // sčítání menšího čísla: "dvacet pět" (20+5), "sto dvacet" (100+20),
+      // skládá jen pokud je další číslo menší než dosavadní součet
+      while (
+        tokens[i]?.kind === "num" &&
+        (tokens[i] as Extract<typeof tokens[number], { kind: "num" }>).value < quantity
+      ) {
+        quantity += (tokens[i] as Extract<typeof tokens[number], { kind: "num" }>).value;
+        i++;
+        while (tokens[i]?.kind === "scale") {
+          quantity *= (tokens[i] as Extract<typeof tokens[number], { kind: "scale" }>).value;
+          i++;
+        }
       }
     } else if (t?.kind === "scale") {
       quantity = t.value; // "sto gramů"
