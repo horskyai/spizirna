@@ -240,6 +240,100 @@ function fmtQty(n: number): string {
   return String(Math.round(n * 100) / 100);
 }
 
+// Úprava položky v seznamu (název, množství, jednotka, kategorie) —
+// když se něco nadiktuje špatně, uživatel to tady opraví.
+function EditItemModal({ item, mode, onClose }: { item: ShoppingItem; mode: ShoppingMode; onClose: () => void }) {
+  const updateItem = useShoppingStore((s) => s.updateItem);
+  const [name, setName] = useState(item.name);
+  const [quantity, setQuantity] = useState(String(item.quantity));
+  const [unit, setUnit] = useState(item.unit);
+  const [category, setCategory] = useState(item.category || "ostatni");
+
+  const units = ["ks", "g", "kg", "ml", "l", "balení"];
+
+  const save = () => {
+    if (!name.trim()) return;
+    updateItem(item.id, {
+      name: name.trim(),
+      quantity: parseFloat(quantity.replace(",", ".")) || item.quantity,
+      unit,
+      category,
+    }, mode);
+    onClose();
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, display: "flex", flexDirection: "column", justifyContent: "flex-end", zIndex: 200 }}>
+      <div className="sheet-overlay animate-fade-in" onClick={onClose} style={{ position: "absolute", inset: 0 }} />
+      <div
+        className="relative animate-slide-up rounded-t-3xl overflow-hidden"
+        style={{ background: "var(--bg-primary)", paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
+        </div>
+        <div className="px-5 pt-2 pb-4 space-y-3">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Upravit položku</h3>
+            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
+              <X size={15} style={{ color: "var(--text-secondary)" }} />
+            </button>
+          </div>
+
+          <input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Název produktu..."
+            autoFocus
+            className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
+            style={{ background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+          />
+
+          <div className="flex gap-2">
+            <input
+              type="number"
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              className="w-24 px-3 py-2.5 rounded-xl text-sm outline-none text-center font-semibold"
+              style={{ background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+            />
+            <select
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              style={{ flex: 1, background: "white", border: "1.5px solid var(--border)", borderRadius: 12, padding: "8px 12px", fontSize: 14, fontWeight: 600, outline: "none", color: "var(--text-primary)" }}
+            >
+              {units.map((u) => <option key={u} value={u}>{u}</option>)}
+            </select>
+          </div>
+
+          <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>KATEGORIE</p>
+          <div className="grid grid-cols-2 gap-2">
+            {CATEGORIES.map((c) => (
+              <button
+                key={c.id}
+                onClick={() => setCategory(c.id)}
+                className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-sm font-medium transition-all text-left"
+                style={{
+                  background: category === c.id ? "var(--green-light)" : "white",
+                  border: `1.5px solid ${category === c.id ? "var(--green-primary)" : "var(--border)"}`,
+                  color: category === c.id ? "var(--green-dark)" : "var(--text-primary)",
+                }}
+              >
+                <span>{c.emoji}</span> {c.label}
+              </button>
+            ))}
+          </div>
+
+          <button onClick={save} className="btn-primary" disabled={!name.trim()}>
+            <Check size={18} /> Uložit změny
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function shoppingItemToProduct(item: ShoppingItem): ProductInfo {
   return {
     ean_code: item.ean_code || "",
@@ -415,6 +509,7 @@ export function ShoppingView() {
   const { toggleItem, removeItem, removeChecked, clearAll, getItems } = useShoppingStore();
   const addItems = useShoppingStore((s) => s.addItems);
   const items = getItems(mode);
+  const [editItem, setEditItem] = useState<ShoppingItem | null>(null);
 
   const addToPantry = usePantryStore((s) => s.addItem);
   const [showAdd, setShowAdd] = useState(false);
@@ -511,6 +606,7 @@ export function ShoppingView() {
         <VoiceFab onItems={handleVoiceAdd} />
 
         {showAdd && <AddItemModal onClose={() => setShowAdd(false)} mode={mode} />}
+      {editItem && <EditItemModal item={editItem} mode={mode} onClose={() => setEditItem(null)} />}
       </div>
     );
   }
@@ -581,13 +677,14 @@ export function ShoppingView() {
                     >
                       {justChecked.has(item.id) && <Check size={13} color="white" strokeWidth={3} />}
                     </button>
-                    <div className="flex-1 min-w-0">
+                    <button onClick={() => setEditItem(item)} className="flex-1 min-w-0 text-left">
                       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{item.name}</p>
                       <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
                         {fmtQty(item.quantity)} {item.unit}
                         {cat && <span style={{ color: "var(--text-tertiary)" }}> · {cat.emoji} {cat.label}</span>}
+                        <span style={{ color: "var(--text-tertiary)" }}> · upravit</span>
                       </p>
-                    </div>
+                    </button>
                     <button onClick={() => removeItem(item.id, mode)}>
                       <X size={14} style={{ color: "var(--text-tertiary)" }} />
                     </button>
@@ -660,6 +757,7 @@ export function ShoppingView() {
       <VoiceFab onItems={handleVoiceAdd} />
 
       {showAdd && <AddItemModal onClose={() => setShowAdd(false)} mode={mode} />}
+      {editItem && <EditItemModal item={editItem} mode={mode} onClose={() => setEditItem(null)} />}
 
       {toast && (
         <div

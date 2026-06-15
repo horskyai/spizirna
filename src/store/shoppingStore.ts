@@ -22,6 +22,7 @@ interface ShoppingStore {
   // Vždy pracuje s položkami daného módu
   addItem: (item: Omit<ShoppingItem, "id" | "checked">, mode: ShoppingMode) => void;
   addItems: (items: Omit<ShoppingItem, "id" | "checked">[], mode: ShoppingMode) => void;
+  updateItem: (id: string, changes: Partial<Omit<ShoppingItem, "id">>, mode: ShoppingMode) => void;
   toggleItem: (id: string, mode: ShoppingMode) => void;
   removeItem: (id: string, mode: ShoppingMode) => void;
   removeChecked: (mode: ShoppingMode) => void;
@@ -63,6 +64,13 @@ export const useShoppingStore = create<ShoppingStore>()(
 
       addItems: (items, mode) => {
         items.forEach((item) => get().addItem(item, mode));
+      },
+
+      updateItem: (id, changes, mode) => {
+        const key = itemsKey(mode);
+        set((s) => ({
+          [key]: s[key].map((i) => (i.id === id ? { ...i, ...changes } : i)),
+        }));
       },
 
       toggleItem: (id, mode) => {
