@@ -11,72 +11,127 @@ export interface ParsedItem {
 
 // Převod mluvených čísel na číslice
 const NUMBERS: Record<string, number> = {
-  jeden: 1, jedna: 1, jedno: 1, "jednu": 1,
-  dva: 2, dvě: 2, dve: 2,
+  jeden: 1, jedna: 1, jedno: 1, "jednu": 1, jednou: 1,
+  dva: 2, dvě: 2, dve: 2, dvakrát: 2,
   tři: 3, čtyři: 4, pět: 5, šest: 6, sedm: 7, osm: 8, devět: 9, deset: 10,
   jedenáct: 11, dvanáct: 12, třináct: 13, čtrnáct: 14, patnáct: 15,
   šestnáct: 16, sedmnáct: 17, osmnáct: 18, devatenáct: 19, dvacet: 20,
+  třicet: 30, čtyřicet: 40, padesát: 50, šedesát: 60, sedmdesát: 70,
+  osmdesát: 80, devadesát: 90,
+  dvěstě: 200, třista: 300, čtyřista: 400, pětset: 500, šestset: 600,
   půl: 0.5, "půlka": 0.5, čtvrt: 0.25,
+};
+
+// Násobky pro skládání čísel typu "pět set", "dvě stě", "tři tisíce"
+const SCALES: Record<string, number> = {
+  set: 100, sto: 100, stě: 100, sta: 100,
+  tisíc: 1000, tisíce: 1000, tisíců: 1000,
 };
 
 const UNIT_ALIASES: Record<string, string> = {
   gram: "g", gramu: "g", gramů: "g", gramy: "g",
-  kilogram: "kg", kilogramu: "kg", kilogramů: "kg", kilogramy: "kg", kilo: "kg",
-  dekagram: "dkg", dekagramů: "dkg",
+  kilogram: "kg", kilogramu: "kg", kilogramů: "kg", kilogramy: "kg",
+  kilo: "kg", kila: "kg", kil: "kg",
+  deko: "dkg", dekagram: "dkg", dekagramů: "dkg", deka: "dkg",
   mililitr: "ml", mililitru: "ml", mililitrů: "ml", mililitry: "ml",
   litr: "l", litru: "l", litrů: "l", litry: "l",
   lžíce: "lžíce", lžíci: "lžíce", lžic: "lžíce",
   lžička: "lžička", lžičky: "lžička", lžiček: "lžička",
   hrnek: "hrnek", hrnku: "hrnek", hrnků: "hrnek", hrnky: "hrnek",
   kus: "ks", kusy: "ks", kusu: "ks", kusů: "ks",
-  balení: "balení", balenie: "balení",
+  balení: "balení", balenie: "balení", balíček: "balení", balíčky: "balení",
+  plechovka: "ks", plechovky: "ks",
+  lahev: "ks", lahve: "ks", láhev: "ks",
+  konzerva: "ks", konzervy: "ks",
   stroužek: "stroužky", stroužky: "stroužky", stroužků: "stroužky",
   větvička: "větvičky", větvičky: "větvičky",
   plátky: "plátky", plátek: "plátky", plátků: "plátky",
   lístky: "listů", lístek: "listů",
 };
 
+// Vrací číselnou hodnotu slova, nebo null pokud to není číslo
+function wordToNumber(w: string): number | null {
+  const digit = parseFloat(w.replace(",", "."));
+  if (!isNaN(digit)) return digit;
+  if (w in NUMBERS) return NUMBERS[w];
+  return null;
+}
+
 export function parseSpokenText(text: string): ParsedItem[] {
-  const results: ParsedItem[] = [];
-
-  // Rozdělíme na položky podle: čárka, "a", "pak", "dále", "taky", "také"
-  const segments = text
+  // Normalizace: malá písmena, "a" jako oddělovač pryč, slova jako tokeny
+  const words = text
     .toLowerCase()
-    .split(/,|\sa\s|\spak\s|\sdále\s|\staky\s|\stakté\s|\splus\s/i)
-    .map(s => s.trim())
-    .filter(s => s.length > 1);
+    .replace(/,/g, " ")
+    .replace(/\s+a\s+/g, " ")
+    .replace(/\s+(pak|dále|potom|ještě|taky|také|plus)\s+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean);
 
-  for (const segment of segments) {
-    const words = segment.trim().split(/\s+/);
+  type Token =
+    | { kind: "num"; value: number }
+    | { kind: "scale"; value: number }
+    | { kind: "unit"; value: string }
+    | { kind: "word"; value: string };
+
+  const tokens: Token[] = words.map((w): Token => {
+    const n = wordToNumber(w);
+    if (n !== null) return { kind: "num", value: n };
+    if (w in SCALES) return { kind: "scale", value: SCALES[w] };
+    if (w in UNIT_ALIASES) return { kind: "unit", value: UNIT_ALIASES[w] };
+    return { kind: "word", value: w };
+  });
+
+  const results: ParsedItem[] = [];
+  let i = 0;
+
+  while (i < tokens.length) {
     let quantity = 1;
+    let hasQuantity = false;
     let unit = "ks";
-    let nameStart = 0;
+    let hasUnit = false;
 
-    // Hledáme číslo (číslici nebo slovo)
-    let i = 0;
-    if (words[i]) {
-      const num = parseFloat(words[i]);
-      if (!isNaN(num)) {
-        quantity = num;
+    // 1) Množství — číslo, případně skládané se škálou ("pět" + "set" = 500)
+    const t = tokens[i];
+    if (t?.kind === "num") {
+      quantity = t.value;
+      hasQuantity = true;
+      i++;
+      // skládání: "pět set", "dvě stě", "tři tisíce"
+      let next = tokens[i];
+      while (next?.kind === "scale") {
+        quantity *= next.value;
         i++;
-      } else if (NUMBERS[words[i]]) {
-        quantity = NUMBERS[words[i]];
-        i++;
+        next = tokens[i];
       }
-    }
-
-    // Hledáme jednotku
-    if (words[i] && UNIT_ALIASES[words[i]]) {
-      unit = UNIT_ALIASES[words[i]];
-      i++;
-    } else if (words[i] === "g" || words[i] === "kg" || words[i] === "ml" || words[i] === "l") {
-      unit = words[i];
+    } else if (t?.kind === "scale") {
+      quantity = t.value; // "sto gramů"
+      hasQuantity = true;
       i++;
     }
 
-    nameStart = i;
-    const name = words.slice(nameStart).join(" ").trim();
+    // 2) Jednotka
+    const u = tokens[i];
+    if (u?.kind === "unit") {
+      unit = u.value;
+      hasUnit = true;
+      i++;
+    }
 
+    // 3) Název = slova až do dalšího čísla (= začátek nové položky)
+    const nameParts: string[] = [];
+    while (i < tokens.length && tokens[i].kind === "word") {
+      nameParts.push((tokens[i] as Extract<Token, { kind: "word" }>).value);
+      i++;
+    }
+
+    if (nameParts.length === 0) {
+      // osamocené číslo/jednotka bez názvu — přeskoč, ať se nezacyklíme
+      if (!hasQuantity && !hasUnit) i++;
+      continue;
+    }
+
+    const name = nameParts.join(" ").trim();
     if (name.length > 1) {
       results.push({ name: capitalize(name), quantity, unit });
     }
