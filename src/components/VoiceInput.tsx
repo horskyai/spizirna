@@ -35,6 +35,8 @@ const SCALES: Record<string, number> = {
 };
 
 const UNIT_ALIASES: Record<string, string> = {
+  // krátké symboly (Google je u čísel často přepíše rovnou takto)
+  g: "g", kg: "kg", dkg: "dkg", dag: "dkg", mg: "g", ml: "ml", l: "l",
   gram: "g", gramu: "g", gramů: "g", gramy: "g",
   kilogram: "kg", kilogramu: "kg", kilogramů: "kg", kilogramy: "kg",
   kilo: "kg", kila: "kg", kil: "kg",
@@ -136,10 +138,16 @@ export function parseSpokenText(text: string): ParsedItem[] {
       i++;
     }
 
-    // 3) Název = slova až do dalšího čísla (= začátek nové položky)
+    // 3) Název = slova; jednotka může přijít i za názvem ("brambory 1200 g")
     const nameParts: string[] = [];
     while (i < tokens.length && tokens[i].kind === "word") {
       nameParts.push((tokens[i] as Extract<Token, { kind: "word" }>).value);
+      i++;
+    }
+    // jednotka za názvem (jen pokud jsme ji ještě nezachytili před názvem)
+    if (!hasUnit && tokens[i]?.kind === "unit") {
+      unit = (tokens[i] as Extract<Token, { kind: "unit" }>).value;
+      hasUnit = true;
       i++;
     }
 
@@ -151,11 +159,24 @@ export function parseSpokenText(text: string): ParsedItem[] {
 
     const name = nameParts.join(" ").trim();
     if (name.length > 1) {
-      results.push({ name: capitalize(name), quantity, unit });
+      const norm = normalizeUnit(quantity, unit);
+      results.push({ name: capitalize(name), quantity: norm.quantity, unit: norm.unit });
     }
   }
 
   return results;
+}
+
+// Hezčí jednotky: 1000+ g → kg, 1000+ ml → l (1200 g → 1.2 kg)
+function normalizeUnit(quantity: number, unit: string): { quantity: number; unit: string } {
+  if (unit === "g" && quantity >= 1000) return { quantity: round2(quantity / 1000), unit: "kg" };
+  if (unit === "ml" && quantity >= 1000) return { quantity: round2(quantity / 1000), unit: "l" };
+  if (unit === "dkg" && quantity >= 100) return { quantity: round2(quantity / 100), unit: "kg" };
+  return { quantity, unit };
+}
+
+function round2(n: number): number {
+  return Math.round(n * 100) / 100;
 }
 
 function capitalize(s: string) {
