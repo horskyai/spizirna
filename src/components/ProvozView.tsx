@@ -4,7 +4,7 @@ import { useState, useCallback, useRef } from "react";
 import {
   ClipboardList, Plus, X, ChevronRight,
   AlertTriangle, Check, Truck, Package, BarChart3, Trash2, ScanLine, Keyboard,
-  FileText, Download, FileSpreadsheet, Pencil, Share2, Mic, MicOff, Loader
+  FileText, Download, FileSpreadsheet, Pencil, Share2, Mic, MicOff, Loader, Search
 } from "lucide-react";
 import { parseSpokenText } from "@/components/VoiceInput";
 import {
@@ -901,6 +901,7 @@ function SpravaSkladu() {
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
   const critical = getPolozkyCritical();
 
   // Hlasem nadiktované položky se rovnou založí do skladu Provozu
@@ -927,9 +928,11 @@ function SpravaSkladu() {
     });
   });
 
+  const q = search.trim().toLowerCase();
+  const filtrovane = q ? polozky.filter(p => p.nazev.toLowerCase().includes(q)) : polozky;
   const byKategorie = INVENTURA_KATEGORIE.map(k => ({
     ...k,
-    polozky: polozky.filter(p => p.kategorie === k.id),
+    polozky: filtrovane.filter(p => p.kategorie === k.id),
   })).filter(k => k.polozky.length > 0);
 
   return (
@@ -948,7 +951,34 @@ function SpravaSkladu() {
         </div>
       )}
 
+      {/* Hledání ve skladu — jen pokud nějaké položky jsou */}
+      {polozky.length > 0 && (
+        <div
+          className="flex items-center gap-2.5 mb-4"
+          style={{ background: "white", borderRadius: 16, padding: "12px 14px", boxShadow: "var(--shadow)" }}
+        >
+          <Search size={17} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Hledat ve skladu..."
+            style={{ border: "none", outline: "none", background: "transparent", fontSize: 14, width: "100%", color: "var(--text-primary)" }}
+          />
+          {search && (
+            <button onClick={() => setSearch("")} style={{ flexShrink: 0, display: "flex" }}>
+              <X size={15} style={{ color: "var(--text-tertiary)" }} />
+            </button>
+          )}
+        </div>
+      )}
+
       {byKategorie.length === 0 ? (
+        q ? (
+          <div className="text-center py-12">
+            <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>Nic nenalezeno pro „{search}“</p>
+          </div>
+        ) : (
         <div className="flex flex-col items-center justify-center py-16 gap-4">
           <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
             <Package size={28} style={{ color: "var(--green-primary)" }} strokeWidth={1.5} />
@@ -961,6 +991,7 @@ function SpravaSkladu() {
             <Plus size={16} /> Přidat položku
           </button>
         </div>
+        )
       ) : (
         <div className="space-y-4">
           {byKategorie.map(k => (

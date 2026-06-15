@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef } from "react";
-import { Plus, Check, ShoppingCart, X, Share2, Lightbulb, ChevronDown, ChevronUp, Mic, MicOff, Loader } from "lucide-react";
+import { Plus, Check, ShoppingCart, X, Share2, Lightbulb, ChevronDown, ChevronUp, Mic, MicOff, Loader, Search } from "lucide-react";
 import { useShoppingStore, ShoppingMode } from "@/store/shoppingStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useRecurringStore } from "@/store/recurringStore";
@@ -514,6 +514,7 @@ export function ShoppingView() {
   const addToPantry = usePantryStore((s) => s.addItem);
   const [showAdd, setShowAdd] = useState(false);
   const [view, setView] = useState<"vse" | "kategorie">("vse");
+  const [search, setSearch] = useState("");
   const [toast, setToast] = useState<string | null>(null);
   const [justChecked, setJustChecked] = useState<Set<string>>(new Set());
 
@@ -535,8 +536,10 @@ export function ShoppingView() {
     setTimeout(() => setToast(null), 3000);
   };
 
-  const unchecked = useMemo(() => items.filter((i) => !i.checked), [items]);
-  const checked = useMemo(() => items.filter((i) => i.checked), [items]);
+  const q = search.trim().toLowerCase();
+  const visible = q ? items.filter((i) => i.name.toLowerCase().includes(q)) : items;
+  const unchecked = useMemo(() => visible.filter((i) => !i.checked), [visible]);
+  const checked = useMemo(() => visible.filter((i) => i.checked), [visible]);
 
   const groups = useMemo(() => {
     if (view === "kategorie") {
@@ -615,6 +618,26 @@ export function ShoppingView() {
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-2 pb-24 space-y-4">
         <SmartSuggestionsWidget mode={mode} />
+
+        {/* Hledání */}
+        <div
+          className="flex items-center gap-2.5"
+          style={{ background: "white", borderRadius: 16, padding: "12px 14px", boxShadow: "var(--shadow)" }}
+        >
+          <Search size={17} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Hledat v seznamu..."
+            style={{ border: "none", outline: "none", background: "transparent", fontSize: 14, width: "100%", color: "var(--text-primary)" }}
+          />
+          {search && (
+            <button onClick={() => setSearch("")} style={{ flexShrink: 0, display: "flex" }}>
+              <X size={15} style={{ color: "var(--text-tertiary)" }} />
+            </button>
+          )}
+        </div>
 
         {/* Segmentový přepínač Vše | Kategorie */}
         <div style={{ display: "flex", background: "#E7E4DC", borderRadius: 14, padding: 4 }}>
