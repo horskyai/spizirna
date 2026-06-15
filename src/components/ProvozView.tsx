@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef } from "react";
 import {
   ClipboardList, Plus, X, ChevronRight,
   AlertTriangle, Check, Truck, Package, BarChart3, Trash2, ScanLine, Keyboard,
-  FileText, Download, FileSpreadsheet, Pencil, Share2
+  FileText, Download, FileSpreadsheet, Pencil, Share2, Mic, MicOff, Loader
 } from "lucide-react";
+import { parseSpokenText } from "@/components/VoiceInput";
 import {
   useProvozStore,
   INVENTURA_KATEGORIE,
@@ -793,12 +794,128 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
   );
 }
 
+// Odhad skladové kategorie podle názvu (vlastní pro Provoz — jiný výčet než Nákup)
+function guessSkladKategorie(name: string): InventuraKategorie {
+  const n = name.toLowerCase();
+  const has = (...kw: string[]) => kw.some((k) => n.includes(k));
+  if (has("víno", "vino", "pivo", "rum", "vodka", "whisky", "becher", "fernet", "likér", "liker", "tequila", "gin", "alkohol", "sekt", "šampaň", "sampan")) return "alkohol";
+  if (has("kuř", "kur", "hověz", "hovez", "vepřov", "veprov", "maso", "šunk", "sunk", "salám", "salam", "klobás", "klobas", "ryb", "losos", "filet", "mlet")) return "maso-ryby";
+  if (has("mlék", "mlek", "másl", "masl", "sýr", "syr", "jogurt", "tvaroh", "smetan", "vejc", "vajíčk", "vajick")) return "mlecne";
+  if (has("brambor", "cibul", "česnek", "cesnek", "rajč", "rajc", "paprik", "okurk", "mrkev", "mrkv", "jablk", "banán", "banan", "salát", "salat", "zelenin", "ovoce")) return "ovoce-zelenina";
+  if (has("mouk", "cukr", "rýže", "ryze", "těstovin", "testovin", "luštěn", "lusten", "olej", "ocet", "koření", "koreni", "konzerv", "rýži", "ryzi")) return "suche-zbozi";
+  if (has("voda", "vody", "džus", "dzus", "limonád", "limonad", "kofol", "cola", "kola", "sirup", "minerálk", "mineralk")) return "napoje-nealkohol";
+  if (has("chléb", "chleb", "pečiv", "peciv", "rohlík", "rohlik", "housk")) return "potraviny";
+  return "ostatni";
+}
+
+// Samostatný hlasový mikrofon pro sklad Provozu (oddělený od Nákupu).
+// Naparsované položky zakládá rovnou do skladu Provozu.
+function SkladVoiceFab({ onItems }: { onItems: (items: { name: string; quantity: number; unit: string }[]) => void }) {
+  const [state, setState] = useState<"idle" | "listening" | "processing">("idle");
+  const [transcript, setTranscript] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const start = () => {
+    setError(null);
+    setTranscript("");
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setError("Prohlížeč nepodporuje hlasové zadávání. Zkuste Chrome nebo Safari.");
+      return;
+    }
+    const recognition = new SpeechRecognition();
+    recognition.lang = "cs-CZ";
+    recognition.continuous = false;
+    recognition.interimResults = true;
+    recognition.maxAlternatives = 1;
+    recognitionRef.current = recognition;
+
+    recognition.onstart = () => setState("listening");
+    recognition.onresult = (event: any) => {
+      const result = event.results[event.results.length - 1];
+      const text = result[0].transcript;
+      setTranscript(text);
+      if (result.isFinal) {
+        setState("processing");
+        const items = parseSpokenText(text);
+        setTimeout(() => {
+          if (items.length > 0) onItems(items);
+          else setError("Nerozuměl jsem. Zkuste to znovu.");
+          setState("idle");
+          setTranscript("");
+        }, 300);
+      }
+    };
+    recognition.onerror = (event: any) => {
+      setError(event.error === "not-allowed" ? "Přístup k mikrofonu byl odmítnut." : "Nic jsem neslyšel. Zkuste znovu.");
+      setState("idle");
+    };
+    recognition.onend = () => setState((s) => (s === "listening" ? "idle" : s));
+    recognition.start();
+  };
+
+  const stop = () => { recognitionRef.current?.stop(); setState("idle"); };
+  const listening = state === "listening";
+
+  return (
+    <>
+      {(listening || error) && (
+        <div
+          onClick={() => setError(null)}
+          style={{
+            position: "fixed", right: 20,
+            bottom: "calc(158px + env(safe-area-inset-bottom, 0px))",
+            maxWidth: 280, background: "rgba(0,0,0,0.78)", color: "white",
+            borderRadius: 14, padding: "10px 14px", fontSize: 13, lineHeight: 1.45, zIndex: 60,
+          }}
+        >
+          {error ? error : transcript ? `„${transcript}"` : "Poslouchám… např. „dvanáct lahví vína, pět kilo mouky\""}
+        </div>
+      )}
+      <button
+        onClick={listening ? stop : start}
+        aria-label="Přidat položku hlasem"
+        style={{
+          position: "fixed", right: 20,
+          bottom: "calc(92px + env(safe-area-inset-bottom, 0px))",
+          width: 56, height: 56, borderRadius: "50%",
+          background: listening
+            ? "linear-gradient(135deg, #F08A8A 0%, #D95757 100%)"
+            : "linear-gradient(135deg, #F7B267 0%, #E8862E 100%)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: listening ? "0 8px 20px rgba(217,87,87,0.5)" : "0 8px 20px rgba(232,134,46,0.45)",
+          zIndex: 50, transition: "background 0.2s ease",
+        }}
+      >
+        {state === "processing" ? <Loader size={22} color="white" className="animate-spin" />
+          : listening ? <MicOff size={24} color="white" /> : <Mic size={24} color="white" />}
+      </button>
+    </>
+  );
+}
+
 // ── Správa skladu (seznam položek) ────────────────────────────────────────────
 function SpravaSkladu() {
-  const { polozky, inventury, removePolozka, getPolozkyCritical } = useProvozStore();
+  const { polozky, inventury, removePolozka, getPolozkyCritical, addPolozka } = useProvozStore();
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const critical = getPolozkyCritical();
+
+  // Hlasem nadiktované položky se rovnou založí do skladu Provozu
+  const handleVoiceAdd = (items: { name: string; quantity: number; unit: string }[]) => {
+    items.forEach((it) => {
+      addPolozka({
+        nazev: it.name,
+        kategorie: guessSkladKategorie(it.name),
+        jednotka: it.unit,
+        minZasoba: 0,
+      });
+    });
+    setToast(items.length === 1 ? `${items[0].name} přidáno do skladu` : `${items.length} položky přidány do skladu`);
+    setTimeout(() => setToast(null), 3000);
+  };
 
   // Vypočítej poslední stav každé položky
   const posledniStav: Record<string, number> = {};
@@ -908,6 +1025,25 @@ function SpravaSkladu() {
 
       {showAdd && <AddPolozkaModal onClose={() => setShowAdd(false)} />}
       {editId && <EditPolozkaModal polozka={polozky.find(p => p.id === editId)!} onClose={() => setEditId(null)} />}
+
+      <SkladVoiceFab onItems={handleVoiceAdd} />
+
+      {toast && (
+        <div
+          style={{
+            position: "fixed",
+            bottom: "calc(80px + env(safe-area-inset-bottom, 0px))",
+            left: "50%", transform: "translateX(-50%)",
+            background: "var(--green-primary)", color: "white",
+            borderRadius: 16, padding: "10px 18px",
+            fontSize: 13, fontWeight: 600,
+            display: "flex", alignItems: "center", gap: 8,
+            zIndex: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", whiteSpace: "nowrap",
+          }}
+        >
+          <Check size={15} strokeWidth={3} /> {toast}
+        </div>
+      )}
     </div>
   );
 }
