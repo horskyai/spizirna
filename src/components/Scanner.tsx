@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, useCallback } from "react";
-import { Flashlight, X, Keyboard, ArrowLeft, Plus, ExternalLink, Camera } from "lucide-react";
+import { Flashlight, X, Keyboard, ArrowLeft, Plus, ExternalLink, Camera, HelpCircle } from "lucide-react";
 import { useUIStore } from "@/store/uiStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { lookupProductByEAN } from "@/lib/productLookup";
@@ -45,6 +45,15 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
   const [showNotFoundPanel, setShowNotFoundPanel] = useState(false);
   const [showAddManual, setShowAddManual] = useState(false);
   const [showDbPicker, setShowDbPicker] = useState(false);
+  // Nápověda ke skenování — poprvé se ukáže sama, pak ji lze vyvolat přes "?"
+  const [showHelp, setShowHelp] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !localStorage.getItem("scanner-help-seen");
+  });
+  const closeHelp = () => {
+    setShowHelp(false);
+    try { localStorage.setItem("scanner-help-seen", "1"); } catch {}
+  };
 
   const isEmbedded = !!onScanned;
 
@@ -420,7 +429,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
       </div>
 
       {/* Top controls */}
-      <div className="absolute top-4 right-4">
+      <div className="absolute top-4 right-4 flex flex-col gap-2">
         <button
           onClick={toggleTorch}
           className="flex items-center justify-center transition-all"
@@ -434,7 +443,64 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
         >
           <Flashlight size={19} style={{ color: torchOn ? "#1A1A1A" : "white" }} />
         </button>
+        <button
+          onClick={() => setShowHelp(true)}
+          aria-label="Jak skenovat"
+          className="flex items-center justify-center transition-all"
+          style={{
+            width: 44, height: 44, borderRadius: 14,
+            background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)",
+          }}
+        >
+          <HelpCircle size={19} style={{ color: "white" }} />
+        </button>
       </div>
+
+      {/* Nápověda ke skenování */}
+      {showHelp && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 150, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+          <div className="sheet-overlay animate-fade-in" onClick={closeHelp} style={{ position: "absolute", inset: 0 }} />
+          <div
+            className="relative animate-slide-up rounded-t-3xl"
+            style={{ background: "var(--bg-primary)", paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))" }}
+          >
+            <div className="flex justify-center pt-3 pb-1">
+              <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
+            </div>
+            <div className="px-5 pt-2 pb-2">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Jak naskenovat produkt</h3>
+                <button onClick={closeHelp} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
+                  <X size={15} style={{ color: "var(--text-secondary)" }} />
+                </button>
+              </div>
+
+              <div className="space-y-3">
+                {[
+                  { n: "1", t: "Namiřte na čárový kód", d: "Podržte telefon nad čárovým kódem na obalu (najdete ho většinou na zadní straně). Kód udržte v zeleném rámečku." },
+                  { n: "2", t: "Počkejte na zaměření", d: "Aplikace kód přečte sama, nemusíte nic mačkat. Ve špatném světle si posviťte tlačítkem baterky vpravo nahoře." },
+                  { n: "3", t: "Produkt se najde", d: "Pokud je kód v databázi, načte se název i výživové hodnoty. Vše už máte předvyplněné — jen potvrdíte." },
+                  { n: "4", t: "Když se nenajde", d: "Některé produkty v databázi nejsou. Pak ťukněte na „Zadat ručně“ dole a doplníte údaje (i s vlastní fotkou). Příště už si je aplikace pamatuje." },
+                ].map((s) => (
+                  <div key={s.n} className="flex gap-3">
+                    <div style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 13 }}>
+                      {s.n}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{s.t}</p>
+                      <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)", lineHeight: 1.5 }}>{s.d}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <button onClick={closeHelp} className="btn-primary" style={{ marginTop: 16 }}>
+                Rozumím, jdu skenovat
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Manual EAN input modal */}
       {showManualInput && (
