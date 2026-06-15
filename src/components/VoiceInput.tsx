@@ -157,7 +157,7 @@ export function parseSpokenText(text: string): ParsedItem[] {
       continue;
     }
 
-    const name = nameParts.join(" ").trim();
+    const name = lemmatizeName(nameParts.join(" ").trim());
     if (name.length > 1) {
       const norm = normalizeUnit(quantity, unit);
       results.push({ name: capitalize(name), quantity: norm.quantity, unit: norm.unit });
@@ -165,6 +165,55 @@ export function parseSpokenText(text: string): ParsedItem[] {
   }
 
   return results;
+}
+
+// Převod skloňovaných tvarů potravin do 1. pádu ("brambor" → "brambory",
+// "mléka" → "mléko"). Slovník nejčastějších položek; co tam není, necháme být.
+const LEMMA: Record<string, string> = {
+  brambor: "brambory", brambory: "brambory",
+  mléka: "mléko", mleka: "mléko", mléko: "mléko",
+  másla: "máslo", masla: "máslo", máslo: "máslo", másel: "máslo",
+  vajec: "vejce", vajíčka: "vejce", vajicka: "vejce", vejce: "vejce",
+  rýže: "rýže", ryze: "rýže",
+  mouky: "mouka", mouka: "mouka",
+  cukru: "cukr", cukr: "cukr",
+  soli: "sůl", sůl: "sůl", sul: "sůl",
+  chleba: "chléb", chléb: "chléb", chleb: "chléb",
+  rohlíků: "rohlíky", rohlíky: "rohlíky", rohliku: "rohlíky", rohliky: "rohlíky",
+  housek: "housky", housky: "housky",
+  sýra: "sýr", syra: "sýr", sýr: "sýr", syr: "sýr",
+  šunky: "šunka", sunky: "šunka", šunka: "šunka",
+  jogurtů: "jogurt", jogurty: "jogurt", jogurtu: "jogurt", jogurt: "jogurt",
+  cibule: "cibule", cibuli: "cibule",
+  česneku: "česnek", cesneku: "česnek", česnek: "česnek",
+  rajčat: "rajčata", rajčata: "rajčata", rajcat: "rajčata", rajče: "rajčata",
+  paprik: "paprika", papriky: "paprika", papriku: "paprika", paprika: "paprika",
+  okurek: "okurky", okurky: "okurky", okurku: "okurky",
+  mrkve: "mrkev", mrkví: "mrkev", mrkev: "mrkev",
+  jablek: "jablka", jablka: "jablka", jablko: "jablka",
+  banánů: "banány", banány: "banány", bananu: "banány", banany: "banány",
+  kuřete: "kuřecí maso", kuřecího: "kuřecí maso", kureciho: "kuřecí maso",
+  hovězího: "hovězí maso", hoveziho: "hovězí maso",
+  vepřového: "vepřové maso", veproveho: "vepřové maso",
+  těstovin: "těstoviny", těstoviny: "těstoviny", testovin: "těstoviny",
+  kávy: "káva", kavy: "káva", káva: "káva", kava: "káva",
+  čaje: "čaj", caje: "čaj", čaj: "čaj",
+};
+
+function lemmatizeName(name: string): string {
+  const words = name.split(/\s+/);
+  // jednoslovný název: zkus slovník
+  if (words.length === 1) {
+    return LEMMA[words[0]] ?? name;
+  }
+  // víceslovný: zkus celé spojení, jinak lemmatizuj poslední (hlavní) slovo
+  if (LEMMA[name]) return LEMMA[name];
+  const last = words[words.length - 1];
+  if (LEMMA[last]) {
+    words[words.length - 1] = LEMMA[last];
+    return words.join(" ");
+  }
+  return name;
 }
 
 // Hezčí jednotky: 1000+ g → kg, 1000+ ml → l (1200 g → 1.2 kg).

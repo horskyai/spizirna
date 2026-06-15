@@ -10,6 +10,7 @@ import { useModeStore } from "@/store/modeStore";
 import { ShoppingItem } from "@/store/shoppingStore";
 import { ProductInfo } from "@/types";
 import { VoiceInput, parseSpokenText, ParsedItem } from "@/components/VoiceInput";
+import { guessCategory } from "@/lib/guessCategory";
 
 const CATEGORIES = [
   { id: "ovoce-zelenina", label: "Ovoce a zelenina", emoji: "🥦" },
@@ -39,7 +40,7 @@ function AddItemModal({ onClose, mode }: { onClose: () => void; mode: ShoppingMo
   };
 
   const handleVoice = (items: { name: string; quantity: number; unit: string }[]) => {
-    items.forEach((item) => addItem({ name: item.name, quantity: item.quantity, unit: item.unit, category }, mode));
+    items.forEach((item) => addItem({ name: item.name, quantity: item.quantity, unit: item.unit, category: guessCategory(item.name) }, mode));
     if (items.length > 0) onClose();
   };
 
@@ -434,7 +435,7 @@ export function ShoppingView() {
   };
 
   const handleVoiceAdd = (voiceItems: ParsedItem[]) => {
-    addItems(voiceItems.map((i) => ({ name: i.name, quantity: i.quantity, unit: i.unit, category: "ostatni" })), mode);
+    addItems(voiceItems.map((i) => ({ name: i.name, quantity: i.quantity, unit: i.unit, category: guessCategory(i.name) })), mode);
     setToast(voiceItems.length === 1 ? `${voiceItems[0].name} přidáno na seznam` : `${voiceItems.length} položky přidány na seznam`);
     setTimeout(() => setToast(null), 3000);
   };
