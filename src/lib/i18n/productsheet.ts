@@ -12,6 +12,7 @@ export const productsheet: Record<string, Translation> = {
   "product.camera": { cs: "Kamera", sk: "Kamera" },
   "product.tabInfo": { cs: "Informace", sk: "Informácie" },
   "product.addToPantry": { cs: "Přidat do spižírny", sk: "Pridať do špajze" },
+  "product.addToStock": { cs: "Přidat do skladu", sk: "Pridať do skladu" },
 
   // ── Výživové hodnoty ──
   "product.editNutrition": { cs: "Upravit výživové hodnoty", sk: "Upraviť výživové hodnoty" },

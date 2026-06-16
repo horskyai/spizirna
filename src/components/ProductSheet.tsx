@@ -5,6 +5,8 @@ import { X, Plus, AlertCircle, Pencil, ChevronLeft } from "lucide-react";
 import { ProductInfo, StorageLocation } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
 import { usePriceStore } from "@/store/priceStore";
+import { useProvozStore } from "@/store/provozStore";
+import { useModeStore } from "@/store/modeStore";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG } from "@/components/LocationIcons";
 import { daysUntil } from "@/lib/dateUtils";
 import { useT } from "@/lib/i18n";
@@ -29,6 +31,10 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
   const addItem = usePantryStore((s) => s.addItem);
   const updateItem = usePantryStore((s) => s.updateItem);
   const pantryItems = usePantryStore((s) => s.items);
+  // V režimu provozovna se sken přidává do skladu (provozStore), ne do spížírny.
+  const mode = useModeStore((s) => s.mode);
+  const isProvoz = mode === "provoz";
+  const addPolozka = useProvozStore((s) => s.addPolozka);
   const addRecord = usePriceStore((s) => s.addRecord);
   const allPriceRecords = usePriceStore((s) => s.records);
   const priceRecords = useMemo(
@@ -36,8 +42,8 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
     [allPriceRecords, product.ean_code]
   );
 
-  // Najdi existující položky ve spižírně podle EAN
-  const existingItems = pantryItems.filter((i) => i.product.ean_code === product.ean_code);
+  // Najdi existující položky ve spižírně podle EAN (v provozu se spížírna nepoužívá)
+  const existingItems = isProvoz ? [] : pantryItems.filter((i) => i.product.ean_code === product.ean_code);
 
   const [tab, setTab] = useState<"info" | "add">("info");
   const [qty, setQty] = useState(1);
@@ -70,6 +76,20 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
   };
 
   const handleAdd = () => {
+    if (isProvoz) {
+      // Provozovna: přidej do skladu (inventury), ne do spížírny.
+      addPolozka({
+        nazev: product.product_name,
+        kategorie: "potraviny",
+        jednotka: product.unit === "ml" ? "l" : product.unit === "g" ? "kg" : product.unit || "ks",
+        minZasoba: 1,
+        cenaJednotka: price ? parseFloat(price) : undefined,
+        minTrvanlivost: expires || undefined,
+      });
+      setAdded(true);
+      setTimeout(onClose, 1200);
+      return;
+    }
     addItem(product, qty, location, price ? parseFloat(price) : undefined, store, undefined, undefined, expires || undefined);
     if (price) {
       addRecord({
@@ -496,7 +516,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
                 ) : existingItems.length > 0 ? (
                   <><Plus size={18} /> {t("product.addAsNew")}</>
                 ) : (
-                  <><Plus size={18} /> {t("product.addToPantry")}</>
+                  <><Plus size={18} /> {isProvoz ? t("product.addToStock") : t("product.addToPantry")}</>
                 )}
               </button>
             </div>

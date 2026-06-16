@@ -89,9 +89,14 @@ Google vyžaduje:
 ## 5) Předplatné (Google Play Billing)
 
 1. V **Play Console → Monetize → Subscriptions** vytvořit produkty:
-   - `basic_monthly` — Základní, 99 Kč/měsíc
-   - `family_monthly` — Rodinný, 149 Kč/měsíc
-   (ceny, zkušební období, atd.)
+   - `domacnost_monthly` — Domácnost, **119 Kč/měsíc**
+   - `provozovna_monthly` — Provozovna, **219 Kč/měsíc**
+   - U každého nastavit **free trial = 14 dní** (2 týdny zdarma).
+
+   **Model triálu: Google trial** (zvoleno). Uživatel klikne „Vyzkoušet zdarma",
+   Google si vezme platební údaje, 14 dní nestrhne nic a po vypršení automaticky
+   spustí placené předplatné (pokud uživatel nezruší). Hlídá to Google, ne appka.
+   → V appce se jen ověří přes RevenueCat, jestli má uživatel aktivní trial/předplatné.
 2. Propojit s **RevenueCat** (nadefinovat tam "entitlements" = co plán odemyká).
 3. V appce nahradit dnešní šablonová tlačítka **"Změnit plán" / "Zrušit
    předplatné"** za reálné volání RevenueCat SDK:
