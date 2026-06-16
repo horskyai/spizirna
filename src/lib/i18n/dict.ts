@@ -20,6 +20,7 @@ import { prices } from "./prices";
 import { auth } from "./auth";
 import { settings } from "./settings";
 import { guide } from "./guide";
+import { provozsklad } from "./provozsklad";
 
 export interface Translation {
   cs: string;
@@ -44,4 +45,5 @@ export const DICT: Record<string, Translation> = {
   ...auth,
   ...settings,
   ...guide,
+  ...provozsklad,
 };

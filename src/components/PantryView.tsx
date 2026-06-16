@@ -4,7 +4,9 @@ import { useState } from "react";
 import { Plus, Trash2, ChevronRight, Pencil, X, RefrigeratorIcon, ScanLine, Minus, Search } from "lucide-react";
 import { usePantryStore } from "@/store/pantryStore";
 import { useUIStore } from "@/store/uiStore";
+import { useModeStore } from "@/store/modeStore";
 import { useGamificationStore } from "@/store/gamificationStore";
+import { ProvozSkladView } from "@/components/ProvozSkladView";
 import { PantryItem, StorageLocation } from "@/types";
 import { daysUntil, formatDateShort } from "@/lib/dateUtils";
 import { cn } from "@/lib/cn";
@@ -255,9 +257,15 @@ export function PantryView() {
   const t = useT();
   const { items, removeItem } = usePantryStore();
   const { setTab } = useUIStore();
+  const mode = useModeStore((s) => s.mode);
   const [filter, setFilter] = useState<StorageLocation | "vse">("vse");
   const [search, setSearch] = useState("");
   const [showManual, setShowManual] = useState(false);
+
+  // V režimu provozovna ukazuje tab Spižírna obsah skladu (propojeno s Provozem).
+  if (mode === "provoz") {
+    return <ProvozSkladView />;
+  }
 
   const byLocation = filter === "vse" ? items : items.filter(i => i.location === filter);
   const filtered = search.trim()
