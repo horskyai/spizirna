@@ -137,10 +137,16 @@ export function AuthScreen() {
     <div className="flex flex-col min-h-dvh px-5 justify-center" style={{ background: "var(--bg-primary)", paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
       {/* Logo */}
       <div className="flex flex-col items-center mb-6">
-        <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)", boxShadow: "0 6px 20px rgba(76,175,130,0.4)" }}>
-          <ChefHat size={28} color="white" />
-        </div>
-        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{t("auth.appName")}</h1>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/icon-192.png"
+          alt={t("auth.appName")}
+          width={72}
+          height={72}
+          className="rounded-2xl mb-3"
+          style={{ boxShadow: "0 6px 20px rgba(232,134,46,0.35)" }}
+        />
+        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)", letterSpacing: "0.02em" }}>{t("auth.appName")}</h1>
         <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{t("auth.tagline")}</p>
       </div>
 
