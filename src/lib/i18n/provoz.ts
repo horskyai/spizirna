@@ -66,6 +66,9 @@ export const provoz: Record<string, Translation> = {
   "provoz.dodavatel": { cs: "Dodavatel", sk: "Dodávateľ" },
   "provoz.volitelne": { cs: "volitelné", sk: "voliteľné" },
   "provoz.minTrvanlivostDo": { cs: "Min. trvanlivost do", sk: "Min. trvanlivosť do" },
+  "provoz.foto": { cs: "Fotka položky", sk: "Fotka položky" },
+  "provoz.fotit": { cs: "Fotit", sk: "Fotiť" },
+  "provoz.galerie": { cs: "Galerie", sk: "Galéria" },
   "provoz.pridatPolozku": { cs: "Přidat položku", sk: "Pridať položku" },
 
   // ── Aktivní inventura ──

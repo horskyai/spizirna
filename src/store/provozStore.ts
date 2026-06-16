@@ -31,6 +31,7 @@ export interface InventuraPolozka {
   cenaJednotka?: number; // cena za jednotku pro výpočet hodnoty skladu
   dodavatel?: string;
   minTrvanlivost?: string; // YYYY-MM-DD
+  fotoUrl?: string; // fotka položky (data URL z galerie/foťáku)
 }
 
 export interface InventuraZaznam {

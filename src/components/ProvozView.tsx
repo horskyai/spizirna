@@ -4,7 +4,8 @@ import { useState, useCallback, useRef } from "react";
 import {
   ClipboardList, Plus, X, ChevronRight,
   AlertTriangle, Check, Truck, Package, BarChart3, Trash2, ScanLine, Keyboard,
-  FileText, Download, FileSpreadsheet, Pencil, Share2, Mic, MicOff, Loader, Search
+  FileText, Download, FileSpreadsheet, Pencil, Share2, Mic, MicOff, Loader, Search,
+  Camera, Image as ImageIcon
 } from "lucide-react";
 import { parseSpokenText } from "@/components/VoiceInput";
 import {
@@ -746,7 +747,18 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
   const [cena, setCena] = useState(polozka.cenaJednotka ? String(polozka.cenaJednotka) : "");
   const [dodavatel, setDodavatel] = useState(polozka.dodavatel ?? "");
   const [minTrvanlivost, setMinTrvanlivost] = useState(polozka.minTrvanlivost ?? "");
+  const [fotoUrl, setFotoUrl] = useState<string | null>(polozka.fotoUrl ?? null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraInputRef = useRef<HTMLInputElement>(null);
   const JEDNOTKY = ["ks", "l", "dl", "ml", "kg", "g", "lahev", "balení", "porce"];
+
+  const handlePhotoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setFotoUrl(reader.result as string);
+    reader.readAsDataURL(file);
+  };
 
   const save = () => {
     updatePolozka(polozka.id, {
@@ -756,6 +768,7 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
       cenaJednotka: cena ? parseFloat(cena) : undefined,
       dodavatel: dodavatel.trim() || undefined,
       minTrvanlivost: minTrvanlivost || undefined,
+      fotoUrl: fotoUrl ?? undefined,
     });
     onClose();
   };
@@ -810,6 +823,36 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
             className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
             style={{ border: "1.5px solid var(--border)", background: "white", color: minTrvanlivost ? "var(--text-primary)" : "var(--text-tertiary)" }} />
         </div>
+
+        {/* Fotka položky */}
+        <div>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.foto")}</label>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            {fotoUrl ? (
+              <div style={{ position: "relative" }}>
+                <img src={fotoUrl} alt="" style={{ width: 64, height: 64, borderRadius: 12, objectFit: "cover", border: "1.5px solid var(--border)" }} />
+                <button onClick={() => setFotoUrl(null)}
+                  style={{ position: "absolute", top: -6, right: -6, width: 22, height: 22, borderRadius: "50%", background: "var(--red)", display: "flex", alignItems: "center", justifyContent: "center", border: "2px solid white" }}>
+                  <X size={11} color="white" />
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: "flex", gap: 8, flex: 1 }}>
+                <button onClick={() => cameraInputRef.current?.click()}
+                  style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 12, border: "1.5px solid var(--border)", background: "white", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>
+                  <Camera size={15} style={{ color: "var(--green-primary)" }} /> {t("provoz.fotit")}
+                </button>
+                <button onClick={() => fileInputRef.current?.click()}
+                  style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px", borderRadius: 12, border: "1.5px solid var(--border)", background: "white", fontSize: 13, fontWeight: 600, color: "var(--text-secondary)" }}>
+                  <ImageIcon size={15} style={{ color: "var(--green-primary)" }} /> {t("provoz.galerie")}
+                </button>
+              </div>
+            )}
+          </div>
+          <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoFile} style={{ display: "none" }} />
+          <input ref={cameraInputRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoFile} style={{ display: "none" }} />
+        </div>
+
         <button onClick={save} className="btn-primary" disabled={!nazev.trim()}>
           <Check size={16} /> {t("common.saveChanges")}
         </button>
