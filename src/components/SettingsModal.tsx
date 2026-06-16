@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, User, LogOut, Crown, Home, Briefcase, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText } from "lucide-react";
+import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useModeStore } from "@/store/modeStore";
 import { useFoodLogStore } from "@/store/foodLogStore";
@@ -14,7 +14,8 @@ const EXPIRY_NOTIF_KEY = "expiry-notifications";
 export function SettingsModal({ onClose }: { onClose: () => void }) {
   const t = useT();
   const { profile, user, signOut, isTrialActive } = useAuthStore();
-  const { mode, setMode } = useModeStore();
+  // Denní cíl má smysl jen v domácnosti — v provozovně se sekce skrývá.
+  const mode = useModeStore((s) => s.mode);
   const goal = useFoodLogStore((s) => s.goal);
   const setGoal = useFoodLogStore((s) => s.setGoal);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
@@ -129,35 +130,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             </div>
           </Section>
 
-          {/* ── Režim ── */}
-          <Section icon={mode === "provoz" ? <Briefcase size={15} /> : <Home size={15} />} title={t("settings.mode")}>
-            <div style={{ display: "flex", gap: 8 }}>
-              {([
-                { id: "domacnost" as const, label: t("plan.domacnost"), icon: <Home size={15} /> },
-                { id: "provoz" as const, label: t("plan.provoz"), icon: <Briefcase size={15} /> },
-              ]).map((m) => {
-                const active = mode === m.id;
-                return (
-                  <button
-                    key={m.id}
-                    onClick={() => { if (!active) setMode(m.id); }}
-                    style={{
-                      flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-                      padding: "10px 8px", borderRadius: 12, fontSize: 13, fontWeight: 700,
-                      background: active ? "var(--green-primary)" : "var(--bg-primary)",
-                      color: active ? "white" : "var(--text-secondary)",
-                      border: `1.5px solid ${active ? "var(--green-primary)" : "var(--border)"}`,
-                    }}
-                  >
-                    {m.icon} {m.label}
-                  </button>
-                );
-              })}
-            </div>
-            <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.modeHint")}</p>
-          </Section>
-
-          {/* ── Denní cíl ── */}
+          {/* ── Denní cíl ── jen v domácnosti (pro provozovnu nedává smysl) */}
+          {mode !== "provoz" && (
           <Section icon={<Target size={15} />} title={t("settings.goal")}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {([
@@ -181,6 +155,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               ))}
             </div>
           </Section>
+          )}
 
           {/* ── Notifikace ── */}
           <Section icon={<Bell size={15} />} title={t("settings.notifications")}>
