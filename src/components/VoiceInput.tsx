@@ -27,12 +27,25 @@ const NUMBERS: Record<string, number> = {
   dvěstě: 200, dveste: 200, třista: 300, trista: 300, čtyřista: 400, ctyrista: 400,
   pětset: 500, petset: 500, šestset: 600, sestset: 600,
   půl: 0.5, půlka: 0.5, pul: 0.5, pulka: 0.5, čtvrt: 0.25, ctvrt: 0.25,
+  // ── slovenské tvary (české tvary už výše: dve, sest atd. nedupluji) ──
+  jedného: 1, jednej: 1, dvaja: 2, štyri: 4, styri: 4, päť: 5, pat: 5,
+  šesť: 6, sedem: 7, osem: 8, deväť: 9, devat: 9, desať: 10, desat: 10,
+  jedenásť: 11, dvanásť: 12, trinásť: 13,
+  štrnásť: 14, strnast: 14, pätnásť: 15, šestnásť: 16,
+  sedemnásť: 17, osemnásť: 18, devätnásť: 19, devatnast: 19,
+  dvadsať: 20, dvadsat: 20, tridsať: 30, tridsat: 30, štyridsať: 40, styridsat: 40,
+  päťdesiat: 50, patdesiat: 50, šesťdesiat: 60, sestdesiat: 60,
+  sedemdesiat: 70, osemdesiat: 80, deväťdesiat: 90, devatdesiat: 90,
+  dvesto: 200, tristo: 300, štyristo: 400, styristo: 400, päťsto: 500, patsto: 500,
+  šesťsto: 600, seststo: 600, pol: 0.5, štvrť: 0.25, stvrt: 0.25,
 };
 
 // Násobky pro skládání čísel typu "pět set", "dvě stě", "tři tisíce"
 const SCALES: Record<string, number> = {
   set: 100, sto: 100, stě: 100, ste: 100, sta: 100, stovek: 100,
   tisíc: 1000, tisic: 1000, tisíce: 1000, tisice: 1000, tisíců: 1000, tisicu: 1000,
+  // ── slovenské tvary (sta/tisíc/tisíce už výše) ──
+  stovák: 100, stoviek: 100, tisícov: 1000, tisicov: 1000,
 };
 
 const UNIT_ALIASES: Record<string, string> = {
@@ -56,6 +69,20 @@ const UNIT_ALIASES: Record<string, string> = {
   větvička: "větvičky", větvičky: "větvičky",
   plátky: "plátky", plátek: "plátky", plátků: "plátky",
   lístky: "listů", lístek: "listů",
+  // ── slovenské tvary (balenie/plechovka/konzerva už výše) ──
+  gramov: "g", kilogramov: "kg", kilá: "kg", kíl: "kg",
+  dekagramov: "dkg",
+  mililiter: "ml", mililitra: "ml", mililitrov: "ml",
+  liter: "l", litra: "l", litrov: "l", litre: "l",
+  lyžica: "lžíce", lyžice: "lžíce", lyžíc: "lžíce",
+  lyžička: "lžička", lyžičky: "lžička", lyžičiek: "lžička",
+  hrnček: "hrnek", hrnčeky: "hrnek", hrnčekov: "hrnek",
+  kusov: "ks",
+  balíčok: "balení",
+  fľaša: "ks", fľaše: "ks", fľaška: "ks",
+  strúčik: "stroužky", strúčiky: "stroužky", strúčikov: "stroužky",
+  vetvička: "větvičky", vetvičky: "větvičky",
+  plátok: "plátky", plátkov: "plátky",
 };
 
 // Vrací číselnou hodnotu slova, nebo null pokud to není číslo
@@ -211,6 +238,38 @@ const LEMMA: Record<string, string> = {
   "šlehačky": "šlehačka", "slehacky": "šlehačka",
   "sýru eidam": "sýr eidam", "syru eidam": "sýr eidam",
   "sýra eidam": "sýr eidam", "syra eidam": "sýr eidam",
+  // ── slovenské názvy → český kanonický tvar (zobrazení si přeloží zpět).
+  //    Klíče zde se nesmí krýt s českými výše (TS hlídá duplicity). ──
+  zemiaky: "brambory", zemiakov: "brambory", zemiak: "brambory",
+  mlieko: "mléko", mlieka: "mléko",
+  maslo: "máslo",
+  vajcia: "vejce", vajicia: "vejce",
+  ryža: "rýže",
+  múka: "mouka", múky: "mouka", muka: "mouka",
+  cukor: "cukr",
+  soľ: "sůl", sol: "sůl",
+  chlieb: "chléb",
+  rožky: "rohlíky", rožkov: "rohlíky", rozky: "rohlíky", rožok: "rohlíky",
+  žemle: "housky", žemľa: "housky", zemle: "housky",
+  jogurtov: "jogurt",
+  cibuľa: "cibule",
+  cesnak: "česnek", cesnaku: "česnek",
+  paradajky: "rajčata", paradajok: "rajčata", paradajka: "rajčata",
+  uhorky: "okurky", uhorka: "okurky", uhoriek: "okurky",
+  mrkva: "mrkev", mrkvy: "mrkev",
+  jablká: "jablka", jabĺk: "jablka",
+  banánov: "banány",
+  kura: "kuřecí maso", kurča: "kuřecí maso", kuracie: "kuřecí maso",
+  hovädzie: "hovězí maso", hovadzie: "hovězí maso",
+  bravčové: "vepřové maso", bravcove: "vepřové maso",
+  cestoviny: "těstoviny", cestovín: "těstoviny",
+  čaju: "čaj",
+  // víceslovné slovenské fráze
+  "kuracie prsia": "kuřecí prsa", "kuracích pŕs": "kuřecí prsa", "kuracích prs": "kuřecí prsa",
+  "mleté mäso": "mleté maso", "mletého mäsa": "mleté maso",
+  "kyslá smotana": "kysaná smetana", "kyslej smotany": "kysaná smetana",
+  "smotana": "smetana", "smotany": "smetana",
+  "šľahačka": "šlehačka", "šľahačky": "šlehačka",
 };
 
 // Jednotlivá poslední slova ve skloňovaném tvaru → 1. pád. Použije se, když
