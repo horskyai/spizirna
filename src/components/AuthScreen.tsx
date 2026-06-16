@@ -82,7 +82,7 @@ export function AuthScreen() {
               onChange={e => setEmail(e.target.value)}
               placeholder={t("auth.emailPlaceholder")}
               onKeyDown={e => e.key === "Enter" && submitReset()}
-              style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+              style={{ width: "100%", paddingLeft: 42, paddingRight: 16, paddingTop: 15, paddingBottom: 15, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
             />
           </div>
           {error && <p className="text-sm px-1" style={{ color: "#C0392B" }}>{error}</p>}
@@ -151,7 +151,7 @@ export function AuthScreen() {
       </div>
 
       {/* Toggle */}
-      <div className="flex rounded-2xl p-1 mb-4" style={{ background: "white", border: "1.5px solid var(--border)" }}>
+      <div className="flex rounded-2xl p-1 mb-5" style={{ background: "white", border: "1.5px solid var(--border)" }}>
         {(["login", "signup"] as const).map((m) => (
           <button
             key={m}
@@ -168,7 +168,7 @@ export function AuthScreen() {
       </div>
 
       {/* Form */}
-      <div className="space-y-2.5">
+      <div className="space-y-3.5">
         {mode === "signup" && (
           <div style={{ position: "relative" }}>
             <User size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
@@ -176,7 +176,7 @@ export function AuthScreen() {
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder={t("auth.namePlaceholder")}
-              style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+              style={{ width: "100%", paddingLeft: 42, paddingRight: 16, paddingTop: 15, paddingBottom: 15, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
             />
           </div>
         )}
@@ -187,7 +187,7 @@ export function AuthScreen() {
             value={email}
             onChange={e => setEmail(e.target.value)}
             placeholder={t("auth.emailPlaceholder")}
-            style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+            style={{ width: "100%", paddingLeft: 42, paddingRight: 16, paddingTop: 15, paddingBottom: 15, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
           />
         </div>
         <div style={{ position: "relative" }}>
@@ -198,7 +198,7 @@ export function AuthScreen() {
             onChange={e => setPassword(e.target.value)}
             placeholder={t("auth.passwordPlaceholder")}
             onKeyDown={e => e.key === "Enter" && submit()}
-            style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+            style={{ width: "100%", paddingLeft: 42, paddingRight: 16, paddingTop: 15, paddingBottom: 15, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
           />
         </div>
 
@@ -224,7 +224,7 @@ export function AuthScreen() {
           onClick={submit}
           disabled={loading}
           className="btn-primary"
-          style={{ opacity: loading ? 0.7 : 1 }}
+          style={{ opacity: loading ? 0.7 : 1, marginTop: 6 }}
         >
           {loading ? t("auth.loading") : mode === "login" ? t("auth.login") : t("auth.createAccount")}
         </button>
