@@ -20,6 +20,9 @@ export const settings: Record<string, Translation> = {
   "settings.planFamily": { cs: "Rodina", sk: "Rodina" },
   "settings.trialActive": { cs: "Zkušební verze aktivní", sk: "Skúšobná verzia aktívna" },
   "settings.trialEnds": { cs: "Zkušební verze končí {date}", sk: "Skúšobná verzia končí {date}" },
+  // Tlačítka plánu — zatím šablona (bez napojení na platby).
+  "settings.changePlan": { cs: "Změnit plán", sk: "Zmeniť plán" },
+  "settings.cancelPlan": { cs: "Zrušit předplatné", sk: "Zrušiť predplatné" },
 
   // ── Režim ──
   "settings.mode": { cs: "Režim", sk: "Režim" },

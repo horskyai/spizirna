@@ -13,7 +13,7 @@ const EXPIRY_NOTIF_KEY = "expiry-notifications";
 
 export function SettingsModal({ onClose }: { onClose: () => void }) {
   const t = useT();
-  const { profile, user, signOut, isTrialActive } = useAuthStore();
+  const { profile, user, signOut, isTrialActive, isPaidPlan } = useAuthStore();
   // Denní cíl má smysl jen v domácnosti — v provozovně se sekce skrývá.
   const mode = useModeStore((s) => s.mode);
   const goal = useFoodLogStore((s) => s.goal);
@@ -118,9 +118,9 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             )}
           </Section>
 
-          {/* ── Plán ── */}
+          {/* ── Plán ── tlačítka zatím ŠABLONA, bez napojení na platby */}
           <Section icon={<Crown size={15} />} title={t("settings.plan")}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 2px 10px" }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{planLabel}</span>
               {isTrialActive() && profile?.trial_ends_at && (
                 <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green-dark)", background: "var(--green-light)", padding: "4px 10px", borderRadius: 99 }}>
@@ -128,6 +128,15 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                 </span>
               )}
             </div>
+            {/* TODO: napojit na platby (Stripe / App Store / Google Play) */}
+            <button onClick={() => { /* TODO: zmenit plan */ }} style={rowBtn("var(--green-light)", "var(--green-dark)")}>
+              <Crown size={15} /> {t("settings.changePlan")}
+            </button>
+            {isPaidPlan() && (
+              <button onClick={() => { /* TODO: zrusit predplatne */ }} style={{ ...rowBtn("transparent", "var(--text-secondary)"), marginTop: 8 }}>
+                {t("settings.cancelPlan")}
+              </button>
+            )}
           </Section>
 
           {/* ── Denní cíl ── jen v domácnosti (pro provozovnu nedává smysl) */}
