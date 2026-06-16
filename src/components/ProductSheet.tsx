@@ -85,6 +85,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
         minZasoba: 1,
         cenaJednotka: price ? parseFloat(price) : undefined,
         minTrvanlivost: expires || undefined,
+        fotoUrl: product.image_url || undefined,
       });
       setAdded(true);
       setTimeout(onClose, 1200);

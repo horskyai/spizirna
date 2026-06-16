@@ -84,7 +84,11 @@ export function ProvozSkladView() {
                 className="flex items-center gap-3 rounded-2xl px-4 py-3"
                 style={{ background: "white", boxShadow: "var(--shadow)", border: critical ? "1.5px solid #F59E42" : "1.5px solid transparent" }}
               >
-                <span style={{ fontSize: 22, flexShrink: 0 }}>{katEmoji(p.kategorie)}</span>
+                {p.fotoUrl ? (
+                  <img src={p.fotoUrl} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover", flexShrink: 0 }} />
+                ) : (
+                  <span style={{ width: 44, height: 44, borderRadius: 10, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, background: "var(--green-light)" }}>{katEmoji(p.kategorie)}</span>
+                )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p className="text-sm font-semibold" style={{ color: "var(--text-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{p.nazev}</p>
                   <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
