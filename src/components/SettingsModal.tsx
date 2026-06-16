@@ -1,19 +1,25 @@
 "use client";
 
 import { useState } from "react";
-import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText } from "lucide-react";
+import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useModeStore } from "@/store/modeStore";
 import { useFoodLogStore } from "@/store/foodLogStore";
-import { useT } from "@/lib/i18n";
+import { useT, useLocale } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/dateUtils";
+
+// Kontaktní e-mail podpory (appkový Gmail).
+const SUPPORT_EMAIL = "spizirnacz@gmail.com";
 
 const APP_VERSION = "1.0.0";
 const EXPIRY_NOTIF_KEY = "expiry-notifications";
 
 export function SettingsModal({ onClose }: { onClose: () => void }) {
   const t = useT();
+  const locale = useLocale();
   const { profile, user, signOut, isTrialActive, isPaidPlan } = useAuthStore();
+  const supportSubject = locale === "sk" ? "Špajza – podpora" : "Spižírna – podpora";
+  const supportHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(supportSubject)}`;
   // Denní cíl má smysl jen v domácnosti — v provozovně se sekce skrývá.
   const mode = useModeStore((s) => s.mode);
   const goal = useFoodLogStore((s) => s.goal);
@@ -208,11 +214,13 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.dataHint")}</p>
           </Section>
 
-          {/* ── Odkazy ── ŠABLONA: zatím bez cílových URL, doplnit později (href). */}
+          {/* ── Odkazy ── Soukromí a Podmínky vedou na stránky v projektu.
+              Podpora zatím bez URL (doplnit kontaktní e-mail/stránku). */}
           <Section icon={<LifeBuoy size={15} />} title={t("settings.links")}>
-            <LinkRow icon={<LifeBuoy size={16} />} label={t("settings.support")} />
-            <LinkRow icon={<Shield size={16} />} label={t("settings.privacy")} />
-            <LinkRow icon={<FileText size={16} />} label={t("settings.terms")} last />
+            <LinkRow icon={<HelpCircle size={16} />} label={t("settings.faq")} href="/faq" />
+            <LinkRow icon={<LifeBuoy size={16} />} label={t("settings.support")} href={supportHref} />
+            <LinkRow icon={<Shield size={16} />} label={t("settings.privacy")} href="/soukromi" />
+            <LinkRow icon={<FileText size={16} />} label={t("settings.terms")} href="/podminky" last />
           </Section>
 
           {/* ── O aplikaci ── */}
@@ -240,23 +248,25 @@ function Section({ icon, title, children }: { icon: React.ReactNode; title: stri
   );
 }
 
-// Řádek odkazu — zatím ŠABLONA bez cíle. Až budou URL, nahraď onClick za
-// otevření odkazu (window.open(url) nebo <a href>).
-function LinkRow({ icon, label, last }: { icon: React.ReactNode; label: string; last?: boolean }) {
-  return (
-    <button
-      onClick={() => { /* TODO: doplnit cílovou URL (podpora / soukromí / podmínky) */ }}
-      style={{
-        display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 2px",
-        background: "transparent", textAlign: "left",
-        borderBottom: last ? "none" : "1px solid var(--border)",
-      }}
-    >
+// Řádek odkazu. S `href` otevře cíl (interní stránku v nové záložce),
+// bez něj zůstává neaktivní (zatím bez URL — např. podpora).
+function LinkRow({ icon, label, href, last }: { icon: React.ReactNode; label: string; href?: string; last?: boolean }) {
+  const style: React.CSSProperties = {
+    display: "flex", alignItems: "center", gap: 10, width: "100%", padding: "10px 2px",
+    background: "transparent", textAlign: "left", textDecoration: "none",
+    borderBottom: last ? "none" : "1px solid var(--border)",
+  };
+  const inner = (
+    <>
       <span style={{ color: "var(--text-secondary)", flexShrink: 0 }}>{icon}</span>
       <span style={{ flex: 1, fontSize: 14, color: "var(--text-primary)" }}>{label}</span>
       <ChevronRight size={16} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
-    </button>
+    </>
   );
+  if (href) {
+    return <a href={href} target="_blank" rel="noopener noreferrer" style={style}>{inner}</a>;
+  }
+  return <button style={style}>{inner}</button>;
 }
 
 function rowBtn(bg: string, color: string): React.CSSProperties {

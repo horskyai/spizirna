@@ -43,3 +43,6 @@ next-env.d.ts
 .vercel
 
 .git-commit-msg.txt
+
+# interni navod - jen lokalne, nepatri na GitHub
+SKILLS.md

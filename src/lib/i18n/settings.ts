@@ -60,6 +60,7 @@ export const settings: Record<string, Translation> = {
 
   // ── Odkazy (zatím šablona — doplnit cílové URL) ──
   "settings.links": { cs: "Odkazy", sk: "Odkazy" },
+  "settings.faq": { cs: "Časté dotazy", sk: "Časté otázky" },
   "settings.support": { cs: "Podpora a kontakt", sk: "Podpora a kontakt" },
   "settings.privacy": { cs: "Ochrana soukromí", sk: "Ochrana súkromia" },
   "settings.terms": { cs: "Podmínky použití", sk: "Podmienky používania" },
