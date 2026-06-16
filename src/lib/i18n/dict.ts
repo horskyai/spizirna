@@ -19,6 +19,7 @@ import { voice } from "./voice";
 import { prices } from "./prices";
 import { auth } from "./auth";
 import { settings } from "./settings";
+import { guide } from "./guide";
 
 export interface Translation {
   cs: string;
@@ -42,4 +43,5 @@ export const DICT: Record<string, Translation> = {
   ...prices,
   ...auth,
   ...settings,
+  ...guide,
 };

@@ -4,11 +4,22 @@ import { useState, useMemo } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useModeStore } from "@/store/modeStore";
-import { Plus, Bell, AlertTriangle, ScanLine, PenLine, Home, Briefcase, Settings } from "lucide-react";
+import { Plus, Bell, AlertTriangle, ScanLine, PenLine, Home, Briefcase, Settings, HelpCircle } from "lucide-react";
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
+import { ScreenGuide, useScreenGuide } from "@/components/ScreenGuide";
 import { daysUntil } from "@/lib/dateUtils";
 import { useT } from "@/lib/i18n";
+
+// Příručka pro každé okno: id (localStorage flag), titulek, intro a kroky.
+// Skener má vlastní nápovědu, proto tu není.
+const GUIDES: Record<string, { id: string; title: string; intro: string; steps: string[] }> = {
+  spizirna: { id: "pantry", title: "guide.pantry.title", intro: "guide.pantry.intro", steps: ["guide.pantry.s1", "guide.pantry.s2", "guide.pantry.s3"] },
+  recepty: { id: "recipes", title: "guide.recipes.title", intro: "guide.recipes.intro", steps: ["guide.recipes.s1", "guide.recipes.s2", "guide.recipes.s3"] },
+  nakup: { id: "shopping", title: "guide.shopping.title", intro: "guide.shopping.intro", steps: ["guide.shopping.s1", "guide.shopping.s2", "guide.shopping.s3"] },
+  opakujici: { id: "recurring", title: "guide.recurring.title", intro: "guide.recurring.intro", steps: ["guide.recurring.s1", "guide.recurring.s2"] },
+  provoz: { id: "provoz", title: "guide.provoz.title", intro: "guide.provoz.intro", steps: ["guide.provoz.s1", "guide.provoz.s2", "guide.provoz.s3"] },
+};
 
 const TITLES: Record<string, string> = {
   spizirna: "header.title.spizirna",
@@ -39,7 +50,27 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const [showExpiry, setShowExpiry] = useState(false);
   const title = t(TITLES[activeTab] ?? "header.title.spizirna");
 
+  // Příručka aktuálního okna — poprvé se ukáže sama, pak přes "?".
+  const guideCfg = GUIDES[activeTab];
+  const guide = useScreenGuide(guideCfg?.id ?? "none");
+  const hasGuide = !!guideCfg;
+
   if (activeTab === "skenovat") return null;
+
+  const HelpButton = hasGuide ? (
+    <button
+      onClick={guide.show}
+      className="w-10 h-10 rounded-full flex items-center justify-center"
+      style={{ background: "white", border: "1px solid var(--border)" }}
+      aria-label={t(guideCfg.title)}
+    >
+      <HelpCircle size={18} style={{ color: "var(--text-secondary)" }} />
+    </button>
+  ) : null;
+
+  const guideSheet = hasGuide ? (
+    <ScreenGuide guide={guide} titleKey={guideCfg.title} introKey={guideCfg.intro} steps={guideCfg.steps} />
+  ) : null;
 
   const isPantry = activeTab === "spizirna";
 
@@ -87,6 +118,7 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
                   </span>
                 </button>
               )}
+              {HelpButton}
               <button
                 onClick={onOpenSettings}
                 className="w-10 h-10 rounded-full flex items-center justify-center"
@@ -124,6 +156,7 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
                 <Plus size={19} color="white" strokeWidth={2.5} />
               </button>
             )}
+            {HelpButton}
             <button
               onClick={onOpenSettings}
               className="w-10 h-10 rounded-full flex items-center justify-center"
@@ -135,6 +168,8 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
           </div>
         </header>
       )}
+
+      {guideSheet}
 
       {/* Add menu sheet */}
       {showAddMenu && (
