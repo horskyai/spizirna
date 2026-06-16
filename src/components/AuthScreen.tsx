@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useAuthStore } from "@/store/authStore";
+import { getCurrentMode } from "@/store/modeStore";
 import { useT } from "@/lib/i18n";
 import { ChefHat, Mail, Lock, User } from "lucide-react";
 
@@ -41,7 +42,8 @@ export function AuthScreen() {
     if (mode === "login") {
       err = await signIn(email, password);
     } else {
-      const res = await signUp(email, password, name);
+      // Režim zvolený v onboardingu se uloží k účtu (jeden e-mail = jeden režim)
+      const res = await signUp(email, password, name, getCurrentMode());
       err = res.error;
       // Obrazovku „zkontrolujte e-mail" ukážeme jen když Supabase vyžaduje
       // potvrzení. Pokud je potvrzování vypnuté, uživatel je rovnou přihlášen.

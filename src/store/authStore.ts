@@ -9,6 +9,8 @@ interface Profile {
   email: string;
   display_name: string;
   plan: "free" | "basic" | "family";
+  // Režim vázaný na účet — jeden e-mail = jeden režim (domácnost/provoz).
+  mode?: "domacnost" | "provoz" | null;
   trial_ends_at: string;
   family_id?: string;
 }
@@ -21,7 +23,7 @@ interface AuthStore {
   init: () => Promise<void>;
   // signUp vrací { error, needsConfirmation } — pokud je v Supabase vypnuté
   // potvrzování e-mailem, vznikne rovnou session a needsConfirmation = false.
-  signUp: (email: string, password: string, name: string) => Promise<{ error: string | null; needsConfirmation: boolean }>;
+  signUp: (email: string, password: string, name: string, mode: "domacnost" | "provoz") => Promise<{ error: string | null; needsConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<string | null>;
   // Pošle e-mail s odkazem na obnovu hesla (text e-mailu řídí Supabase šablona).
   resetPassword: (email: string) => Promise<string | null>;
@@ -57,11 +59,12 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     });
   },
 
-  signUp: async (email, password, name) => {
+  signUp: async (email, password, name, mode) => {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { display_name: name } },
+      // app_mode uloží DB trigger handle_new_user do profiles.mode
+      options: { data: { display_name: name, app_mode: mode } },
     });
     // Když je session rovnou k dispozici, potvrzování e-mailem je vypnuté
     // a uživatel je přihlášený (onAuthStateChange ho pustí dovnitř).

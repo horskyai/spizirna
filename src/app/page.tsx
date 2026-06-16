@@ -45,14 +45,22 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
 
 export default function Home() {
   const { activeTab, activeSheet, scannedProduct, closeSheet } = useUIStore();
-  const { mode } = useModeStore();
-  const { user, loading: authLoading, init: authInit } = useAuthStore();
+  const { mode, setMode } = useModeStore();
+  const { user, profile, loading: authLoading, init: authInit } = useAuthStore();
   const [showSettings, setShowSettings] = useState(false);
 
   // Inicializace přihlášení — načte session ze Supabase a poslouchá změny
   useEffect(() => {
     authInit();
   }, [authInit]);
+
+  // Jeden e-mail = jeden režim: po přihlášení má přednost režim uložený k účtu.
+  // Když se liší od lokálního (jiný telefon), appka se přepne na účtový režim.
+  useEffect(() => {
+    if (profile?.mode && profile.mode !== mode) {
+      setMode(profile.mode);
+    }
+  }, [profile?.mode, mode, setMode]);
 
   // Úplný reset aplikace: otevřením /?reset se smažou všechna lokální data
   // a appka začne od splash screenu a onboardingu jako při první instalaci
