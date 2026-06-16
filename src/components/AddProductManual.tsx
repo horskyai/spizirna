@@ -9,17 +9,18 @@ import { daysUntil } from "@/lib/dateUtils";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG } from "@/components/LocationIcons";
 import { VoiceInput, ParsedItem } from "@/components/VoiceInput";
 import { VoiceReviewModal, ReviewItem } from "@/components/VoiceReviewModal";
+import { useT } from "@/lib/i18n";
 
 interface Props {
   onClose: () => void;
   prefillEAN?: string;
 }
 
-const LOCATIONS: { id: StorageLocation; label: string; Icon: React.FC<{ size?: number }> }[] = [
-  { id: "lednice", label: "Lednice", Icon: LedniceSVG },
-  { id: "mrazak", label: "Mrazák", Icon: MrazakSVG },
-  { id: "spiz", label: "Spíž", Icon: SpizSVG },
-  { id: "linka", label: "Skříňka", Icon: SkrinskaSVG },
+const LOCATIONS: { id: StorageLocation; labelKey: string; Icon: React.FC<{ size?: number }> }[] = [
+  { id: "lednice", labelKey: "addproduct.locLednice", Icon: LedniceSVG },
+  { id: "mrazak", labelKey: "addproduct.locMrazak", Icon: MrazakSVG },
+  { id: "spiz", labelKey: "addproduct.locSpiz", Icon: SpizSVG },
+  { id: "linka", labelKey: "addproduct.locSkrinka", Icon: SkrinskaSVG },
 ];
 
 const DEFAULT_CATEGORIES = [
@@ -33,6 +34,7 @@ const STORES = ["Lidl", "Albert", "Billa", "Kaufland", "Tesco", "Penny", "Rohlik
 const SUGGESTED_TAGS = ["Bio", "Bez lepku", "Laktóza free", "Vegán", "Oblíbené", "Doma", "Práce", "Akce"];
 
 export function AddProductManual({ onClose, prefillEAN }: Props) {
+  const t = useT();
   const { addItem, customCategories, addCustomCategory } = usePantryStore();
 
   const [step, setStep] = useState<"basic" | "nutrition" | "pantry">("basic");
@@ -176,7 +178,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
 
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-2 pb-4">
-          <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Přidat produkt ručně</h2>
+          <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{t("addproduct.title")}</h2>
           <button
             onClick={onClose}
             className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -188,18 +190,18 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
 
         {/* Voice quick-add */}
         <div className="px-5 mb-3">
-          <VoiceInput onResult={handleVoicePantry} label="Nadiktovat více produktů najednou" />
+          <VoiceInput onResult={handleVoicePantry} label={t("addproduct.voiceLabel")} />
         </div>
 
         <div className="px-5 mb-2">
-          <p className="text-xs font-semibold text-center" style={{ color: "var(--text-tertiary)" }}>— nebo přidat ručně —</p>
+          <p className="text-xs font-semibold text-center" style={{ color: "var(--text-tertiary)" }}>{t("addproduct.orManually")}</p>
         </div>
 
         {/* Step tabs */}
         <div className="flex px-5 gap-2 mb-4">
           {([
-            { id: "basic", label: "Základní info" },
-            { id: "pantry", label: "Do spižírny" },
+            { id: "basic", label: t("addproduct.stepBasic") },
+            { id: "pantry", label: t("addproduct.stepPantry") },
           ] as const).map((s, i) => {
             const active = step === s.id || (s.id === "pantry" && step === "nutrition");
             const done = s.id === "basic" && (step === "nutrition" || step === "pantry");
@@ -226,7 +228,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
               className="flex-1 py-2 rounded-full text-xs font-semibold"
               style={{ background: "var(--green-primary)", color: "white" }}
             >
-              Výživa
+              {t("addproduct.stepNutrition")}
             </button>
           )}
         </div>
@@ -240,7 +242,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
 
               {/* Foto */}
               <div className="card p-4">
-                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>FOTKA PRODUKTU</p>
+                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>{t("addproduct.photoLabel")}</p>
                 <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
                   {photoUrl ? (
                     <div style={{ position: "relative", flexShrink: 0 }}>
@@ -262,13 +264,13 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                       onClick={() => fileInputRef.current?.click()}
                       style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 12, background: "var(--bg-primary)", border: "1.5px solid var(--border)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}
                     >
-                      <Image size={15} style={{ color: "var(--green-primary)" }} /> Z galerie
+                      <Image size={15} style={{ color: "var(--green-primary)" }} /> {t("addproduct.fromGallery")}
                     </button>
                     <button
                       onClick={() => cameraInputRef.current?.click()}
                       style={{ display: "flex", alignItems: "center", gap: 8, padding: "9px 14px", borderRadius: 12, background: "var(--bg-primary)", border: "1.5px solid var(--border)", fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}
                     >
-                      <Camera size={15} style={{ color: "var(--green-primary)" }} /> Vyfotit
+                      <Camera size={15} style={{ color: "var(--green-primary)" }} /> {t("addproduct.takePhoto")}
                     </button>
                   </div>
                 </div>
@@ -278,22 +280,22 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
 
               <div className="card p-4 space-y-3">
                 <div>
-                  <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>NÁZEV PRODUKTU *</p>
+                  <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>{t("addproduct.nameLabel")}</p>
                   <input
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="např. Hovězí přední bez kosti"
+                    placeholder={t("addproduct.namePlaceholder")}
                     className="w-full px-3 py-3 rounded-xl text-sm outline-none"
                     style={{ background: "var(--bg-primary)", border: `1.5px solid ${name ? "var(--green-primary)" : "var(--border)"}`, color: "var(--text-primary)" }}
                     autoFocus
                   />
                 </div>
                 <div>
-                  <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>ZNAČKA</p>
+                  <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>{t("addproduct.brandLabel")}</p>
                   <input
                     value={brand}
                     onChange={(e) => setBrand(e.target.value)}
-                    placeholder="např. Váhala"
+                    placeholder={t("addproduct.brandPlaceholder")}
                     className="w-full px-3 py-3 rounded-xl text-sm outline-none"
                     style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
                   />
@@ -302,7 +304,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
 
               {/* Category */}
               <div className="card p-4">
-                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>KATEGORIE</p>
+                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>{t("addproduct.categoryLabel")}</p>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {allCategories.map((cat) => (
                     <button
@@ -314,7 +316,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                         color: category === cat ? "white" : "var(--text-secondary)",
                       }}
                     >
-                      {cat}
+                      {t(`addproduct.cat.${cat}`)}
                     </button>
                   ))}
                 </div>
@@ -324,7 +326,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                     value={newCatInput}
                     onChange={e => setNewCatInput(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && handleAddCategory()}
-                    placeholder="+ Vlastní kategorie..."
+                    placeholder={t("addproduct.customCategoryPlaceholder")}
                     className="flex-1 px-3 py-2 rounded-xl text-xs outline-none"
                     style={{ background: "var(--bg-primary)", border: "1.5px dashed var(--border)", color: "var(--text-primary)" }}
                   />
@@ -333,7 +335,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                       onClick={handleAddCategory}
                       style={{ padding: "6px 12px", borderRadius: 10, background: "var(--green-primary)", color: "white", fontSize: 12, fontWeight: 700 }}
                     >
-                      Přidat
+                      {t("common.add")}
                     </button>
                   )}
                 </div>
@@ -341,7 +343,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
 
               {/* Tagy */}
               <div className="card p-4">
-                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>ŠTÍTKY (TAGY)</p>
+                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>{t("addproduct.tagsLabel")}</p>
                 <div className="flex flex-wrap gap-1.5 mb-2">
                   {SUGGESTED_TAGS.map(tag => (
                     <button
@@ -354,7 +356,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                         border: `1px solid ${tags.includes(tag) ? "var(--green-primary)" : "var(--border)"}`,
                       }}
                     >
-                      {tags.includes(tag) ? "✓ " : ""}{tag}
+                      {tags.includes(tag) ? "✓ " : ""}{t(`addproduct.tag.${tag}`)}
                     </button>
                   ))}
                 </div>
@@ -363,7 +365,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                     value={tagInput}
                     onChange={e => setTagInput(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && addTagFromInput()}
-                    placeholder="+ Vlastní štítek..."
+                    placeholder={t("addproduct.customTagPlaceholder")}
                     style={{ flex: 1, padding: "6px 12px", borderRadius: 10, fontSize: 12, border: "1.5px dashed var(--border)", background: "var(--bg-primary)", outline: "none", color: "var(--text-primary)" }}
                   />
                   {tagInput.trim() && (
@@ -371,7 +373,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                       onClick={addTagFromInput}
                       style={{ padding: "6px 12px", borderRadius: 10, background: "var(--green-primary)", color: "white", fontSize: 12, fontWeight: 700 }}
                     >
-                      Přidat
+                      {t("common.add")}
                     </button>
                   )}
                 </div>
@@ -391,7 +393,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
 
               {/* Quantity/unit */}
               <div className="card p-4">
-                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>BALENÍ</p>
+                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>{t("addproduct.packagingLabel")}</p>
                 <div className="flex gap-2 mb-2">
                   {(["g", "ml", "ks"] as const).map((u) => (
                     <button
@@ -415,7 +417,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                     else if (unit === "ml") setVolumeMl(e.target.value);
                     else setPieces(e.target.value);
                   }}
-                  placeholder={unit === "g" ? "např. 350" : unit === "ml" ? "např. 500" : "např. 6"}
+                  placeholder={unit === "g" ? t("addproduct.qtyPlaceholderG") : unit === "ml" ? t("addproduct.qtyPlaceholderMl") : t("addproduct.qtyPlaceholderKs")}
                   className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
                   style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
                 />
@@ -427,7 +429,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                 disabled={!canProceedBasic}
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
               >
-                <Plus size={17} /> Přidat do spižírny
+                <Plus size={17} /> {t("addproduct.addToPantry")}
               </button>
               <button
                 onClick={() => setStep("nutrition")}
@@ -435,7 +437,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                 style={{ marginTop: 8 }}
                 disabled={!canProceedBasic}
               >
-                Přidat také výživové hodnoty →
+                {t("addproduct.addNutritionToo")}
               </button>
             </div>
           )}
@@ -443,16 +445,16 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
           {/* ===== STEP: NUTRITION ===== */}
           {step === "nutrition" && (
             <div className="space-y-3">
-              <p className="text-xs text-center" style={{ color: "var(--text-tertiary)" }}>Hodnoty na 100g / 100ml (volitelné)</p>
+              <p className="text-xs text-center" style={{ color: "var(--text-tertiary)" }}>{t("addproduct.nutritionHint")}</p>
               <div className="card p-4">
                 <div className="grid grid-cols-2 gap-3">
                   {[
-                    { label: "Kalorie (kcal)", val: kcal, set: setKcal, accent: true },
-                    { label: "Bílkoviny (g)", val: protein, set: setProtein },
-                    { label: "Sacharidy (g)", val: carbs, set: setCarbs },
-                    { label: "Tuky (g)", val: fat, set: setFat },
-                    { label: "Vláknina (g)", val: fiber, set: setFiber },
-                    { label: "Sůl (g)", val: salt, set: setSalt },
+                    { label: t("addproduct.calories"), val: kcal, set: setKcal, accent: true },
+                    { label: t("addproduct.proteinG"), val: protein, set: setProtein },
+                    { label: t("addproduct.carbsG"), val: carbs, set: setCarbs },
+                    { label: t("addproduct.fatG"), val: fat, set: setFat },
+                    { label: t("addproduct.fiberG"), val: fiber, set: setFiber },
+                    { label: t("addproduct.saltG"), val: salt, set: setSalt },
                   ].map(({ label, val, set, accent }) => (
                     <div key={label}>
                       <p className="text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>{label}</p>
@@ -473,10 +475,10 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                 </div>
               </div>
               <button onClick={() => setStep("pantry")} className="btn-primary">
-                Dál — Do spižírny
+                {t("addproduct.nextToPantry")}
               </button>
               <button onClick={() => setStep("basic")} className="btn-secondary" style={{ marginTop: 8 }}>
-                Zpět
+                {t("common.back")}
               </button>
             </div>
           )}
@@ -486,7 +488,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
             <div className="space-y-3">
               {/* Quantity */}
               <div className="card p-4">
-                <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>MNOŽSTVÍ</p>
+                <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>{t("addproduct.quantity")}</p>
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => setQty((q) => Math.max(1, q - 1))}
@@ -504,7 +506,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
 
               {/* Location */}
               <div className="card p-4">
-                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>UMÍSTĚNÍ</p>
+                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>{t("addproduct.location")}</p>
                 <div className="grid grid-cols-2 gap-2">
                   {LOCATIONS.map((loc) => (
                     <button
@@ -518,7 +520,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                     >
                       <loc.Icon size={22} />
                       <span className="text-sm font-medium" style={{ color: location === loc.id ? "var(--green-dark)" : "var(--text-primary)" }}>
-                        {loc.label}
+                        {t(loc.labelKey)}
                       </span>
                     </button>
                   ))}
@@ -527,7 +529,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
 
               {/* Expiry */}
               <div className="card p-4">
-                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>SPOTŘEBUJTE DO (volitelné)</p>
+                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>{t("addproduct.expiryOptional")}</p>
                 <input
                   type="date"
                   value={expires}
@@ -538,13 +540,13 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                 {expires && (() => {
                   const d = daysUntil(expires);
                   const cls = d < 0 ? "badge-danger" : d <= 1 ? "badge-warn" : "badge-ok";
-                  const txt = d < 0 ? "Toto datum už prošlo" : d === 0 ? "Spotřebujte dnes" : d === 1 ? "Spotřebujte zítra" : `Vydrží ještě ${d} dní`;
+                  const txt = d < 0 ? t("addproduct.dateExpired") : d === 0 ? t("addproduct.consumeToday") : d === 1 ? t("addproduct.consumeTomorrow") : t("addproduct.lastsDays").replace("{n}", String(d));
                   return (
                     <div className="mt-2.5 flex items-center gap-2 flex-wrap">
                       <span className={`text-xs font-semibold ${cls}`} style={{ padding: "4px 10px", borderRadius: 10 }}>{txt}</span>
                       {d >= 0 && d <= 3 && (
                         <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-                          Tip: v Receptech najdeš, co z toho uvařit
+                          {t("addproduct.recipeTip")}
                         </span>
                       )}
                     </div>
@@ -552,14 +554,14 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                 })()}
                 {!expires && (
                   <p className="text-xs mt-2" style={{ color: "var(--text-tertiary)" }}>
-                    Zadejte datum z obalu — připomeneme vám, než potravina projde.
+                    {t("addproduct.expiryHint")}
                   </p>
                 )}
               </div>
 
               {/* Price */}
               <div className="card p-4">
-                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>CENA (volitelné)</p>
+                <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>{t("addproduct.priceOptional")}</p>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="number"
@@ -581,7 +583,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                         color: store === s ? "white" : "var(--text-secondary)",
                       }}
                     >
-                      {s}
+                      {s === "Jiný" ? t(`addproduct.store.${s}`) : s}
                     </button>
                   ))}
                 </div>
@@ -592,10 +594,10 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                 className="btn-primary"
                 style={added ? { background: "#4A6B3F" } : {}}
               >
-                {added ? "✓ Přidáno!" : <><Plus size={18} /> Přidat do spižírny</>}
+                {added ? t("addproduct.added") : <><Plus size={18} /> {t("addproduct.addToPantry")}</>}
               </button>
               <button onClick={() => setStep("nutrition")} className="btn-secondary" style={{ marginTop: 8 }}>
-                Zpět
+                {t("common.back")}
               </button>
             </div>
           )}

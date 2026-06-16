@@ -10,25 +10,34 @@ import { daysUntil, formatDateShort } from "@/lib/dateUtils";
 import { cn } from "@/lib/cn";
 import { AddProductManual } from "@/components/AddProductManual";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG, VseSVG } from "@/components/LocationIcons";
+import { useT } from "@/lib/i18n";
 
-const LOCATION_LABELS: Record<StorageLocation, { label: string; Icon: React.FC<{ size?: number }> }> = {
-  lednice: { label: "Lednice", Icon: LedniceSVG },
-  mrazak: { label: "Mrazák", Icon: MrazakSVG },
-  spiz: { label: "Spíž", Icon: SpizSVG },
-  linka: { label: "Skříňka", Icon: SkrinskaSVG },
+const LOCATION_LABELS: Record<StorageLocation, { labelKey: string; Icon: React.FC<{ size?: number }> }> = {
+  lednice: { labelKey: "pantry.location.lednice", Icon: LedniceSVG },
+  mrazak: { labelKey: "pantry.location.mrazak", Icon: MrazakSVG },
+  spiz: { labelKey: "pantry.location.spiz", Icon: SpizSVG },
+  linka: { labelKey: "pantry.location.linka", Icon: SkrinskaSVG },
 };
 
 function ExpiryBadge({ expiresAt }: { expiresAt?: string }) {
+  const t = useT();
   if (!expiresAt) return null;
   const days = daysUntil(expiresAt);
   const cls = days < 0 ? "badge-danger" : days <= 1 ? "badge-warn" : "badge-ok";
-  const label = days < 0 ? "Prošlé" : days === 0 ? "Spotřebujte dnes" : days === 1 ? "Spotřebujte zítra" : `Spotřebujte do ${days} dní`;
+  const label = days < 0
+    ? t("pantry.expiry.expired")
+    : days === 0
+      ? t("pantry.expiry.today")
+      : days === 1
+        ? t("pantry.expiry.tomorrow")
+        : t("pantry.expiry.days").replace("{n}", String(days));
   return (
     <span className={`text-xs font-semibold ${cls}`} style={{ padding: "4px 10px", borderRadius: 10, whiteSpace: "nowrap" }}>{label}</span>
   );
 }
 
 function EditModal({ item, onClose }: { item: PantryItem; onClose: () => void }) {
+  const t = useT();
   const { updateItem } = usePantryStore();
   const [quantity, setQuantity] = useState(String(item.quantity));
   const [unit, setUnit] = useState(item.unit);
@@ -50,14 +59,14 @@ function EditModal({ item, onClose }: { item: PantryItem; onClose: () => void })
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
       <div className="relative rounded-t-3xl px-5 pt-5 pb-8 space-y-4 animate-slide-up" style={{ background: "var(--bg-primary)", paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))" }}>
         <div className="flex items-center justify-between mb-2">
-          <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Upravit položku</h3>
+          <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("pantry.edit.title")}</h3>
           <button onClick={onClose}><X size={20} style={{ color: "var(--text-tertiary)" }} /></button>
         </div>
         <p className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>{item.product.product_name}</p>
 
         <div className="flex gap-3">
           <div style={{ flex: 1 }}>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Množství</label>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("pantry.edit.quantity")}</label>
             <input
               type="number"
               value={quantity}
@@ -67,7 +76,7 @@ function EditModal({ item, onClose }: { item: PantryItem; onClose: () => void })
             />
           </div>
           <div style={{ flex: 1 }}>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Jednotka</label>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("pantry.edit.unit")}</label>
             <input
               type="text"
               value={unit}
@@ -79,7 +88,7 @@ function EditModal({ item, onClose }: { item: PantryItem; onClose: () => void })
         </div>
 
         <div>
-          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Umístění</label>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("pantry.edit.location")}</label>
           <div className="flex gap-2 flex-wrap">
             {(["spiz", "lednice", "mrazak", "linka"] as StorageLocation[]).map(loc => (
               <button
@@ -93,14 +102,14 @@ function EditModal({ item, onClose }: { item: PantryItem; onClose: () => void })
                   borderColor: location === loc ? "var(--green-primary)" : "var(--border)",
                 }}
               >
-                {LOCATION_LABELS[loc].label}
+                {t(LOCATION_LABELS[loc].labelKey)}
               </button>
             ))}
           </div>
         </div>
 
         <div>
-          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Datum expirace</label>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("pantry.edit.expiry")}</label>
           <input
             type="date"
             value={expires}
@@ -110,13 +119,14 @@ function EditModal({ item, onClose }: { item: PantryItem; onClose: () => void })
           />
         </div>
 
-        <button onClick={save} className="btn-primary">Uložit změny</button>
+        <button onClick={save} className="btn-primary">{t("common.saveChanges")}</button>
       </div>
     </div>
   );
 }
 
 function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => void }) {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
   const [justConsumed, setJustConsumed] = useState(false);
@@ -170,7 +180,7 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
           </p>
           <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
             {item.product.brand && `${item.product.brand} · `}
-            {item.quantity} {item.unit} · {loc.label}
+            {item.quantity} {item.unit} · {t(loc.labelKey)}
           </p>
         </div>
 
@@ -186,7 +196,7 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
                 transform: justConsumed ? "scale(0.85)" : "scale(1)",
                 transition: "all 0.2s ease",
               }}
-              title="Spotřebovat 1"
+              title={t("pantry.item.consumeOne")}
             >
               <Minus size={12} style={{ color: justConsumed ? "white" : "var(--green-primary)" }} />
             </button>
@@ -210,12 +220,12 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
           )}
           {item.price_paid && (
             <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-              Cena: <b>{item.price_paid} CZK</b> · {item.store}
+              {t("pantry.item.price")}: <b>{item.price_paid} CZK</b> · {item.store}
             </p>
           )}
           {item.expires_at && (
             <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-              Expiruje: <b>{formatDateShort(item.expires_at)}</b>
+              {t("pantry.item.expires")}: <b>{formatDateShort(item.expires_at)}</b>
             </p>
           )}
           <div className="flex gap-2">
@@ -224,14 +234,14 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
               className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all"
               style={{ background: "var(--green-light)", color: "var(--green-primary)" }}
             >
-              <Pencil size={12} /> Upravit
+              <Pencil size={12} /> {t("common.edit")}
             </button>
             <button
               onClick={onRemove}
               className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full transition-all"
               style={{ background: "#FDE8E8", color: "#C0392B" }}
             >
-              <Trash2 size={12} /> Odebrat
+              <Trash2 size={12} /> {t("common.remove")}
             </button>
           </div>
         </div>
@@ -242,6 +252,7 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
 }
 
 export function PantryView() {
+  const t = useT();
   const { items, removeItem } = usePantryStore();
   const { setTab } = useUIStore();
   const [filter, setFilter] = useState<StorageLocation | "vse">("vse");
@@ -254,8 +265,8 @@ export function PantryView() {
     : byLocation;
 
   const filters: { id: StorageLocation | "vse"; label: string; Icon: React.FC<{ size?: number }> }[] = [
-    { id: "vse", label: "Vše", Icon: VseSVG },
-    ...Object.entries(LOCATION_LABELS).map(([id, v]) => ({ id: id as StorageLocation, label: v.label, Icon: v.Icon })),
+    { id: "vse", label: t("pantry.filter.vse"), Icon: VseSVG },
+    ...Object.entries(LOCATION_LABELS).map(([id, v]) => ({ id: id as StorageLocation, label: t(v.labelKey), Icon: v.Icon })),
   ];
 
   if (items.length === 0) {
@@ -265,9 +276,9 @@ export function PantryView() {
           <RefrigeratorIcon size={38} strokeWidth={1.4} style={{ color: "var(--green-primary)" }} />
         </div>
         <div className="text-center">
-          <p className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Spižírna je prázdná</p>
+          <p className="text-xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>{t("pantry.empty.title")}</p>
           <p className="text-sm" style={{ color: "var(--text-secondary)", lineHeight: 1.6 }}>
-            Naskenujte čárový kód z obalu potravin<br />nebo přidejte produkty ručně.
+            {t("pantry.empty.subtitle")}
           </p>
         </div>
         <button
@@ -275,17 +286,17 @@ export function PantryView() {
           style={{ width: "100%", maxWidth: 280, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
           onClick={() => setTab("skenovat")}
         >
-          <ScanLine size={18} /> Naskenovat první produkt
+          <ScanLine size={18} /> {t("pantry.empty.scanFirst")}
         </button>
         <button
           className="btn-secondary"
           style={{ width: "100%", maxWidth: 280, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
           onClick={() => setShowManual(true)}
         >
-          <Plus size={18} /> Přidat ručně
+          <Plus size={18} /> {t("pantry.empty.addManual")}
         </button>
         <p style={{ fontSize: 11, color: "var(--text-tertiary)", textAlign: "center", marginTop: 4 }}>
-          Tip: Naskenujte kód ze zadní strany obalu. Většina potravin se najde automaticky.
+          {t("pantry.empty.tip")}
         </p>
         {showManual && <AddProductManual onClose={() => setShowManual(false)} />}
       </div>
@@ -305,7 +316,7 @@ export function PantryView() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Hledat potraviny..."
+            placeholder={t("pantry.search.placeholder")}
             style={{ border: "none", outline: "none", background: "transparent", fontSize: 14, width: "100%", color: "var(--text-primary)" }}
           />
           {search && (
@@ -351,7 +362,7 @@ export function PantryView() {
         {/* Items */}
         {filtered.length === 0 ? (
           <div className="text-center py-12">
-            <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>Žádné produkty v této kategorii</p>
+            <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>{t("pantry.list.empty")}</p>
           </div>
         ) : (
           filtered.map((item) => (

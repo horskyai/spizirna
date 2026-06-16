@@ -8,18 +8,20 @@ import { Plus, Bell, AlertTriangle, ScanLine, PenLine, Home, Briefcase } from "l
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { daysUntil } from "@/lib/dateUtils";
+import { useT } from "@/lib/i18n";
 
 const TITLES: Record<string, string> = {
-  spizirna: "Spižírna",
-  jidlo: "Jídlo",
-  skenovat: "Skenovat",
-  recepty: "Recepty",
-  nakup: "Nákupní seznam",
-  opakujici: "Zásoby & připomínky",
-  provoz: "Provoz & inventura",
+  spizirna: "header.title.spizirna",
+  jidlo: "header.title.jidlo",
+  skenovat: "header.title.skenovat",
+  recepty: "header.title.recepty",
+  nakup: "header.title.nakup",
+  opakujici: "header.title.opakujici",
+  provoz: "header.title.provoz",
 };
 
 export function AppHeader() {
+  const t = useT();
   const { activeTab, setTab } = useUIStore();
   const { mode } = useModeStore();
   const pantryItems = usePantryStore((s) => s.items);
@@ -33,7 +35,7 @@ export function AppHeader() {
   const [showManual, setShowManual] = useState(false);
   const [showAddRecipe, setShowAddRecipe] = useState(false);
   const [showExpiry, setShowExpiry] = useState(false);
-  const title = TITLES[activeTab] ?? "Spižírna";
+  const title = t(TITLES[activeTab] ?? "header.title.spizirna");
 
   if (activeTab === "skenovat") return null;
 
@@ -50,9 +52,9 @@ export function AppHeader() {
           {/* Top row: greeting + actions */}
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>Dobrý den 👋</p>
+              <p className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>{t("header.greeting")} 👋</p>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)", lineHeight: 1.2 }}>Moje spižírna</h1>
+                <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)", lineHeight: 1.2 }}>{t("header.myPantry")}</h1>
                 <span
                   style={{
                     display: "flex", alignItems: "center", gap: 4,
@@ -63,7 +65,7 @@ export function AppHeader() {
                   }}
                 >
                   {mode === "provoz" ? <Briefcase size={11} /> : <Home size={11} />}
-                  {mode === "provoz" ? "Provozovna" : "Domácnost"}
+                  {mode === "provoz" ? t("plan.provoz") : t("plan.domacnost")}
                 </span>
               </div>
             </div>
@@ -131,8 +133,8 @@ export function AppHeader() {
                   <ScanLine size={18} style={{ color: "var(--green-primary)" }} />
                 </div>
                 <div>
-                  <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>Naskenovat EAN kód</p>
-                  <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Automaticky načte info z databáze</p>
+                  <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>{t("header.scanEan")}</p>
+                  <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{t("header.scanEanDesc")}</p>
                 </div>
               </button>
               <button
@@ -143,8 +145,8 @@ export function AppHeader() {
                   <PenLine size={18} style={{ color: "var(--green-primary)" }} />
                 </div>
                 <div>
-                  <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>Přidat ručně</p>
-                  <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Zadejte název, výživové hodnoty a cenu</p>
+                  <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>{t("header.addManual")}</p>
+                  <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{t("header.addManualDesc")}</p>
                 </div>
               </button>
             </div>
@@ -153,7 +155,7 @@ export function AppHeader() {
               className="card w-full py-4 font-semibold text-sm"
               style={{ color: "var(--text-secondary)" }}
             >
-              Zrušit
+              {t("common.cancel")}
             </button>
           </div>
         </div>
@@ -179,7 +181,7 @@ export function AppHeader() {
             <div className="px-5 pt-2 pb-4">
               <div className="flex items-center gap-2 mb-4">
                 <AlertTriangle size={18} style={{ color: "#B85C00" }} />
-                <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Brzy vyprší</h3>
+                <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("header.expiringSoon")}</h3>
               </div>
               <div className="space-y-2">
                 {expiringItems.map((item) => {
@@ -206,7 +208,7 @@ export function AppHeader() {
                           color: "white",
                         }}
                       >
-                        {days < 0 ? "Prošlé!" : days === 0 ? "Dnes" : days === 1 ? "Zítra" : `Za ${days} dní`}
+                        {days < 0 ? t("header.expired") : days === 0 ? t("header.today") : days === 1 ? t("header.tomorrow") : t("header.inDays").replace("{n}", String(days))}
                       </span>
                     </div>
                   );

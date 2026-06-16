@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useModeStore, AppMode } from "@/store/modeStore";
+import { useLocaleStore, Locale } from "@/store/localeStore";
+import { useT } from "@/lib/i18n";
 import {
   Check,
   ScanLine, BookOpen, ShoppingCart, RefreshCw,
@@ -11,76 +13,100 @@ import {
 // ── Štítky plánů ──────────────────────────────────────────────────────────────
 type Plan = "domacnost" | "provoz";
 
-const PLAN_CHIP: Record<Plan, { label: string; bg: string; color: string }> = {
-  domacnost: { label: "Domácnost", bg: "var(--green-light)", color: "var(--green-dark)" },
-  provoz: { label: "Provozovna", bg: "#FDEBD7", color: "#B85C00" },
+const PLAN_CHIP: Record<Plan, { labelKey: "plan.domacnost" | "plan.provoz"; bg: string; color: string }> = {
+  domacnost: { labelKey: "plan.domacnost", bg: "var(--green-light)", color: "var(--green-dark)" },
+  provoz: { labelKey: "plan.provoz", bg: "#FDEBD7", color: "#B85C00" },
 };
 
+// Dvojjazyčný text (čeština + slovenština)
+type L10n = { cs: string; sk: string };
+
 // ── Slides onboardingu ────────────────────────────────────────────────────────
-const SLIDES: { img: string; title: string; text: string; plans: Plan[] }[] = [
+const SLIDES: { img: string; title: L10n; text: L10n; plans: Plan[] }[] = [
   {
     img: "/icon-192.png",
-    title: "Vítej ve Spižírně!",
-    text: "Chytrá správa potravin pro domácnost i profesionální provoz. Nikdy víc prošlé jídlo ani chybějící zásoby.",
+    title: { cs: "Vítej ve Spižírně!", sk: "Vitaj v Špajze!" },
+    text: {
+      cs: "Chytrá správa potravin pro domácnost i profesionální provoz. Nikdy víc prošlé jídlo ani chybějící zásoby.",
+      sk: "Inteligentná správa potravín pre domácnosť aj profesionálnu prevádzku. Už nikdy prešlé jedlo ani chýbajúce zásoby.",
+    },
     plans: ["domacnost", "provoz"],
   },
   {
     img: "/onboarding/zasoby.png",
-    title: "Přehled zásob",
-    text: "Vidíš, co máš v lednici, mrazáku i spíži — včetně množství a data spotřeby. Aplikace tě upozorní, než něco projde.",
+    title: { cs: "Přehled zásob", sk: "Prehľad zásob" },
+    text: {
+      cs: "Vidíš, co máš v lednici, mrazáku i spíži — včetně množství a data spotřeby. Aplikace tě upozorní, než něco projde.",
+      sk: "Vidíš, čo máš v chladničke, mrazničke aj špajze — vrátane množstva a dátumu spotreby. Aplikácia ťa upozorní skôr, než niečo prejde.",
+    },
     plans: ["domacnost", "provoz"],
   },
   {
     img: "/onboarding/skener.png",
-    title: "Skenuj EAN kódem",
-    text: "Naskenuj čárový kód z obalu. Aplikace produkt automaticky najde v databázi a doplní název, nutriční hodnoty i alergeny za tebe.",
+    title: { cs: "Skenuj EAN kódem", sk: "Skenuj EAN kódom" },
+    text: {
+      cs: "Naskenuj čárový kód z obalu. Aplikace produkt automaticky najde v databázi a doplní název, nutriční hodnoty i alergeny za tebe.",
+      sk: "Naskenuj čiarový kód z obalu. Aplikácia produkt automaticky nájde v databáze a doplní názov, nutričné hodnoty aj alergény za teba.",
+    },
     plans: ["domacnost", "provoz"],
   },
   {
     img: "/onboarding/recepty.png",
-    title: "Recepty z toho, co máš",
-    text: "Stovky českých receptů s postupem. Aplikace porovná suroviny s tvojí spižírnou a chybějící položky pošle rovnou do nákupního seznamu.",
+    title: { cs: "Recepty z toho, co máš", sk: "Recepty z toho, čo máš" },
+    text: {
+      cs: "Stovky českých receptů s postupem. Aplikace porovná suroviny s tvojí spižírnou a chybějící položky pošle rovnou do nákupního seznamu.",
+      sk: "Stovky receptov s postupom. Aplikácia porovná suroviny s tvojou špajzou a chýbajúce položky pošle rovno do nákupného zoznamu.",
+    },
     plans: ["domacnost", "provoz"],
   },
   {
     img: "/onboarding/nakup-hlas.png",
-    title: "Nákupní seznam s hlasem",
-    text: "Nadiktuj nákup hlasem — „dvě kila brambor a mléko“ — a aplikace položky roztřídí podle kategorií. V obchodě jen odškrtáváš.",
+    title: { cs: "Nákupní seznam s hlasem", sk: "Nákupný zoznam hlasom" },
+    text: {
+      cs: "Nadiktuj nákup hlasem — „dvě kila brambor a mléko“ — a aplikace položky roztřídí podle kategorií. V obchodě jen odškrtáváš.",
+      sk: "Nadiktuj nákup hlasom — „dve kilá zemiakov a mlieko“ — a aplikácia položky roztriedi podľa kategórií. V obchode už len odškrtávaš.",
+    },
     plans: ["domacnost", "provoz"],
   },
   {
     img: "/onboarding/opakovani.png",
-    title: "Opakované nákupy",
-    text: "Granule, káva, prací prášek… Aplikace si pamatuje, jak často je kupuješ, a včas připomene, že docházejí.",
+    title: { cs: "Opakované nákupy", sk: "Opakované nákupy" },
+    text: {
+      cs: "Granule, káva, prací prášek… Aplikace si pamatuje, jak často je kupuješ, a včas připomene, že docházejí.",
+      sk: "Granule, káva, prací prášok… Aplikácia si pamätá, ako často ich kupuješ, a včas pripomenie, že dochádzajú.",
+    },
     plans: ["domacnost"],
   },
   {
     img: "/onboarding/inventura.png",
-    title: "Inventura & dodavatelé",
-    text: "Pro restaurace a jídelny: přesná inventura skladu s minimálními zásobami, správa dodavatelů a export do PDF nebo Excelu.",
+    title: { cs: "Inventura & dodavatelé", sk: "Inventúra & dodávatelia" },
+    text: {
+      cs: "Pro restaurace a jídelny: přesná inventura skladu s minimálními zásobami, správa dodavatelů a export do PDF nebo Excelu.",
+      sk: "Pre reštaurácie a jedálne: presná inventúra skladu s minimálnymi zásobami, správa dodávateľov a export do PDF alebo Excelu.",
+    },
     plans: ["provoz"],
   },
 ];
 
 // ── Feature řádky pro každý plán ─────────────────────────────────────────────
-const DOMACNOST_FEATURES = [
-  { icon: <ScanLine size={14} />, text: "Spižírna & skenování EAN" },
-  { icon: <BookOpen size={14} />, text: "Recepty s postupem vaření" },
-  { icon: <ShoppingCart size={14} />, text: "Nákupní seznam s hlasem" },
-  { icon: <RefreshCw size={14} />, text: "Opakované nákupy & připomínky" },
-  { icon: <Sparkles size={14} />, text: "Gamifikace & streak" },
+const DOMACNOST_FEATURES: { icon: React.ReactNode; text: L10n }[] = [
+  { icon: <ScanLine size={14} />, text: { cs: "Spižírna & skenování EAN", sk: "Špajza & skenovanie EAN" } },
+  { icon: <BookOpen size={14} />, text: { cs: "Recepty s postupem vaření", sk: "Recepty s postupom varenia" } },
+  { icon: <ShoppingCart size={14} />, text: { cs: "Nákupní seznam s hlasem", sk: "Nákupný zoznam hlasom" } },
+  { icon: <RefreshCw size={14} />, text: { cs: "Opakované nákupy & připomínky", sk: "Opakované nákupy & pripomienky" } },
+  { icon: <Sparkles size={14} />, text: { cs: "Gamifikace & streak", sk: "Gamifikácia & streak" } },
 ];
 
-const PROVOZ_FEATURES = [
-  { icon: <ScanLine size={14} />, text: "Spižírna & skenování EAN" },
-  { icon: <BookOpen size={14} />, text: "Recepty s postupem vaření" },
-  { icon: <Package size={14} />, text: "Inventura skladu" },
-  { icon: <Truck size={14} />, text: "Správa dodavatelů" },
-  { icon: <FileText size={14} />, text: "Export PDF & Excel" },
+const PROVOZ_FEATURES: { icon: React.ReactNode; text: L10n }[] = [
+  { icon: <ScanLine size={14} />, text: { cs: "Spižírna & skenování EAN", sk: "Špajza & skenovanie EAN" } },
+  { icon: <BookOpen size={14} />, text: { cs: "Recepty s postupem vaření", sk: "Recepty s postupom varenia" } },
+  { icon: <Package size={14} />, text: { cs: "Inventura skladu", sk: "Inventúra skladu" } },
+  { icon: <Truck size={14} />, text: { cs: "Správa dodavatelů", sk: "Správa dodávateľov" } },
+  { icon: <FileText size={14} />, text: { cs: "Export PDF & Excel", sk: "Export PDF & Excel" } },
 ];
 
 // ── Pomocné chipy ─────────────────────────────────────────────────────────────
-function PlanChips({ plans }: { plans: Plan[] }) {
+function PlanChips({ plans, t }: { plans: Plan[]; t: (k: "plan.domacnost" | "plan.provoz") => string }) {
   return (
     <div style={{ display: "flex", gap: 6, justifyContent: "center", marginTop: 14 }}>
       {plans.map((p) => {
@@ -95,7 +121,7 @@ function PlanChips({ plans }: { plans: Plan[] }) {
               letterSpacing: "0.02em",
             }}
           >
-            {chip.label}
+            {t(chip.labelKey)}
           </span>
         );
       })}
@@ -106,6 +132,8 @@ function PlanChips({ plans }: { plans: Plan[] }) {
 // ── Hlavní komponenta ─────────────────────────────────────────────────────────
 export function ModeSelect({ onDone }: { onDone: () => void }) {
   const setMode = useModeStore((s) => s.setMode);
+  const locale: Locale = useLocaleStore((s) => s.locale) ?? "cs";
+  const t = useT();
   const [slide, setSlide] = useState(0);
   const totalSlides = SLIDES.length + 1; // +1 pro výběr plánu
   const isChoosing = slide === SLIDES.length;
@@ -139,7 +167,7 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
           draggable={false}
           style={{ borderRadius: 10 }}
         />
-        <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>Spižírna</span>
+        <span style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", letterSpacing: "-0.5px" }}>{t("tab.spizirna")}</span>
       </div>
 
       {/* Progress dots */}
@@ -177,17 +205,17 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
               fontSize: 24, fontWeight: 800, color: "var(--text-primary)",
               textAlign: "center", margin: "0 0 12px", lineHeight: 1.2,
             }}>
-              {current.title}
+              {current.title[locale]}
             </h1>
             <p style={{
               fontSize: 14, color: "var(--text-secondary)",
               textAlign: "center", lineHeight: 1.6,
               maxWidth: 300, margin: 0,
             }}>
-              {current.text}
+              {current.text[locale]}
             </p>
 
-            <PlanChips plans={current.plans} />
+            <PlanChips plans={current.plans} t={t} />
           </div>
         )}
 
@@ -195,8 +223,8 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
         {isChoosing && (
           <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
             <div style={{ textAlign: "center", padding: "16px 0 14px" }}>
-              <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 3px" }}>Vyberte svůj plán</p>
-              <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0 }}>Testovací verze · Zdarma</p>
+              <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 3px" }}>{t("onb.choosePlanTitle")}</p>
+              <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0 }}>{t("onb.freeTrial")}</p>
             </div>
 
             {/* Dvě karty vedle sebe */}
@@ -225,14 +253,14 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                   draggable={false}
                   style={{ borderRadius: 12, marginBottom: 8 }}
                 />
-                <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 2px" }}>Domácnost</p>
-                <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: "0 0 8px" }}>Pro rodiny</p>
+                <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 2px" }}>{t("plan.domacnost")}</p>
+                <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: "0 0 8px" }}>{t("onb.forFamilies")}</p>
                 <p style={{ fontSize: 18, fontWeight: 800, color: "var(--green-primary)", margin: "0 0 10px", lineHeight: 1 }}>
-                  Zdarma<span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)" }}> · testovací</span>
+                  {t("onb.free")}<span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)" }}> · {t("onb.trial")}</span>
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
                   {DOMACNOST_FEATURES.map(f => (
-                    <div key={f.text} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                    <div key={f.text.cs} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
                       <div style={{
                         width: 15, height: 15, borderRadius: "50%", flexShrink: 0, marginTop: 1,
                         background: "var(--green-light)",
@@ -241,7 +269,7 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                       }}>
                         <Check size={9} strokeWidth={3} />
                       </div>
-                      <span style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.35 }}>{f.text}</span>
+                      <span style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.35 }}>{f.text[locale]}</span>
                     </div>
                   ))}
                 </div>
@@ -251,7 +279,7 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                   textAlign: "center",
                   fontSize: 12, fontWeight: 700, color: "white",
                 }}>
-                  Vybrat
+                  {t("onb.select")}
                 </div>
               </button>
 
@@ -280,17 +308,17 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                     style={{ borderRadius: 12 }}
                   />
                   <span style={{ fontSize: 9, fontWeight: 700, color: "white", background: "#E8862E", padding: "2px 7px", borderRadius: 99, letterSpacing: "0.04em" }}>
-                    PRO FIRMY
+                    {t("onb.forBusiness")}
                   </span>
                 </div>
-                <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 2px" }}>Provozovna</p>
-                <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: "0 0 8px" }}>Restaurace & bary</p>
+                <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 2px" }}>{t("plan.provoz")}</p>
+                <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: "0 0 8px" }}>{t("onb.restaurants")}</p>
                 <p style={{ fontSize: 18, fontWeight: 800, color: "#E8862E", margin: "0 0 10px", lineHeight: 1 }}>
-                  Zdarma<span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)" }}> · testovací</span>
+                  {t("onb.free")}<span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)" }}> · {t("onb.trial")}</span>
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
                   {PROVOZ_FEATURES.map(f => (
-                    <div key={f.text} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
+                    <div key={f.text.cs} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>
                       <div style={{
                         width: 15, height: 15, borderRadius: "50%", flexShrink: 0, marginTop: 1,
                         background: "#FDEBD7",
@@ -299,7 +327,7 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                       }}>
                         <Check size={9} strokeWidth={3} />
                       </div>
-                      <span style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.35 }}>{f.text}</span>
+                      <span style={{ fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.35 }}>{f.text[locale]}</span>
                     </div>
                   ))}
                 </div>
@@ -309,13 +337,13 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                   textAlign: "center",
                   fontSize: 12, fontWeight: 700, color: "white",
                 }}>
-                  Vybrat
+                  {t("onb.select")}
                 </div>
               </button>
             </div>
 
             <p style={{ fontSize: 10, color: "var(--text-tertiary)", textAlign: "center", marginTop: 10, lineHeight: 1.5 }}>
-              Testovací verze je zdarma. Plán lze změnit v nastavení.
+              {t("onb.planNote")}
             </p>
           </div>
         )}
@@ -327,13 +355,13 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
               onClick={() => setSlide(s => s + 1)}
               className="btn-primary"
             >
-              {slide === SLIDES.length - 1 ? "Vybrat plán →" : "Další"}
+              {slide === SLIDES.length - 1 ? t("onb.choosePlan") : t("onb.next")}
             </button>
             <button
               onClick={() => setSlide(SLIDES.length)}
               style={{ color: "var(--text-tertiary)", fontSize: 13, fontWeight: 500, padding: "6px 0" }}
             >
-              Přeskočit na výběr plánu
+              {t("onb.skipToPlan")}
             </button>
           </div>
         )}

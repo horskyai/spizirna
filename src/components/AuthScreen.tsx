@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import { useAuthStore } from "@/store/authStore";
+import { useT } from "@/lib/i18n";
 import { ChefHat, Mail, Lock, User } from "lucide-react";
 
 export function AuthScreen() {
+  const t = useT();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -21,7 +23,7 @@ export function AuthScreen() {
     if (mode === "login") {
       err = await signIn(email, password);
     } else {
-      if (!name.trim()) { setError("Zadejte jméno"); setLoading(false); return; }
+      if (!name.trim()) { setError(t("auth.errEnterName")); setLoading(false); return; }
       err = await signUp(email, password, name);
       if (!err) { setSuccess(true); setLoading(false); return; }
     }
@@ -35,13 +37,13 @@ export function AuthScreen() {
         <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6" style={{ background: "var(--green-light)" }}>
           <ChefHat size={36} style={{ color: "var(--green-primary)" }} />
         </div>
-        <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>Zkontrolujte email</h2>
+        <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>{t("auth.checkEmail")}</h2>
         <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
-          Poslali jsme vám potvrzovací odkaz na <b>{email}</b>.<br />
-          Po potvrzení se přihlaste.
+          {t("auth.confirmSent")} <b>{email}</b>.<br />
+          {t("auth.confirmThenLogin")}
         </p>
         <button onClick={() => { setSuccess(false); setMode("login"); }} className="btn-primary" style={{ width: "auto", paddingLeft: 32, paddingRight: 32 }}>
-          Přihlásit se
+          {t("auth.login")}
         </button>
       </div>
     );
@@ -54,8 +56,8 @@ export function AuthScreen() {
         <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)", boxShadow: "0 6px 20px rgba(76,175,130,0.4)" }}>
           <ChefHat size={28} color="white" />
         </div>
-        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>Spižírna</h1>
-        <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>Chytrá správa potravin</p>
+        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)" }}>{t("auth.appName")}</h1>
+        <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{t("auth.tagline")}</p>
       </div>
 
       {/* Toggle */}
@@ -70,7 +72,7 @@ export function AuthScreen() {
               color: mode === m ? "white" : "var(--text-secondary)",
             }}
           >
-            {m === "login" ? "Přihlásit se" : "Registrace"}
+            {m === "login" ? t("auth.login") : t("auth.signup")}
           </button>
         ))}
       </div>
@@ -83,7 +85,7 @@ export function AuthScreen() {
             <input
               value={name}
               onChange={e => setName(e.target.value)}
-              placeholder="Jméno"
+              placeholder={t("auth.namePlaceholder")}
               style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
             />
           </div>
@@ -94,7 +96,7 @@ export function AuthScreen() {
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
-            placeholder="Email"
+            placeholder={t("auth.emailPlaceholder")}
             style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
           />
         </div>
@@ -104,7 +106,7 @@ export function AuthScreen() {
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
-            placeholder="Heslo"
+            placeholder={t("auth.passwordPlaceholder")}
             onKeyDown={e => e.key === "Enter" && submit()}
             style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
           />
@@ -120,13 +122,13 @@ export function AuthScreen() {
           className="btn-primary"
           style={{ opacity: loading ? 0.7 : 1 }}
         >
-          {loading ? "Načítám..." : mode === "login" ? "Přihlásit se" : "Vytvořit účet"}
+          {loading ? t("auth.loading") : mode === "login" ? t("auth.login") : t("auth.createAccount")}
         </button>
 
         {mode === "signup" && (
           <p className="text-xs text-center px-4" style={{ color: "var(--text-tertiary)" }}>
-            Po registraci máte <b>14 dní zdarma</b>.<br />
-            Základní plán 99 Kč/měsíc, Rodinný 149 Kč/měsíc.
+            {t("auth.trialNote")} <b>{t("auth.trialDays")}</b>.<br />
+            {t("auth.planNote")}
           </p>
         )}
       </div>

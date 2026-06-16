@@ -80,6 +80,7 @@ export interface FoodLogItem {
 
 export interface RecipeIngredient {
   name: string;
+  name_sk?: string; // slovenský název suroviny (fallback na `name`)
   quantity: number;
   unit: string;
   ean_code?: string;
@@ -93,7 +94,9 @@ export interface RecipeIngredient {
 export interface Recipe {
   id: string;
   name: string;
+  name_sk?: string; // slovenský název receptu (fallback na `name`)
   description: string;
+  description_sk?: string; // slovenský popis (fallback na `description`)
   image_url?: string;
   category?: string;
   servings: number;
@@ -101,6 +104,7 @@ export interface Recipe {
   cook_time_min: number;
   ingredients: RecipeIngredient[];
   instructions: string[];
+  instructions_sk?: string[]; // slovenský postup (fallback na `instructions`)
   calories_per_serving?: number;
   protein_per_serving?: number;
   fat_per_serving?: number;

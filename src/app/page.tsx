@@ -14,6 +14,7 @@ import { RecurringView } from "@/components/RecurringView";
 import { ProvozView } from "@/components/ProvozView";
 import { ProductSheet } from "@/components/ProductSheet";
 import { ModeSelect } from "@/components/ModeSelect";
+import { LanguageSelect } from "@/components/LanguageSelect";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   constructor(props: { children: ReactNode }) {
@@ -52,6 +53,13 @@ export default function Home() {
     }
   }, []);
 
+  // Výběr jazyka — úplně první obrazovka po instalaci, ještě před onboardingem
+  const [localeSelected, setLocaleSelected] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const savedLocale = localStorage.getItem("app-locale");
+    return !!(savedLocale && JSON.parse(savedLocale)?.state?.locale);
+  });
+
   // Zobraz ModeSelect (onboarding + výběr plánu) jen pokud plán ještě nebyl vybrán
   const [modeSelected, setModeSelected] = useState(() => {
     if (typeof window === "undefined") return true;
@@ -59,7 +67,16 @@ export default function Home() {
     return !!(savedMode && JSON.parse(savedMode)?.state?.mode !== null);
   });
 
-  // Výběr režimu — první spuštění (jen jednou)
+  // 1) Výběr jazyka (čeština / slovenština)
+  if (!localeSelected) {
+    return (
+      <ErrorBoundary>
+        <LanguageSelect onDone={() => setLocaleSelected(true)} />
+      </ErrorBoundary>
+    );
+  }
+
+  // 2) Výběr režimu — první spuštění (jen jednou)
   if (!modeSelected || mode === null) {
     return (
       <ErrorBoundary>

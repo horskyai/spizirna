@@ -11,19 +11,25 @@ import { ShoppingItem } from "@/store/shoppingStore";
 import { ProductInfo } from "@/types";
 import { VoiceInput, parseSpokenText, ParsedItem } from "@/components/VoiceInput";
 import { guessCategory } from "@/lib/guessCategory";
+import { useT, useLocale } from "@/lib/i18n";
 
 const CATEGORIES = [
-  { id: "ovoce-zelenina", label: "Ovoce a zelenina", emoji: "🥦" },
-  { id: "maso-ryby", label: "Maso a ryby", emoji: "🥩" },
-  { id: "mlecne", label: "Mléčné výrobky", emoji: "🧀" },
-  { id: "pecivo", label: "Pečivo", emoji: "🍞" },
-  { id: "suche", label: "Suché potraviny", emoji: "🌾" },
-  { id: "napoje", label: "Nápoje", emoji: "🥤" },
-  { id: "mrazene", label: "Mražené", emoji: "❄️" },
-  { id: "ostatni", label: "Ostatní", emoji: "🛒" },
+  { id: "ovoce-zelenina", labelKey: "shopping.cat.ovoce-zelenina", emoji: "🥦" },
+  { id: "maso-ryby", labelKey: "shopping.cat.maso-ryby", emoji: "🥩" },
+  { id: "mlecne", labelKey: "shopping.cat.mlecne", emoji: "🧀" },
+  { id: "pecivo", labelKey: "shopping.cat.pecivo", emoji: "🍞" },
+  { id: "suche", labelKey: "shopping.cat.suche", emoji: "🌾" },
+  { id: "napoje", labelKey: "shopping.cat.napoje", emoji: "🥤" },
+  { id: "mrazene", labelKey: "shopping.cat.mrazene", emoji: "❄️" },
+  { id: "ostatni", labelKey: "shopping.cat.ostatni", emoji: "🛒" },
 ];
 
+// Stabilní interní klíč pro skupinu „ručně přidaných" položek (nezávislý na
+// jazyku — překlad se aplikuje až při zobrazení).
+const MANUAL_GROUP = "__manual__";
+
 function AddItemModal({ onClose, mode }: { onClose: () => void; mode: ShoppingMode }) {
+  const t = useT();
   const addItem = useShoppingStore((s) => s.addItem);
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("1");
@@ -57,7 +63,7 @@ function AddItemModal({ onClose, mode }: { onClose: () => void; mode: ShoppingMo
         </div>
         <div className="overflow-y-auto px-5 pt-2 pb-8 space-y-3">
           <div className="flex items-center justify-between mb-1">
-            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Přidat položku</h3>
+            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("shopping.add.title")}</h3>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
               <X size={15} style={{ color: "var(--text-secondary)" }} />
             </button>
@@ -67,7 +73,7 @@ function AddItemModal({ onClose, mode }: { onClose: () => void; mode: ShoppingMo
             value={name}
             onChange={(e) => setName(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter" && name.trim()) { handleAdd(); } }}
-            placeholder="Název produktu..."
+            placeholder={t("shopping.namePlaceholder")}
             autoFocus
             className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
             style={{ background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
@@ -90,7 +96,7 @@ function AddItemModal({ onClose, mode }: { onClose: () => void; mode: ShoppingMo
             </select>
           </div>
 
-          <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>KATEGORIE</p>
+          <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>{t("shopping.category")}</p>
           <div className="grid grid-cols-2 gap-2">
             {CATEGORIES.map((cat) => (
               <button
@@ -103,7 +109,7 @@ function AddItemModal({ onClose, mode }: { onClose: () => void; mode: ShoppingMo
                   color: category === cat.id ? "var(--green-dark)" : "var(--text-primary)",
                 }}
               >
-                <span>{cat.emoji}</span> {cat.label}
+                <span>{cat.emoji}</span> {t(cat.labelKey)}
               </button>
             ))}
           </div>
@@ -113,12 +119,12 @@ function AddItemModal({ onClose, mode }: { onClose: () => void; mode: ShoppingMo
             className="btn-primary"
             disabled={!name.trim()}
           >
-            <Plus size={18} /> Přidat
+            <Plus size={18} /> {t("common.add")}
           </button>
 
           <div style={{ height: 1, background: "var(--border)", margin: "4px 0" }} />
 
-          <VoiceInput onResult={handleVoice} label="Nadiktovat více položek" />
+          <VoiceInput onResult={handleVoice} label={t("shopping.voiceLabel")} />
         </div>
       </div>
     </div>
@@ -126,6 +132,8 @@ function AddItemModal({ onClose, mode }: { onClose: () => void; mode: ShoppingMo
 }
 
 function VoiceFab({ onItems }: { onItems: (items: ParsedItem[]) => void }) {
+  const t = useT();
+  const locale = useLocale();
   const [state, setState] = useState<"idle" | "listening" | "processing">("idle");
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -137,11 +145,11 @@ function VoiceFab({ onItems }: { onItems: (items: ParsedItem[]) => void }) {
     const SpeechRecognition =
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setError("Prohlížeč nepodporuje hlasové zadávání. Zkuste Chrome nebo Safari.");
+      setError(t("shopping.voice.unsupported"));
       return;
     }
     const recognition = new SpeechRecognition();
-    recognition.lang = "cs-CZ";
+    recognition.lang = locale === "sk" ? "sk-SK" : "cs-CZ";
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
@@ -159,7 +167,7 @@ function VoiceFab({ onItems }: { onItems: (items: ParsedItem[]) => void }) {
           if (items.length > 0) {
             onItems(items);
           } else {
-            setError("Nerozuměl jsem. Zkuste to znovu.");
+            setError(t("shopping.voice.notUnderstood"));
           }
           setState("idle");
           setTranscript("");
@@ -169,8 +177,8 @@ function VoiceFab({ onItems }: { onItems: (items: ParsedItem[]) => void }) {
     recognition.onerror = (event: any) => {
       setError(
         event.error === "not-allowed"
-          ? "Přístup k mikrofonu byl odmítnut."
-          : "Nic jsem neslyšel. Zkuste znovu."
+          ? t("shopping.voice.notAllowed")
+          : t("shopping.voice.nothingHeard")
       );
       setState("idle");
     };
@@ -203,12 +211,12 @@ function VoiceFab({ onItems }: { onItems: (items: ParsedItem[]) => void }) {
             ? error
             : transcript
             ? `„${transcript}"`
-            : "Poslouchám… řekněte např. „2 kila brambor a mléko\""}
+            : t("shopping.voice.listening")}
         </div>
       )}
       <button
         onClick={listening ? stop : start}
-        aria-label="Přidat hlasem"
+        aria-label={t("shopping.voice.aria")}
         style={{
           position: "fixed",
           right: 20,
@@ -243,6 +251,7 @@ function fmtQty(n: number): string {
 // Úprava položky v seznamu (název, množství, jednotka, kategorie) —
 // když se něco nadiktuje špatně, uživatel to tady opraví.
 function EditItemModal({ item, mode, onClose }: { item: ShoppingItem; mode: ShoppingMode; onClose: () => void }) {
+  const t = useT();
   const updateItem = useShoppingStore((s) => s.updateItem);
   const [name, setName] = useState(item.name);
   const [quantity, setQuantity] = useState(String(item.quantity));
@@ -275,7 +284,7 @@ function EditItemModal({ item, mode, onClose }: { item: ShoppingItem; mode: Shop
         </div>
         <div className="px-5 pt-2 pb-4 space-y-3">
           <div className="flex items-center justify-between mb-1">
-            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Upravit položku</h3>
+            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("shopping.edit.title")}</h3>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
               <X size={15} style={{ color: "var(--text-secondary)" }} />
             </button>
@@ -284,7 +293,7 @@ function EditItemModal({ item, mode, onClose }: { item: ShoppingItem; mode: Shop
           <input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Název produktu..."
+            placeholder={t("shopping.namePlaceholder")}
             autoFocus
             className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
             style={{ background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
@@ -307,7 +316,7 @@ function EditItemModal({ item, mode, onClose }: { item: ShoppingItem; mode: Shop
             </select>
           </div>
 
-          <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>KATEGORIE</p>
+          <p className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>{t("shopping.category")}</p>
           <div className="grid grid-cols-2 gap-2">
             {CATEGORIES.map((c) => (
               <button
@@ -320,13 +329,13 @@ function EditItemModal({ item, mode, onClose }: { item: ShoppingItem; mode: Shop
                   color: category === c.id ? "var(--green-dark)" : "var(--text-primary)",
                 }}
               >
-                <span>{c.emoji}</span> {c.label}
+                <span>{c.emoji}</span> {t(c.labelKey)}
               </button>
             ))}
           </div>
 
           <button onClick={save} className="btn-primary" disabled={!name.trim()}>
-            <Check size={18} /> Uložit změny
+            <Check size={18} /> {t("shopping.saveChanges")}
           </button>
         </div>
       </div>
@@ -350,6 +359,7 @@ function shoppingItemToProduct(item: ShoppingItem): ProductInfo {
 }
 
 function SmartSuggestionsWidget({ mode }: { mode: ShoppingMode }) {
+  const t = useT();
   const recurringItems = useRecurringStore((s) => s.items);
   const pantryItems = usePantryStore((s) => s.items);
   const { recipes } = useRecipeStore();
@@ -369,7 +379,7 @@ function SmartSuggestionsWidget({ mode }: { mode: ShoppingMode }) {
         results.push({
           id: `recurring-${item.id}`,
           name: item.name,
-          reason: nextDate <= now ? "Zásoby došly" : "Brzy dojde",
+          reason: nextDate <= now ? t("shopping.suggest.outOfStock") : t("shopping.suggest.soon"),
           quantity: item.quantity,
           unit: item.unit,
           category: item.category || "ostatni",
@@ -384,7 +394,7 @@ function SmartSuggestionsWidget({ mode }: { mode: ShoppingMode }) {
           results.push({
             id: `pantry-low-${item.id}`,
             name: item.product.product_name,
-            reason: `Zbývá jen ${item.quantity} ${item.unit}`,
+            reason: t("shopping.suggest.remaining").replace("{q}", String(item.quantity)).replace("{u}", item.unit),
             quantity: 1,
             unit: item.unit === "ks" ? "ks" : item.unit,
             category: "ostatni",
@@ -416,7 +426,7 @@ function SmartSuggestionsWidget({ mode }: { mode: ShoppingMode }) {
           results.push({
             id: `common-${ing.name}`,
             name: ing.name,
-            reason: "Chybí k receptům",
+            reason: t("shopping.suggest.missingForRecipes"),
             quantity: ing.quantity,
             unit: ing.unit,
             category: ing.category,
@@ -452,7 +462,7 @@ function SmartSuggestionsWidget({ mode }: { mode: ShoppingMode }) {
         <div className="flex items-center gap-2">
           <Lightbulb size={15} style={{ color: "#F57C00" }} />
           <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>
-            Chytré návrhy ({suggestions.length})
+            {t("shopping.suggest.title").replace("{n}", String(suggestions.length))}
           </p>
         </div>
         {collapsed ? <ChevronDown size={15} style={{ color: "var(--text-tertiary)" }} /> : <ChevronUp size={15} style={{ color: "var(--text-tertiary)" }} />}
@@ -469,7 +479,7 @@ function SmartSuggestionsWidget({ mode }: { mode: ShoppingMode }) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{s.name}</p>
                 <p className="text-xs" style={{ color: addedIds.has(s.id) ? "var(--green-primary)" : "#F57C00", fontWeight: 600 }}>
-                  {addedIds.has(s.id) ? "✓ Přidáno" : s.reason}
+                  {addedIds.has(s.id) ? t("shopping.suggest.added") : s.reason}
                 </p>
               </div>
               <button
@@ -492,7 +502,7 @@ function SmartSuggestionsWidget({ mode }: { mode: ShoppingMode }) {
                 className="w-full py-2.5 rounded-2xl text-sm font-semibold"
                 style={{ background: "var(--green-light)", color: "var(--green-dark)", border: "1px solid var(--green-primary)" }}
               >
-                + Přidat vše ({suggestions.filter(s => !addedIds.has(s.id)).length} položek)
+                {t("shopping.suggest.addAll").replace("{n}", String(suggestions.filter(s => !addedIds.has(s.id)).length))}
               </button>
             </div>
           )}
@@ -503,6 +513,7 @@ function SmartSuggestionsWidget({ mode }: { mode: ShoppingMode }) {
 }
 
 export function ShoppingView() {
+  const t = useT();
   const appMode = useModeStore((s) => s.mode);
   const mode: ShoppingMode = appMode === "provoz" ? "provoz" : "domacnost";
 
@@ -525,14 +536,16 @@ export function ShoppingView() {
       setJustChecked((prev) => new Set(prev).add(item.id));
       setTimeout(() => setJustChecked((prev) => { const s = new Set(prev); s.delete(item.id); return s; }), 400);
       addToPantry(shoppingItemToProduct(item), item.quantity, "spiz");
-      setToast(`${item.name} přidáno do spižírny`);
+      setToast(t("shopping.toast.toPantry").replace("{name}", item.name));
       setTimeout(() => setToast(null), 3000);
     }
   };
 
   const handleVoiceAdd = (voiceItems: ParsedItem[]) => {
     addItems(voiceItems.map((i) => ({ name: i.name, quantity: i.quantity, unit: i.unit, category: guessCategory(i.name) })), mode);
-    setToast(voiceItems.length === 1 ? `${voiceItems[0].name} přidáno na seznam` : `${voiceItems.length} položky přidány na seznam`);
+    setToast(voiceItems.length === 1
+      ? t("shopping.toast.oneToList").replace("{name}", voiceItems[0].name)
+      : t("shopping.toast.manyToList").replace("{n}", String(voiceItems.length)));
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -545,37 +558,42 @@ export function ShoppingView() {
     if (view === "kategorie") {
       return CATEGORIES
         .map((cat) => ({
-          name: cat.label,
+          name: t(cat.labelKey),
           items: unchecked.filter((i) => (i.category || "ostatni") === cat.id),
           isManual: false,
         }))
         .filter((g) => g.items.length > 0);
     }
     const byRecipe = unchecked.reduce<Record<string, typeof unchecked>>((acc, item) => {
-      const key = item.recipe_name || "Přidáno ručně";
+      const key = item.recipe_name || MANUAL_GROUP;
       acc[key] = acc[key] || [];
       acc[key].push(item);
       return acc;
     }, {});
     const keys = Object.keys(byRecipe).sort((a, b) =>
-      a === "Přidáno ručně" ? 1 : b === "Přidáno ručně" ? -1 : 0
+      a === MANUAL_GROUP ? 1 : b === MANUAL_GROUP ? -1 : 0
     );
-    return keys.map((k) => ({ name: k, items: byRecipe[k], isManual: k === "Přidáno ručně" }));
-  }, [unchecked, view]);
+    return keys.map((k) => ({
+      name: k === MANUAL_GROUP ? t("shopping.addedManually") : k,
+      items: byRecipe[k],
+      isManual: k === MANUAL_GROUP,
+    }));
+  }, [unchecked, view, t]);
 
   const shareList = () => {
-    const lines: string[] = ["🛒 Nákupní seznam ze Spižírny\n"];
-    groups.forEach(({ name, items: groupItems }) => {
-      lines.push(name === "Přidáno ručně" ? "🛒 Přidáno ručně" : `📖 ${name}`);
+    const manualLabel = t("shopping.addedManually");
+    const lines: string[] = [`${t("shopping.shareHeader")}\n`];
+    groups.forEach(({ name, isManual, items: groupItems }) => {
+      lines.push(isManual ? `🛒 ${manualLabel}` : `📖 ${name}`);
       groupItems.forEach((i) => {
         const cat = CATEGORIES.find((c) => c.id === i.category);
-        lines.push(`  • ${i.name} — ${i.quantity} ${i.unit}${cat ? ` (${cat.label})` : ""}`);
+        lines.push(`  • ${i.name} — ${i.quantity} ${i.unit}${cat ? ` (${t(cat.labelKey)})` : ""}`);
       });
       lines.push("");
     });
     const text = lines.join("\n");
     if (navigator.share) {
-      navigator.share({ title: "Nákupní seznam", text });
+      navigator.share({ title: t("shopping.shareTitle"), text });
     } else {
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
     }
@@ -591,17 +609,17 @@ export function ShoppingView() {
               <ShoppingCart size={32} strokeWidth={1.5} style={{ color: "var(--green-primary)" }} />
             </div>
             <div className="text-center">
-              <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>Seznam je prázdný</p>
+              <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>{t("shopping.empty.title")}</p>
               <p className="text-sm" style={{ color: "var(--text-secondary)", lineHeight: 1.6 }}>
-                Přidejte položky ručně nebo je importujte z receptů.
+                {t("shopping.empty.subtitle")}
               </p>
             </div>
             <button className="btn-primary" onClick={() => setShowAdd(true)}
               style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", maxWidth: 280 }}>
-              <Plus size={18} /> Přidat položku
+              <Plus size={18} /> {t("shopping.add.title")}
             </button>
             <p style={{ fontSize: 11, color: "var(--text-tertiary)", textAlign: "center" }}>
-              Tip: Po zaškrtnutí položky se automaticky přidá do spižírny.
+              {t("shopping.empty.tip")}
             </p>
           </div>
         </div>
@@ -629,7 +647,7 @@ export function ShoppingView() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Hledat v seznamu..."
+            placeholder={t("shopping.searchPlaceholder")}
             style={{ border: "none", outline: "none", background: "transparent", fontSize: 14, width: "100%", color: "var(--text-primary)" }}
           />
           {search && (
@@ -653,18 +671,18 @@ export function ShoppingView() {
                 transition: "all 0.15s ease",
               }}
             >
-              {v === "vse" ? "Vše" : "Kategorie"}
+              {v === "vse" ? t("shopping.view.all") : t("shopping.view.category")}
             </button>
           ))}
         </div>
 
         <div className="flex items-center justify-between">
           <p className="text-sm font-semibold" style={{ color: "var(--text-secondary)" }}>
-            {unchecked.length} položek zbývá
+            {t("shopping.remaining").replace("{n}", String(unchecked.length))}
           </p>
           {checked.length > 0 && (
             <button onClick={() => removeChecked(mode)} className="text-xs font-semibold px-3 py-1.5 rounded-full" style={{ background: "#FDE8E8", color: "#C0392B" }}>
-              Odebrat hotové ({checked.length})
+              {t("shopping.removeChecked").replace("{n}", String(checked.length))}
             </button>
           )}
         </div>
@@ -675,7 +693,7 @@ export function ShoppingView() {
               <p className="text-base font-bold mb-2 px-1" style={{ color: "var(--text-primary)" }}>{name}</p>
             ) : (
               <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>
-                {isManual ? "🛒 Přidáno ručně" : `📖 ${name}`}
+                {isManual ? `🛒 ${t("shopping.addedManually")}` : `📖 ${name}`}
               </p>
             )}
             <div className="card overflow-hidden">
@@ -704,8 +722,8 @@ export function ShoppingView() {
                       <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{item.name}</p>
                       <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
                         {fmtQty(item.quantity)} {item.unit}
-                        {cat && <span style={{ color: "var(--text-tertiary)" }}> · {cat.emoji} {cat.label}</span>}
-                        <span style={{ color: "var(--text-tertiary)" }}> · upravit</span>
+                        {cat && <span style={{ color: "var(--text-tertiary)" }}> · {cat.emoji} {t(cat.labelKey)}</span>}
+                        <span style={{ color: "var(--text-tertiary)" }}> · {t("shopping.editHint")}</span>
                       </p>
                     </button>
                     <button onClick={() => removeItem(item.id, mode)}>
@@ -721,7 +739,7 @@ export function ShoppingView() {
         {checked.length > 0 && (
           <div>
             <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>
-              Hotovo ({checked.length})
+              {t("shopping.done").replace("{n}", String(checked.length))}
             </p>
             <div className="card overflow-hidden">
               {checked.map((item, idx) => (
@@ -753,7 +771,7 @@ export function ShoppingView() {
             className="flex-1 py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
             style={{ background: "white", color: "var(--text-secondary)", border: "1.5px dashed var(--border)" }}
           >
-            <Plus size={16} /> Přidat položku
+            <Plus size={16} /> {t("shopping.add.title")}
           </button>
           {unchecked.length > 0 && (
             <button
@@ -761,7 +779,7 @@ export function ShoppingView() {
               className="py-3 px-4 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
               style={{ background: "var(--green-light)", color: "var(--green-dark)", border: "1.5px solid var(--green-primary)" }}
             >
-              <Share2 size={16} /> Sdílet
+              <Share2 size={16} /> {t("shopping.share")}
             </button>
           )}
         </div>
@@ -772,7 +790,7 @@ export function ShoppingView() {
             className="w-full py-2.5 rounded-2xl text-xs font-medium"
             style={{ color: "var(--text-tertiary)" }}
           >
-            Vymazat celý seznam
+            {t("shopping.clearAll")}
           </button>
         )}
       </div>

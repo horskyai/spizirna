@@ -6,14 +6,15 @@ import { useRecurringStore, RecurringItem } from "@/store/recurringStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useModeStore } from "@/store/modeStore";
+import { useT } from "@/lib/i18n";
 
 const UNITS = ["ks", "g", "kg", "ml", "l", "balení", "lžíce", "hrnek"];
 const INTERVALS = [
-  { label: "Každý týden", days: 7 },
-  { label: "Každé 2 týdny", days: 14 },
-  { label: "Každý měsíc", days: 30 },
-  { label: "Každé 2 měsíce", days: 60 },
-  { label: "Každé 3 měsíce", days: 90 },
+  { labelKey: "recurring.intervalWeek", days: 7 },
+  { labelKey: "recurring.interval2Weeks", days: 14 },
+  { labelKey: "recurring.intervalMonth", days: 30 },
+  { labelKey: "recurring.interval2Months", days: 60 },
+  { labelKey: "recurring.interval3Months", days: 90 },
 ];
 
 function daysUntil(dateStr: string): number {
@@ -22,6 +23,7 @@ function daysUntil(dateStr: string): number {
 }
 
 function AddRecurringModal({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const addItem = useRecurringStore((s) => s.addItem);
   const [name, setName] = useState("");
   const [quantity, setQuantity] = useState("1");
@@ -55,7 +57,7 @@ function AddRecurringModal({ onClose }: { onClose: () => void }) {
         </div>
         <div className="overflow-y-auto px-5 pt-2 pb-8 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Opakující se nákup</h3>
+            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("recurring.modalTitle")}</h3>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
               <X size={15} style={{ color: "var(--text-secondary)" }} />
             </button>
@@ -63,11 +65,11 @@ function AddRecurringModal({ onClose }: { onClose: () => void }) {
 
           <div className="card p-4 space-y-3">
             <div>
-              <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>PRODUKT</p>
+              <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>{t("recurring.product")}</p>
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="např. Mléko, Káva, Chleba..."
+                placeholder={t("recurring.productPlaceholder")}
                 autoFocus
                 className="w-full px-3 py-3 rounded-xl text-sm outline-none"
                 style={{ background: "var(--bg-primary)", border: `1.5px solid ${name ? "var(--green-primary)" : "var(--border)"}`, color: "var(--text-primary)" }}
@@ -76,7 +78,7 @@ function AddRecurringModal({ onClose }: { onClose: () => void }) {
 
             <div className="flex gap-2">
               <div className="flex-1">
-                <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>MNOŽSTVÍ</p>
+                <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>{t("recurring.quantity")}</p>
                 <input
                   type="number"
                   value={quantity}
@@ -86,7 +88,7 @@ function AddRecurringModal({ onClose }: { onClose: () => void }) {
                 />
               </div>
               <div className="flex-1">
-                <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>JEDNOTKA</p>
+                <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>{t("recurring.unit")}</p>
                 <select
                   value={unit}
                   onChange={(e) => setUnit(e.target.value)}
@@ -98,7 +100,7 @@ function AddRecurringModal({ onClose }: { onClose: () => void }) {
             </div>
 
             <div>
-              <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>FREKVENCE</p>
+              <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>{t("recurring.frequency")}</p>
               <div className="grid grid-cols-1 gap-2">
                 {INTERVALS.map((iv) => (
                   <button
@@ -111,12 +113,12 @@ function AddRecurringModal({ onClose }: { onClose: () => void }) {
                       color: intervalDays === iv.days ? "var(--green-dark)" : "var(--text-primary)",
                     }}
                   >
-                    <span>{iv.label}</span>
+                    <span>{t(iv.labelKey)}</span>
                     {intervalDays === iv.days && <Check size={14} style={{ color: "var(--green-primary)" }} />}
                   </button>
                 ))}
                 <div className="flex items-center gap-2">
-                  <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>Nebo vlastní počet dní:</p>
+                  <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>{t("recurring.orCustomDays")}</p>
                   <input
                     type="number"
                     value={intervalDays}
@@ -124,17 +126,17 @@ function AddRecurringModal({ onClose }: { onClose: () => void }) {
                     className="w-16 px-2 py-1.5 rounded-lg text-sm outline-none text-center font-semibold"
                     style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
                   />
-                  <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>dní</p>
+                  <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>{t("recurring.days")}</p>
                 </div>
               </div>
             </div>
 
             <div>
-              <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>OBCHOD (volitelně)</p>
+              <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>{t("recurring.store")}</p>
               <input
                 value={store}
                 onChange={(e) => setStore(e.target.value)}
-                placeholder="např. Lidl, Rohlik..."
+                placeholder={t("recurring.storePlaceholder")}
                 className="w-full px-3 py-3 rounded-xl text-sm outline-none"
                 style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
               />
@@ -142,7 +144,7 @@ function AddRecurringModal({ onClose }: { onClose: () => void }) {
           </div>
 
           <button onClick={handleAdd} className="btn-primary" disabled={!name.trim()}>
-            <Plus size={18} /> Přidat připomínku
+            <Plus size={18} /> {t("recurring.addReminder")}
           </button>
         </div>
       </div>
@@ -151,6 +153,7 @@ function AddRecurringModal({ onClose }: { onClose: () => void }) {
 }
 
 function RecurringCard({ item }: { item: RecurringItem }) {
+  const t = useT();
   const { updateItem, removeItem, markPurchased } = useRecurringStore();
   const addShoppingItem = useShoppingStore((s) => s.addItem);
   const appMode = useModeStore((s) => s.mode);
@@ -166,10 +169,15 @@ function RecurringCard({ item }: { item: RecurringItem }) {
   const statusColor = isOverdue ? "#C0392B" : isSoon ? "#B85C00" : "var(--green-dark)";
   const statusBg = isOverdue ? "#FDE8E8" : isSoon ? "#FEF3E2" : "var(--green-light)";
   const statusLabel = isOverdue
-    ? `Mělo se koupit před ${Math.abs(days)} dny`
+    ? t("recurring.overdue").replace("{n}", String(Math.abs(days)))
     : days === 0
-    ? "Koupit dnes"
-    : `Za ${days} ${days === 1 ? "den" : days < 5 ? "dny" : "dní"}`;
+    ? t("recurring.buyToday")
+    : (days === 1
+        ? t("recurring.inDay")
+        : days < 5
+        ? t("recurring.inDays2to4")
+        : t("recurring.inDays")
+      ).replace("{n}", String(days));
 
   const handleAddToShopping = () => {
     addShoppingItem({ name: item.name, quantity: item.quantity, unit: item.unit }, shoppingMode);
@@ -182,7 +190,10 @@ function RecurringCard({ item }: { item: RecurringItem }) {
     setAddedToCart(false);
   };
 
-  const intervalLabel = INTERVALS.find((i) => i.days === item.interval_days)?.label || `Každých ${item.interval_days} dní`;
+  const matchedInterval = INTERVALS.find((i) => i.days === item.interval_days);
+  const intervalLabel = matchedInterval
+    ? t(matchedInterval.labelKey)
+    : t("recurring.intervalCustom").replace("{n}", String(item.interval_days));
 
   return (
     <div className="card overflow-hidden mb-2">
@@ -213,14 +224,14 @@ function RecurringCard({ item }: { item: RecurringItem }) {
               className="flex-1 py-2.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-1.5"
               style={{ background: addedToCart ? "var(--green-light)" : "var(--bg-primary)", color: addedToCart ? "var(--green-dark)" : "var(--text-secondary)", border: "1.5px solid var(--border)" }}
             >
-              {addedToCart ? <><Check size={14} /> Přidáno</> : <><ShoppingCart size={14} /> Do nákupu</>}
+              {addedToCart ? <><Check size={14} /> {t("recurring.added")}</> : <><ShoppingCart size={14} /> {t("recurring.toShopping")}</>}
             </button>
             <button
               onClick={handleMarkPurchased}
               className="flex-1 py-2.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-1.5"
               style={{ background: "var(--green-primary)", color: "white" }}
             >
-              <Check size={14} /> Koupeno
+              <Check size={14} /> {t("recurring.purchased")}
             </button>
           </div>
 
@@ -230,12 +241,12 @@ function RecurringCard({ item }: { item: RecurringItem }) {
               className="w-full py-2 rounded-2xl text-xs font-medium flex items-center justify-center gap-1"
               style={{ color: "var(--text-tertiary)" }}
             >
-              <Trash2 size={12} /> Odebrat připomínku
+              <Trash2 size={12} /> {t("recurring.removeReminder")}
             </button>
           ) : (
             <div className="flex gap-2">
-              <button onClick={() => removeItem(item.id)} className="flex-1 py-2 rounded-2xl text-sm font-semibold" style={{ background: "#FDE8E8", color: "#C0392B" }}>Odebrat</button>
-              <button onClick={() => setConfirmDelete(false)} className="flex-1 py-2 rounded-2xl text-sm font-semibold" style={{ background: "var(--border)", color: "var(--text-secondary)" }}>Zrušit</button>
+              <button onClick={() => removeItem(item.id)} className="flex-1 py-2 rounded-2xl text-sm font-semibold" style={{ background: "#FDE8E8", color: "#C0392B" }}>{t("common.remove")}</button>
+              <button onClick={() => setConfirmDelete(false)} className="flex-1 py-2 rounded-2xl text-sm font-semibold" style={{ background: "var(--border)", color: "var(--text-secondary)" }}>{t("common.cancel")}</button>
             </div>
           )}
         </div>
@@ -246,6 +257,7 @@ function RecurringCard({ item }: { item: RecurringItem }) {
 
 // Predikce ze spižírny
 function PantryPredictions() {
+  const t = useT();
   const pantryItems = usePantryStore((s) => s.items);
   const { predictDaysLeft, recordConsumption } = useRecurringStore();
   const addShoppingItem = useShoppingStore((s) => s.addItem);
@@ -268,7 +280,7 @@ function PantryPredictions() {
     <div className="card p-4 mb-4" style={{ border: "1.5px solid #FDE8A0" }}>
       <div className="flex items-center gap-2 mb-3">
         <Bell size={15} style={{ color: "#B85C00" }} />
-        <p className="text-xs font-semibold uppercase" style={{ color: "#B85C00", letterSpacing: "0.05em" }}>Brzy dojde</p>
+        <p className="text-xs font-semibold uppercase" style={{ color: "#B85C00", letterSpacing: "0.05em" }}>{t("recurring.runningOut")}</p>
       </div>
       <div className="space-y-2">
         {predictions.map(({ item, days }) => (
@@ -276,7 +288,7 @@ function PantryPredictions() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{item.product.product_name}</p>
               <p className="text-xs" style={{ color: "#B85C00" }}>
-                {days === 0 ? "Dnes dojde" : days === 1 ? "Zbývá 1 den" : `Zbývá ~${days} dní`}
+                {days === 0 ? t("recurring.outToday") : days === 1 ? t("recurring.leftDay") : t("recurring.leftDays").replace("{n}", String(days))}
               </p>
             </div>
             <button
@@ -284,7 +296,7 @@ function PantryPredictions() {
               className="px-3 py-1.5 rounded-xl text-xs font-semibold flex-shrink-0"
               style={{ background: "#FEF3E2", color: "#B85C00" }}
             >
-              + Do nákupu
+              {t("recurring.addToShoppingShort")}
             </button>
           </div>
         ))}
@@ -294,6 +306,7 @@ function PantryPredictions() {
 }
 
 export function RecurringView() {
+  const t = useT();
   const { items, getDueItems, getSoonItems } = useRecurringStore();
   const [showAdd, setShowAdd] = useState(false);
 
@@ -311,7 +324,7 @@ export function RecurringView() {
         {items.length > 0 && (
           <div style={{ padding: "8px 4px 4px" }}>
             <p style={{ fontSize: 11, color: "var(--text-tertiary)", lineHeight: 1.5 }}>
-              Pravidelné nákupy s automatickou připomínkou. Zaškrtnutím odešlete položku do nákupního seznamu.
+              {t("recurring.intro")}
             </p>
           </div>
         )}
@@ -321,7 +334,7 @@ export function RecurringView() {
         {due.length > 0 && (
           <div>
             <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "#C0392B", letterSpacing: "0.06em" }}>
-              🔴 Je čas koupit ({due.length})
+              {t("recurring.timeToBuy").replace("{n}", String(due.length))}
             </p>
             {due.map((item) => <RecurringCard key={item.id} item={item} />)}
           </div>
@@ -330,7 +343,7 @@ export function RecurringView() {
         {soon.length > 0 && (
           <div>
             <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "#B85C00", letterSpacing: "0.06em" }}>
-              🟡 Brzy koupit ({soon.length})
+              {t("recurring.soonBuy").replace("{n}", String(soon.length))}
             </p>
             {soon.map((item) => <RecurringCard key={item.id} item={item} />)}
           </div>
@@ -339,7 +352,7 @@ export function RecurringView() {
         {upcoming.length > 0 && (
           <div>
             <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>
-              Naplánováno
+              {t("recurring.scheduled")}
             </p>
             {upcoming.map((item) => <RecurringCard key={item.id} item={item} />)}
           </div>
@@ -351,23 +364,23 @@ export function RecurringView() {
               <RefreshCw size={32} strokeWidth={1.5} style={{ color: "var(--green-primary)" }} />
             </div>
             <div style={{ textAlign: "center" }}>
-              <p style={{ fontSize: 18, fontWeight: 800, marginBottom: 8, color: "var(--text-primary)" }}>Pravidelné zásoby</p>
+              <p style={{ fontSize: 18, fontWeight: 800, marginBottom: 8, color: "var(--text-primary)" }}>{t("recurring.emptyTitle")}</p>
               <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.7, maxWidth: 280 }}>
-                Přidej položky, které kupuješ opakovaně — např. mléko každý týden, prací prášek každý měsíc. Aplikace ti připomene, až bude čas nakoupit.
+                {t("recurring.emptyDesc")}
               </p>
             </div>
             {/* Ukázkové karty */}
             <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: 8 }}>
               {[
-                { emoji: "🥛", name: "Mléko", interval: "každý týden" },
-                { emoji: "🍞", name: "Chléb", interval: "každé 3 dny" },
-                { emoji: "🧴", name: "Prací prášek", interval: "každý měsíc" },
+                { emoji: "🥛", nameKey: "recurring.exampleMilk", intervalKey: "recurring.exampleMilkInterval" },
+                { emoji: "🍞", nameKey: "recurring.exampleBread", intervalKey: "recurring.exampleBreadInterval" },
+                { emoji: "🧴", nameKey: "recurring.exampleDetergent", intervalKey: "recurring.exampleDetergentInterval" },
               ].map(ex => (
-                <div key={ex.name} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "white", borderRadius: 14, border: "1.5px dashed var(--border)", opacity: 0.6 }}>
+                <div key={ex.nameKey} style={{ display: "flex", alignItems: "center", gap: 12, padding: "10px 14px", background: "white", borderRadius: 14, border: "1.5px dashed var(--border)", opacity: 0.6 }}>
                   <span style={{ fontSize: 22 }}>{ex.emoji}</span>
                   <div>
-                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>{ex.name}</p>
-                    <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: 0 }}>Připomínka {ex.interval}</p>
+                    <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: 0 }}>{t(ex.nameKey)}</p>
+                    <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: 0 }}>{t("recurring.reminderPrefix").replace("{interval}", t(ex.intervalKey))}</p>
                   </div>
                 </div>
               ))}
@@ -377,7 +390,7 @@ export function RecurringView() {
               style={{ width: "100%", maxWidth: 280, display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
               onClick={() => setShowAdd(true)}
             >
-              <Plus size={18} /> Přidat první zásobu
+              <Plus size={18} /> {t("recurring.addFirst")}
             </button>
           </div>
         )}
@@ -388,7 +401,7 @@ export function RecurringView() {
             className="w-full py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
             style={{ background: "white", color: "var(--green-primary)", border: "1.5px dashed var(--green-primary)" }}
           >
-            <Plus size={16} /> Přidat připomínku
+            <Plus size={16} /> {t("recurring.addReminder")}
           </button>
         )}
       </div>

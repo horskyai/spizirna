@@ -3,8 +3,19 @@
 import { useState, useRef } from "react";
 import { X, Plus, Minus, Check, Trash2, Camera, Image } from "lucide-react";
 import { ParsedItem } from "@/components/VoiceInput";
+import { guessVoiceCategory } from "@/lib/guessCategory";
+import { useT, TranslationKey } from "@/lib/i18n";
 
 const UNITS = ["ks", "g", "kg", "ml", "l", "dkg", "balení", "lžíce", "lžička", "hrnek"];
+
+// Vrátí správný tvar slova "položka" podle počtu (1 / 2–4 / 5+).
+// `acc` = akuzativ ("Přidat 3 položky"), jinak nominativ ("3 položky").
+function plural(t: (k: TranslationKey) => string, n: number, acc = false): string {
+  const base = acc ? "voice.countAcc" : "voice.count";
+  if (n === 1) return t(`${base}.one`);
+  if (n >= 2 && n <= 4) return t(`${base}.few`);
+  return t(`${base}.many`);
+}
 
 const DEFAULT_CATEGORIES = [
   "Maso", "Ryby", "Mléčné výrobky", "Zelenina", "Ovoce",
@@ -29,6 +40,7 @@ function ItemCard({ item, onChange, onRemove }: {
   onChange: (changes: Partial<ReviewItem>) => void;
   onRemove: () => void;
 }) {
+  const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
 
@@ -53,7 +65,7 @@ function ItemCard({ item, onChange, onRemove }: {
             border: "none", outline: "none", background: "transparent",
             borderBottom: "1.5px solid var(--border)", paddingBottom: 4,
           }}
-          placeholder="Název produktu"
+          placeholder={t("voice.review.namePlaceholder")}
         />
         <button onClick={onRemove} style={{ flexShrink: 0, padding: 4 }}>
           <Trash2 size={15} style={{ color: "var(--text-tertiary)" }} />
@@ -82,13 +94,13 @@ function ItemCard({ item, onChange, onRemove }: {
             onClick={() => fileInputRef.current?.click()}
             style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 10, background: "var(--bg-primary)", border: "1.5px solid var(--border)", fontSize: 11, fontWeight: 600, color: "var(--text-secondary)" }}
           >
-            <Image size={13} style={{ color: "var(--green-primary)" }} /> Galerie
+            <Image size={13} style={{ color: "var(--green-primary)" }} /> {t("voice.review.gallery")}
           </button>
           <button
             onClick={() => cameraInputRef.current?.click()}
             style={{ display: "flex", alignItems: "center", gap: 5, padding: "6px 10px", borderRadius: 10, background: "var(--bg-primary)", border: "1.5px solid var(--border)", fontSize: 11, fontWeight: 600, color: "var(--text-secondary)" }}
           >
-            <Camera size={13} style={{ color: "var(--green-primary)" }} /> Fotit
+            <Camera size={13} style={{ color: "var(--green-primary)" }} /> {t("voice.review.photo")}
           </button>
         </div>
         <input ref={fileInputRef} type="file" accept="image/*" onChange={handlePhotoFile} style={{ display: "none" }} />
@@ -133,7 +145,7 @@ function ItemCard({ item, onChange, onRemove }: {
               border: `1px solid ${item.category === cat ? "var(--green-primary)" : "var(--border)"}`,
             }}
           >
-            {cat}
+            {t(`voice.cat.${cat}`)}
           </button>
         ))}
       </div>
@@ -142,11 +154,12 @@ function ItemCard({ item, onChange, onRemove }: {
 }
 
 export function VoiceReviewModal({ items: initialItems, onConfirm, onClose }: Props) {
+  const t = useT();
   const [items, setItems] = useState<ReviewItem[]>(
     initialItems.map((item, i) => ({
       ...item,
       id: `voice-${i}-${Date.now()}`,
-      category: "Jiné",
+      category: guessVoiceCategory(item.name),
     }))
   );
 
@@ -186,9 +199,9 @@ export function VoiceReviewModal({ items: initialItems, onConfirm, onClose }: Pr
         {/* Header */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 20px 12px" }}>
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>Zkontroluj položky</h2>
+            <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>{t("voice.review.title")}</h2>
             <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: "2px 0 0" }}>
-              {items.length} {items.length === 1 ? "položka" : items.length < 5 ? "položky" : "položek"} — uprav a potvrď
+              {items.length} {plural(t, items.length)} — {t("voice.review.subtitle")}
             </p>
           </div>
           <button
@@ -211,7 +224,7 @@ export function VoiceReviewModal({ items: initialItems, onConfirm, onClose }: Pr
           ))}
           {items.length === 0 && (
             <p style={{ textAlign: "center", color: "var(--text-tertiary)", padding: "32px 0", fontSize: 14 }}>
-              Všechny položky byly odebrány
+              {t("voice.review.allRemoved")}
             </p>
           )}
         </div>
@@ -224,9 +237,9 @@ export function VoiceReviewModal({ items: initialItems, onConfirm, onClose }: Pr
             className="btn-primary"
             style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, opacity: items.length === 0 ? 0.4 : 1 }}
           >
-            <Check size={17} /> Přidat {items.length > 0 ? `${items.length} ${items.length === 1 ? "položku" : items.length < 5 ? "položky" : "položek"}` : ""} do spižírny
+            <Check size={17} /> {t("voice.review.addToPantry").replace("{label}", items.length > 0 ? `${items.length} ${plural(t, items.length, true)}` : "").replace(/\s+/g, " ").trim()}
           </button>
-          <button onClick={onClose} className="btn-secondary">Zrušit</button>
+          <button onClick={onClose} className="btn-secondary">{t("common.cancel")}</button>
         </div>
       </div>
     </div>

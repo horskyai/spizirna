@@ -6,13 +6,14 @@ import { useFoodLogStore } from "@/store/foodLogStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { FoodLogEntry, FoodLogItem } from "@/types";
 import { todayISO } from "@/lib/dateUtils";
+import { useT } from "@/lib/i18n";
 
 const MEALS = [
-  { id: "snidane", label: "Snídaně", emoji: "🌅" },
-  { id: "svacina", label: "Svačina", emoji: "🍎" },
-  { id: "obed", label: "Oběd", emoji: "🍽️" },
-  { id: "vecere", label: "Večeře", emoji: "🌙" },
-  { id: "jine", label: "Jiné", emoji: "🥤" },
+  { id: "snidane", labelKey: "foodlog.meal.snidane", emoji: "🌅" },
+  { id: "svacina", labelKey: "foodlog.meal.svacina", emoji: "🍎" },
+  { id: "obed", labelKey: "foodlog.meal.obed", emoji: "🍽️" },
+  { id: "vecere", labelKey: "foodlog.meal.vecere", emoji: "🌙" },
+  { id: "jine", labelKey: "foodlog.meal.jine", emoji: "🥤" },
 ] as const;
 
 type MealId = typeof MEALS[number]["id"];
@@ -33,6 +34,7 @@ function MacroBar({ label, value, goal, color }: { label: string; value: number;
 }
 
 function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: Omit<FoodLogEntry, "id">) => void }) {
+  const t = useT();
   const pantryItems = usePantryStore((s) => s.items);
   const [meal, setMeal] = useState<MealId>("obed");
   const [mode, setMode] = useState<"pantry" | "manual">("pantry");
@@ -114,7 +116,7 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
         </div>
         <div className="overflow-y-auto px-5 pt-2 pb-8 space-y-4" style={{ maxHeight: "85vh" }}>
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Přidat jídlo</h3>
+            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("foodlog.addMeal")}</h3>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
               <X size={15} style={{ color: "var(--text-secondary)" }} />
             </button>
@@ -132,7 +134,7 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
                   color: meal === m.id ? "white" : "var(--text-secondary)",
                 }}
               >
-                <span>{m.emoji}</span> {m.label}
+                <span>{m.emoji}</span> {t(m.labelKey)}
               </button>
             ))}
           </div>
@@ -149,7 +151,7 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
                 margin: mode === "pantry" ? 2 : 0,
               }}
             >
-              <Package size={14} /> Ze spižírny
+              <Package size={14} /> {t("foodlog.fromPantry")}
             </button>
             <button
               onClick={() => setMode("manual")}
@@ -161,7 +163,7 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
                 margin: mode === "manual" ? 2 : 0,
               }}
             >
-              Ručně
+              {t("foodlog.manual")}
             </button>
           </div>
 
@@ -175,7 +177,7 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
                     <input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Hledat ve spižírně..."
+                      placeholder={t("foodlog.searchPantry")}
                       autoFocus
                       style={{ width: "100%", paddingLeft: 38, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 14, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
                     />
@@ -183,12 +185,12 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
 
                   {pantryItems.length === 0 ? (
                     <div className="text-center py-8">
-                      <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>Spižírna je prázdná</p>
-                      <p className="text-xs mt-1" style={{ color: "var(--text-tertiary)" }}>Přidejte produkty nebo použijte ruční zadání</p>
+                      <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>{t("foodlog.pantryEmpty")}</p>
+                      <p className="text-xs mt-1" style={{ color: "var(--text-tertiary)" }}>{t("foodlog.pantryEmptyHint")}</p>
                     </div>
                   ) : filteredPantry.length === 0 ? (
                     <div className="text-center py-6">
-                      <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>Nic nenalezeno</p>
+                      <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>{t("foodlog.nothingFound")}</p>
                     </div>
                   ) : (
                     <div className="card overflow-hidden">
@@ -208,7 +210,7 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
                             </p>
                             <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
                               {item.product.calories_kcal ? `${item.product.calories_kcal} kcal/100g · ` : ""}
-                              {item.quantity} {item.unit} doma
+                              {item.quantity} {item.unit} {t("foodlog.atHome")}
                             </p>
                           </div>
                         </button>
@@ -233,11 +235,11 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
                         </p>
                       </div>
                       <button onClick={() => setSelectedProduct(null)} className="text-xs" style={{ color: "var(--green-primary)" }}>
-                        Změnit
+                        {t("foodlog.change")}
                       </button>
                     </div>
 
-                    <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>KOLIK JSI SNĚDL(A)?</p>
+                    <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>{t("foodlog.howMuchEaten")}</p>
                     <div className="flex gap-2 mb-3">
                       <input
                         type="number"
@@ -278,15 +280,15 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
                           </div>
                           <div className="text-center">
                             <p className="text-base font-bold" style={{ color: "var(--green-dark)" }}>{preview.protein.toFixed(1)}g</p>
-                            <p className="text-xs" style={{ color: "var(--green-dark)" }}>bílk.</p>
+                            <p className="text-xs" style={{ color: "var(--green-dark)" }}>{t("foodlog.proteinShort")}</p>
                           </div>
                           <div className="text-center">
                             <p className="text-base font-bold" style={{ color: "var(--green-dark)" }}>{preview.carbs.toFixed(1)}g</p>
-                            <p className="text-xs" style={{ color: "var(--green-dark)" }}>sach.</p>
+                            <p className="text-xs" style={{ color: "var(--green-dark)" }}>{t("foodlog.carbsShort")}</p>
                           </div>
                           <div className="text-center">
                             <p className="text-base font-bold" style={{ color: "var(--green-dark)" }}>{preview.fat.toFixed(1)}g</p>
-                            <p className="text-xs" style={{ color: "var(--green-dark)" }}>tuky</p>
+                            <p className="text-xs" style={{ color: "var(--green-dark)" }}>{t("foodlog.fatShort")}</p>
                           </div>
                         </div>
                       </div>
@@ -294,7 +296,7 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
                   </div>
 
                   <button onClick={handleSubmit} className="btn-primary" disabled={!selectedProduct || !amountG}>
-                    <Plus size={18} /> Zaznamenat jídlo
+                    <Plus size={18} /> {t("foodlog.logMeal")}
                   </button>
                 </>
               )}
@@ -307,16 +309,16 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
               <input
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                placeholder="Název jídla..."
+                placeholder={t("foodlog.mealNamePlaceholder")}
                 className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
                 style={{ background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
               />
               <div className="grid grid-cols-2 gap-3">
                 {[
-                  { key: "kcal", label: "Kalorie (kcal)", set: setKcal, val: kcal, accent: true },
-                  { key: "protein", label: "Bílkoviny (g)", set: setProtein, val: protein },
-                  { key: "carbs", label: "Sacharidy (g)", set: setCarbs, val: carbs },
-                  { key: "fat", label: "Tuky (g)", set: setFat, val: fat },
+                  { key: "kcal", label: t("foodlog.caloriesLabel"), set: setKcal, val: kcal, accent: true },
+                  { key: "protein", label: t("foodlog.proteinLabel"), set: setProtein, val: protein },
+                  { key: "carbs", label: t("foodlog.carbsLabel"), set: setCarbs, val: carbs },
+                  { key: "fat", label: t("foodlog.fatLabel"), set: setFat, val: fat },
                 ].map(({ key, label, set, val, accent }) => (
                   <div key={key}>
                     <p className="text-xs font-medium mb-1 ml-1" style={{ color: "var(--text-secondary)" }}>{label}</p>
@@ -336,7 +338,7 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
                 ))}
               </div>
               <button onClick={handleSubmit} className="btn-primary" disabled={!name || !kcal}>
-                <Plus size={18} /> Zaznamenat jídlo
+                <Plus size={18} /> {t("foodlog.logMeal")}
               </button>
             </>
           )}
@@ -347,6 +349,7 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
 }
 
 export function FoodLogView() {
+  const t = useT();
   const { entries, addEntry, removeEntry, goal, setGoal } = useFoodLogStore();
   const [showModal, setShowModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
@@ -384,9 +387,9 @@ export function FoodLogView() {
               </div>
             </div>
             <div className="flex-1 space-y-2.5">
-              <MacroBar label="Bílkoviny" value={totals.protein} goal={goal.protein_g} color="#6B8F5E" />
-              <MacroBar label="Sacharidy" value={totals.carbs} goal={goal.carbs_g} color="#E8B84B" />
-              <MacroBar label="Tuky" value={totals.fat} goal={goal.fat_g} color="#E8845A" />
+              <MacroBar label={t("foodlog.protein")} value={totals.protein} goal={goal.protein_g} color="#6B8F5E" />
+              <MacroBar label={t("foodlog.carbs")} value={totals.carbs} goal={goal.carbs_g} color="#E8B84B" />
+              <MacroBar label={t("foodlog.fat")} value={totals.fat} goal={goal.fat_g} color="#E8845A" />
             </div>
           </div>
           <div className="flex justify-between items-center mt-4 pt-3" style={{ borderTop: "1px solid var(--border)" }}>
@@ -395,16 +398,16 @@ export function FoodLogView() {
               className="flex items-center gap-1.5"
             >
               <Settings size={13} style={{ color: "var(--text-tertiary)" }} />
-              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>Cíl: {goal.calories_kcal} kcal</span>
+              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{t("foodlog.goal").replace("{n}", String(goal.calories_kcal))}</span>
             </button>
             <span className="text-xs font-semibold" style={{ color: "var(--green-primary)" }}>
-              Zbývá: {Math.max(0, goal.calories_kcal - Math.round(totals.kcal))} kcal
+              {t("foodlog.remaining").replace("{n}", String(Math.max(0, goal.calories_kcal - Math.round(totals.kcal))))}
             </span>
           </div>
         </div>
 
         {/* Meals */}
-        {MEALS.map(({ id, label, emoji }) => {
+        {MEALS.map(({ id, labelKey, emoji }) => {
           const mealEntries = todayEntries.filter((e) => e.meal === id);
           const mealKcal = mealEntries.reduce((s, e) => s + e.total_kcal, 0);
 
@@ -413,7 +416,7 @@ export function FoodLogView() {
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2">
                   <span>{emoji}</span>
-                  <span className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>{label}</span>
+                  <span className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>{t(labelKey)}</span>
                 </div>
                 {mealKcal > 0 && (
                   <span className="text-xs font-bold" style={{ color: "var(--green-primary)" }}>{Math.round(mealKcal)} kcal</span>
@@ -442,14 +445,14 @@ export function FoodLogView() {
                   )}
                 </div>
               ) : (
-                <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>Žádné záznamy</p>
+                <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>{t("foodlog.noEntries")}</p>
               )}
             </div>
           );
         })}
 
         <button className="btn-primary w-full" onClick={() => setShowModal(true)}>
-          <Plus size={18} /> Přidat jídlo
+          <Plus size={18} /> {t("foodlog.addMeal")}
         </button>
       </div>
 
@@ -463,6 +466,7 @@ export function FoodLogView() {
 }
 
 function GoalModal({ goal, onSave, onClose }: { goal: any; onSave: (g: any) => void; onClose: () => void }) {
+  const t = useT();
   const [kcal, setKcal] = useState(goal.calories_kcal.toString());
   const [protein, setProtein] = useState(goal.protein_g.toString());
   const [carbs, setCarbs] = useState(goal.carbs_g.toString());
@@ -490,7 +494,7 @@ function GoalModal({ goal, onSave, onClose }: { goal: any; onSave: (g: any) => v
         </div>
         <div className="px-5 pt-2 pb-6 space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Denní cíle</h3>
+            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("foodlog.dailyGoals")}</h3>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
               <X size={15} style={{ color: "var(--text-secondary)" }} />
             </button>
@@ -498,10 +502,10 @@ function GoalModal({ goal, onSave, onClose }: { goal: any; onSave: (g: any) => v
 
           <div className="grid grid-cols-2 gap-3">
             {[
-              { label: "Kalorie (kcal)", val: kcal, set: setKcal, accent: true },
-              { label: "Bílkoviny (g)", val: protein, set: setProtein },
-              { label: "Sacharidy (g)", val: carbs, set: setCarbs },
-              { label: "Tuky (g)", val: fat, set: setFat },
+              { label: t("foodlog.caloriesLabel"), val: kcal, set: setKcal, accent: true },
+              { label: t("foodlog.proteinLabel"), val: protein, set: setProtein },
+              { label: t("foodlog.carbsLabel"), val: carbs, set: setCarbs },
+              { label: t("foodlog.fatLabel"), val: fat, set: setFat },
             ].map(({ label, val, set, accent }) => (
               <div key={label}>
                 <p className="text-xs font-medium mb-1.5" style={{ color: "var(--text-secondary)" }}>{label}</p>
@@ -522,12 +526,12 @@ function GoalModal({ goal, onSave, onClose }: { goal: any; onSave: (g: any) => v
 
           <div className="rounded-2xl p-3" style={{ background: "var(--green-light)" }}>
             <p className="text-xs font-medium text-center" style={{ color: "var(--green-dark)" }}>
-              Průměrný dospělý: 2000 kcal · 150g bílkovin · 250g sacharidů · 65g tuků
+              {t("foodlog.averageAdult")}
             </p>
           </div>
 
           <button onClick={handleSave} className="btn-primary w-full">
-            Uložit cíle
+            {t("foodlog.saveGoals")}
           </button>
         </div>
       </div>

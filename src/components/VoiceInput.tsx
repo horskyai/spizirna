@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { Mic, MicOff, Loader } from "lucide-react";
+import { Mic, MicOff, Loader, HelpCircle, ChevronDown } from "lucide-react";
+import { useT, useLocale } from "@/lib/i18n";
 
 export interface ParsedItem {
   name: string;
@@ -198,19 +199,50 @@ const LEMMA: Record<string, string> = {
   těstovin: "těstoviny", těstoviny: "těstoviny", testovin: "těstoviny",
   kávy: "káva", kavy: "káva", káva: "káva", kava: "káva",
   čaje: "čaj", caje: "čaj", čaj: "čaj",
+  // víceslovné fráze, jak je hlasovka přepíše ve skloňovaném tvaru
+  "kuřecích prsou": "kuřecí prsa", "kurecich prsou": "kuřecí prsa",
+  "kuřecí prsa": "kuřecí prsa", "kuřecích prsa": "kuřecí prsa",
+  "kuřecího masa": "kuřecí maso", "kureciho masa": "kuřecí maso",
+  "hovězího masa": "hovězí maso", "hoveziho masa": "hovězí maso",
+  "vepřového masa": "vepřové maso", "veproveho masa": "vepřové maso",
+  "mletého masa": "mleté maso", "mleteho masa": "mleté maso",
+  "kysané smetany": "kysaná smetana", "kysane smetany": "kysaná smetana",
+  "zakysané smetany": "zakysaná smetana", "zakysane smetany": "zakysaná smetana",
+  "šlehačky": "šlehačka", "slehacky": "šlehačka",
+  "sýru eidam": "sýr eidam", "syru eidam": "sýr eidam",
+  "sýra eidam": "sýr eidam", "syra eidam": "sýr eidam",
+};
+
+// Jednotlivá poslední slova ve skloňovaném tvaru → 1. pád. Použije se, když
+// víceslovná fráze není ve slovníku celá ("nějaký sýr eidam" → "...eidam").
+const LEMMA_WORD: Record<string, string> = {
+  prsou: "prsa", prsa: "prsa", prsíčka: "prsa", prsicka: "prsa",
+  masa: "maso", maso: "maso",
+  smetany: "smetana", smetana: "smetana",
+  filé: "filé", filet: "filé", filety: "filé",
+  sýra: "sýr", syra: "sýr", sýru: "sýr", syru: "sýr",
+  jogurtu: "jogurt", jogurtů: "jogurt",
 };
 
 function lemmatizeName(name: string): string {
   const words = name.split(/\s+/);
-  // jednoslovný název: zkus slovník
+  // jednoslovný název: zkus slovníky
   if (words.length === 1) {
-    return LEMMA[words[0]] ?? name;
+    return LEMMA[words[0]] ?? LEMMA_WORD[words[0]] ?? name;
   }
-  // víceslovný: zkus celé spojení, jinak lemmatizuj poslední (hlavní) slovo
+  // víceslovný: nejdřív zkus celé spojení (např. "kuřecích prsou" → "kuřecí prsa")
   if (LEMMA[name]) return LEMMA[name];
+  // jinak lemmatizuj poslední (hlavní) slovo — typicky "kuřecí prsou" → "...prsa"
   const last = words[words.length - 1];
-  if (LEMMA[last]) {
-    words[words.length - 1] = LEMMA[last];
+  const lemmaLast = LEMMA[last] ?? LEMMA_WORD[last];
+  if (lemmaLast) {
+    words[words.length - 1] = lemmaLast;
+    return words.join(" ");
+  }
+  // u některých spojení je skloňované první (hlavní) slovo — "sýra eidam" → "sýr eidam"
+  const lemmaFirst = LEMMA_WORD[words[0]];
+  if (lemmaFirst) {
+    words[0] = lemmaFirst;
     return words.join(" ");
   }
   return name;
@@ -240,10 +272,13 @@ interface Props {
   label?: string;
 }
 
-export function VoiceInput({ onResult, label = "Nadiktovat" }: Props) {
+export function VoiceInput({ onResult, label }: Props) {
+  const t = useT();
+  const locale = useLocale();
   const [state, setState] = useState<"idle" | "listening" | "processing">("idle");
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [showGuide, setShowGuide] = useState(false);
   const recognitionRef = useRef<any>(null);
 
   const startListening = useCallback(() => {
@@ -254,12 +289,12 @@ export function VoiceInput({ onResult, label = "Nadiktovat" }: Props) {
       (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
     if (!SpeechRecognition) {
-      setError("Váš prohlížeč nepodporuje hlasové zadávání. Zkuste Chrome nebo Safari.");
+      setError(t("voice.input.noBrowser"));
       return;
     }
 
     const recognition = new SpeechRecognition();
-    recognition.lang = "cs-CZ";
+    recognition.lang = locale === "sk" ? "sk-SK" : "cs-CZ";
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
@@ -285,11 +320,11 @@ export function VoiceInput({ onResult, label = "Nadiktovat" }: Props) {
 
     recognition.onerror = (event: any) => {
       if (event.error === "no-speech") {
-        setError("Nic jste neřekl. Zkuste znovu.");
+        setError(t("voice.input.noSpeech"));
       } else if (event.error === "not-allowed") {
-        setError("Přístup k mikrofonu byl odmítnut.");
+        setError(t("voice.input.notAllowed"));
       } else {
-        setError("Chyba rozpoznávání. Zkuste znovu.");
+        setError(t("voice.input.error"));
       }
       setState("idle");
     };
@@ -299,7 +334,7 @@ export function VoiceInput({ onResult, label = "Nadiktovat" }: Props) {
     };
 
     recognition.start();
-  }, [onResult, state]);
+  }, [onResult, state, t, locale]);
 
   const stopListening = useCallback(() => {
     recognitionRef.current?.stop();
@@ -331,7 +366,7 @@ export function VoiceInput({ onResult, label = "Nadiktovat" }: Props) {
         {state === "listening" ? (
           <>
             <MicOff size={16} />
-            <span>Poslouchám... (klepni pro stop)</span>
+            <span>{t("voice.input.listening")}</span>
             <span style={{ display: "inline-flex", gap: 3 }}>
               {[0, 1, 2].map(i => (
                 <span
@@ -346,9 +381,9 @@ export function VoiceInput({ onResult, label = "Nadiktovat" }: Props) {
             </span>
           </>
         ) : state === "processing" ? (
-          <><Loader size={16} className="animate-spin" /> Zpracovávám...</>
+          <><Loader size={16} className="animate-spin" /> {t("voice.input.processing")}</>
         ) : (
-          <><Mic size={16} /> {label}</>
+          <><Mic size={16} /> {label ?? t("voice.input.dictate")}</>
         )}
       </button>
 
@@ -365,8 +400,50 @@ export function VoiceInput({ onResult, label = "Nadiktovat" }: Props) {
       )}
 
       <p className="text-xs text-center" style={{ color: "var(--text-tertiary)" }}>
-        Např. „2 kuřecí prsa, 300 gramů špaget, jeden litr mléka"
+        {t("voice.input.example")}
       </p>
+
+      {/* Příručka: jak správně diktovat */}
+      <button
+        type="button"
+        onClick={() => setShowGuide(v => !v)}
+        className="w-full flex items-center justify-center gap-1.5 text-xs"
+        style={{ color: "var(--green-dark)", padding: "2px 0" }}
+      >
+        <HelpCircle size={13} />
+        <span>{t("voice.input.howTitle")}</span>
+        <ChevronDown
+          size={13}
+          style={{ transform: showGuide ? "rotate(180deg)" : "none", transition: "transform 0.2s" }}
+        />
+      </button>
+
+      {showGuide && (
+        <div
+          className="text-xs rounded-xl"
+          style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)", padding: "12px 14px", color: "var(--text-secondary)", lineHeight: 1.55 }}
+        >
+          <p style={{ margin: "0 0 8px", fontWeight: 700, color: "var(--text-primary)" }}>
+            {t("voice.guide.order")} <span style={{ color: "var(--green-dark)" }}>{t("voice.guide.orderHl")}</span>.
+          </p>
+
+          <p style={{ margin: "0 0 4px", fontWeight: 600, color: "var(--text-primary)" }}>{t("voice.guide.bestTitle")}</p>
+          <ul style={{ margin: "0 0 10px", paddingLeft: 16, listStyle: "disc" }}>
+            <li>{t("voice.guide.best1")}</li>
+            <li>{t("voice.guide.best2")}</li>
+            <li>{t("voice.guide.best3")}</li>
+            <li>{t("voice.guide.best4a")} <strong>„a"</strong> {t("voice.guide.best4b")}</li>
+          </ul>
+
+          <p style={{ margin: "0 0 4px", fontWeight: 600, color: "var(--text-primary)" }}>{t("voice.guide.tipsTitle")}</p>
+          <ul style={{ margin: 0, paddingLeft: 16, listStyle: "disc" }}>
+            <li>{t("voice.guide.tip1a")} <em>{t("voice.guide.tip1b")}</em>{t("voice.guide.tip1c")}</li>
+            <li>{t("voice.guide.tip2")}</li>
+            <li>{t("voice.guide.tip3")}</li>
+            <li>{t("voice.guide.tip4a")} <strong>{t("voice.guide.tip4b")}</strong> {t("voice.guide.tip4c")}</li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

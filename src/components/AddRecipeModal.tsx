@@ -6,6 +6,7 @@ import { VoiceInput } from "@/components/VoiceInput";
 import { useRecipeStore } from "@/store/recipeStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { RecipeIngredient } from "@/types";
+import { useT } from "@/lib/i18n";
 
 interface Props {
   onClose: () => void;
@@ -24,6 +25,7 @@ function PantryPickerModal({
   onSelect: (productName: string, ean: string, unit: string) => void;
   onClose: () => void;
 }) {
+  const t = useT();
   const pantryItems = usePantryStore((s) => s.items);
   const [search, setSearch] = useState("");
 
@@ -45,7 +47,7 @@ function PantryPickerModal({
         </div>
         <div className="px-5 pt-2 pb-6 flex flex-col gap-3" style={{ height: "100%" }}>
           <div className="flex items-center justify-between">
-            <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Vybrat ze spižírny</h3>
+            <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>{t("addrecipe.pickFromPantry")}</h3>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
               <X size={15} style={{ color: "var(--text-secondary)" }} />
             </button>
@@ -56,7 +58,7 @@ function PantryPickerModal({
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Hledat produkt..."
+              placeholder={t("addrecipe.searchProductPlaceholder")}
               autoFocus
               className="w-full pl-9 pr-4 py-2.5 rounded-xl text-sm outline-none"
               style={{ background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
@@ -66,12 +68,12 @@ function PantryPickerModal({
           <div className="overflow-y-auto flex-1">
             {pantryItems.length === 0 ? (
               <div className="text-center py-8">
-                <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>Spižírna je prázdná</p>
-                <p className="text-xs mt-1" style={{ color: "var(--text-tertiary)" }}>Přidejte produkty do spižírny nejdřív</p>
+                <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>{t("addrecipe.pantryEmpty")}</p>
+                <p className="text-xs mt-1" style={{ color: "var(--text-tertiary)" }}>{t("addrecipe.pantryEmptyHint")}</p>
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-6">
-                <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>Nic nenalezeno</p>
+                <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>{t("addrecipe.nothingFound")}</p>
               </div>
             ) : (
               <div className="card overflow-hidden">
@@ -103,7 +105,7 @@ function PantryPickerModal({
                       </p>
                       <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
                         {item.product.brand && `${item.product.brand} · `}
-                        {item.quantity} {item.unit} doma
+                        {item.quantity} {item.unit} {t("addrecipe.atHome")}
                         {item.product.calories_kcal ? ` · ${item.product.calories_kcal} kcal/100g` : ""}
                       </p>
                     </div>
@@ -120,6 +122,7 @@ function PantryPickerModal({
 }
 
 export function AddRecipeModal({ onClose }: Props) {
+  const t = useT();
   const addRecipe = useRecipeStore((s) => s.addRecipe);
 
   const [step, setStep] = useState<"basic" | "ingredients" | "instructions">("basic");
@@ -227,7 +230,7 @@ export function AddRecipeModal({ onClose }: Props) {
 
           {/* Header */}
           <div className="flex items-center justify-between px-5 pt-2 pb-3">
-            <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>Nový recept</h2>
+            <h2 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{t("addrecipe.title")}</h2>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
               <X size={16} style={{ color: "var(--text-secondary)" }} />
             </button>
@@ -236,7 +239,7 @@ export function AddRecipeModal({ onClose }: Props) {
           {/* Step tabs */}
           <div className="flex px-5 gap-2 mb-3">
             {(["basic", "ingredients", "instructions"] as const).map((s, i) => {
-              const labels = ["Základní", "Suroviny", "Postup"];
+              const labels = [t("addrecipe.stepBasic"), t("addrecipe.stepIngredients"), t("addrecipe.stepInstructions")];
               const active = step === s;
               const done = (s === "basic" && step !== "basic") || (s === "ingredients" && step === "instructions");
               return (
@@ -267,22 +270,22 @@ export function AddRecipeModal({ onClose }: Props) {
               <div className="space-y-3">
                 <div className="card p-4 space-y-3">
                   <div>
-                    <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>NÁZEV RECEPTU *</p>
+                    <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>{t("addrecipe.nameLabel")}</p>
                     <input
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="např. Hovězí guláš"
+                      placeholder={t("addrecipe.namePlaceholder")}
                       autoFocus
                       className="w-full px-3 py-3 rounded-xl text-sm outline-none"
                       style={{ background: "var(--bg-primary)", border: `1.5px solid ${name ? "var(--green-primary)" : "var(--border)"}`, color: "var(--text-primary)" }}
                     />
                   </div>
                   <div>
-                    <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>POPIS</p>
+                    <p className="text-xs font-semibold mb-1.5" style={{ color: "var(--text-secondary)" }}>{t("addrecipe.descLabel")}</p>
                     <textarea
                       value={description}
                       onChange={(e) => setDescription(e.target.value)}
-                      placeholder="Krátký popis receptu..."
+                      placeholder={t("addrecipe.descPlaceholder")}
                       rows={2}
                       className="w-full px-3 py-2.5 rounded-xl text-sm outline-none resize-none"
                       style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--text-primary)", fontFamily: "inherit" }}
@@ -291,12 +294,12 @@ export function AddRecipeModal({ onClose }: Props) {
                 </div>
 
                 <div className="card p-4">
-                  <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>PORCE A ČAS</p>
+                  <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>{t("addrecipe.portionsAndTime")}</p>
                   <div className="grid grid-cols-3 gap-2">
                     {[
-                      { label: "Porcí", value: String(servings), set: (v: string) => setServings(parseInt(v) || 1), unit: "ks" },
-                      { label: "Příprava", value: prepTime, set: setPrepTime, unit: "min" },
-                      { label: "Vaření", value: cookTime, set: setCookTime, unit: "min" },
+                      { label: t("addrecipe.portions"), value: String(servings), set: (v: string) => setServings(parseInt(v) || 1), unit: "ks" },
+                      { label: t("addrecipe.prep"), value: prepTime, set: setPrepTime, unit: "min" },
+                      { label: t("addrecipe.cooking"), value: cookTime, set: setCookTime, unit: "min" },
                     ].map(({ label, value, set, unit }) => (
                       <div key={label}>
                         <p className="text-xs text-center mb-1" style={{ color: "var(--text-secondary)" }}>{label}</p>
@@ -314,13 +317,13 @@ export function AddRecipeModal({ onClose }: Props) {
                 </div>
 
                 <div className="card p-4">
-                  <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>VÝŽIVA NA PORCI (volitelné)</p>
+                  <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>{t("addrecipe.nutritionPerServing")}</p>
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { label: "Kalorie (kcal)", val: kcalPerServing, set: setKcalPerServing, accent: true },
-                      { label: "Bílkoviny (g)", val: proteinPerServing, set: setProteinPerServing },
-                      { label: "Sacharidy (g)", val: carbsPerServing, set: setCarbsPerServing },
-                      { label: "Tuky (g)", val: fatPerServing, set: setFatPerServing },
+                      { label: t("addrecipe.calories"), val: kcalPerServing, set: setKcalPerServing, accent: true },
+                      { label: t("addrecipe.proteinG"), val: proteinPerServing, set: setProteinPerServing },
+                      { label: t("addrecipe.carbsG"), val: carbsPerServing, set: setCarbsPerServing },
+                      { label: t("addrecipe.fatG"), val: fatPerServing, set: setFatPerServing },
                     ].map(({ label, val, set, accent }) => (
                       <div key={label}>
                         <p className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>{label}</p>
@@ -338,7 +341,7 @@ export function AddRecipeModal({ onClose }: Props) {
                 </div>
 
                 <div className="card p-4">
-                  <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>ŠTÍTKY</p>
+                  <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>{t("addrecipe.tagsLabel")}</p>
                   <div className="flex flex-wrap gap-1.5 mb-2">
                     {TAGS_PRESET.map((tag) => (
                       <button
@@ -350,7 +353,7 @@ export function AddRecipeModal({ onClose }: Props) {
                           color: selectedTags.includes(tag) ? "white" : "var(--text-secondary)",
                         }}
                       >
-                        {tag}
+                        {t(`addrecipe.tag.${tag}`)}
                       </button>
                     ))}
                   </div>
@@ -359,7 +362,7 @@ export function AddRecipeModal({ onClose }: Props) {
                       value={customTag}
                       onChange={(e) => setCustomTag(e.target.value)}
                       onKeyDown={(e) => { if (e.key === "Enter" && customTag.trim()) { toggleTag(customTag.trim()); setCustomTag(""); } }}
-                      placeholder="Vlastní štítek..."
+                      placeholder={t("addrecipe.customTagPlaceholder")}
                       className="flex-1 px-3 py-2 rounded-xl text-xs outline-none"
                       style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
                     />
@@ -374,7 +377,7 @@ export function AddRecipeModal({ onClose }: Props) {
                 </div>
 
                 <button onClick={() => setStep("ingredients")} className="btn-primary" disabled={!canProceedBasic}>
-                  Dál — Suroviny
+                  {t("addrecipe.nextIngredients")}
                 </button>
               </div>
             )}
@@ -383,7 +386,7 @@ export function AddRecipeModal({ onClose }: Props) {
             {step === "ingredients" && (
               <div className="space-y-3">
                 <p className="text-xs text-center" style={{ color: "var(--text-tertiary)" }}>
-                  Propojte suroviny se spižírnou pro přesné sledování
+                  {t("addrecipe.linkHint")}
                 </p>
 
                 {ingredients.map((ing, idx) => (
@@ -398,7 +401,7 @@ export function AddRecipeModal({ onClose }: Props) {
                         <div className="flex items-center gap-1.5">
                           <Link size={11} style={{ color: "var(--green-primary)" }} />
                           <span className="text-xs font-semibold" style={{ color: "var(--green-primary)" }}>
-                            Propojeno: {ing.linked_product_name}
+                            {t("addrecipe.linked").replace("{name}", ing.linked_product_name)}
                           </span>
                         </div>
                         <button
@@ -422,7 +425,7 @@ export function AddRecipeModal({ onClose }: Props) {
                       <input
                         value={ing.name}
                         onChange={(e) => updateIngredient(idx, "name", e.target.value)}
-                        placeholder="Název suroviny..."
+                        placeholder={t("addrecipe.ingredientNamePlaceholder")}
                         className="flex-1 px-3 py-2 rounded-xl text-sm outline-none"
                         style={{
                           background: "var(--bg-primary)",
@@ -443,7 +446,7 @@ export function AddRecipeModal({ onClose }: Props) {
                         type="number"
                         value={ing.quantity || ""}
                         onChange={(e) => updateIngredient(idx, "quantity", parseFloat(e.target.value) || 0)}
-                        placeholder="Množství"
+                        placeholder={t("addrecipe.quantityPlaceholder")}
                         className="flex-1 px-3 py-2 rounded-xl text-sm outline-none text-center"
                         style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
                       />
@@ -463,7 +466,7 @@ export function AddRecipeModal({ onClose }: Props) {
                         }}
                       >
                         {UNITS.map((u) => (
-                          <option key={u} value={u}>{u}</option>
+                          <option key={u} value={u}>{t(`addrecipe.unit.${u}`)}</option>
                         ))}
                       </select>
                     </div>
@@ -475,7 +478,7 @@ export function AddRecipeModal({ onClose }: Props) {
                         className="flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-full transition-all"
                         style={{ background: "var(--green-light)", color: "var(--green-dark)" }}
                       >
-                        <Link size={12} /> Propojit se spižírnou
+                        <Link size={12} /> {t("addrecipe.linkToPantry")}
                       </button>
                     ) : (
                       <button
@@ -483,7 +486,7 @@ export function AddRecipeModal({ onClose }: Props) {
                         className="flex items-center gap-1.5 text-xs font-medium px-3 py-1.5 rounded-full"
                         style={{ background: "var(--border)", color: "var(--text-secondary)" }}
                       >
-                        <Link size={12} /> Změnit propojení
+                        <Link size={12} /> {t("addrecipe.changeLink")}
                       </button>
                     )}
                   </div>
@@ -494,7 +497,7 @@ export function AddRecipeModal({ onClose }: Props) {
                   className="w-full py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
                   style={{ background: "white", color: "var(--green-primary)", border: "1.5px dashed var(--green-primary)" }}
                 >
-                  <Plus size={16} /> Přidat surovinu
+                  <Plus size={16} /> {t("addrecipe.addIngredient")}
                 </button>
 
                 <VoiceInput
@@ -505,23 +508,23 @@ export function AddRecipeModal({ onClose }: Props) {
                       return [...cleaned, ...newIngs, { ...EMPTY_ING }];
                     });
                   }}
-                  label="Nadiktovat suroviny hlasem"
+                  label={t("addrecipe.voiceIngredients")}
                 />
 
                 <button onClick={() => setStep("instructions")} className="btn-primary" disabled={!canProceedIngredients}>
-                  Dál — Postup vaření
+                  {t("addrecipe.nextInstructions")}
                 </button>
                 <button onClick={handleSave} className="btn-secondary" disabled={!canProceedIngredients} style={{ marginTop: 8 }}>
-                  Uložit bez postupu
+                  {t("addrecipe.saveWithoutInstructions")}
                 </button>
-                <button onClick={() => setStep("basic")} style={{ marginTop: 4, color: "var(--text-tertiary)", fontSize: 14, fontWeight: 500, padding: "8px 0" }}>Zpět</button>
+                <button onClick={() => setStep("basic")} style={{ marginTop: 4, color: "var(--text-tertiary)", fontSize: 14, fontWeight: 500, padding: "8px 0" }}>{t("common.back")}</button>
               </div>
             )}
 
             {/* ===== INSTRUCTIONS ===== */}
             {step === "instructions" && (
               <div className="space-y-3">
-                <p className="text-xs text-center" style={{ color: "var(--text-tertiary)" }}>Popište kroky vaření</p>
+                <p className="text-xs text-center" style={{ color: "var(--text-tertiary)" }}>{t("addrecipe.describeSteps")}</p>
 
                 {instructions.map((ins, idx) => (
                   <div key={idx} className="flex gap-2 items-start">
@@ -534,7 +537,7 @@ export function AddRecipeModal({ onClose }: Props) {
                     <textarea
                       value={ins}
                       onChange={(e) => updateInstruction(idx, e.target.value)}
-                      placeholder={`Krok ${idx + 1}...`}
+                      placeholder={t("addrecipe.stepPlaceholder").replace("{n}", String(idx + 1))}
                       rows={2}
                       className="flex-1 px-3 py-2.5 rounded-xl text-sm outline-none resize-none"
                       style={{
@@ -557,7 +560,7 @@ export function AddRecipeModal({ onClose }: Props) {
                   className="w-full py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
                   style={{ background: "white", color: "var(--green-primary)", border: "1.5px dashed var(--green-primary)" }}
                 >
-                  <Plus size={16} /> Přidat krok
+                  <Plus size={16} /> {t("addrecipe.addStep")}
                 </button>
 
                 <button
@@ -565,9 +568,9 @@ export function AddRecipeModal({ onClose }: Props) {
                   className="btn-primary"
                   disabled={!canProceedBasic || !canProceedIngredients}
                 >
-                  Uložit recept
+                  {t("addrecipe.saveRecipe")}
                 </button>
-                <button onClick={() => setStep("ingredients")} className="btn-secondary" style={{ marginTop: 8 }}>Zpět</button>
+                <button onClick={() => setStep("ingredients")} className="btn-secondary" style={{ marginTop: 8 }}>{t("common.back")}</button>
               </div>
             )}
           </div>

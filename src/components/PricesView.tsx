@@ -4,8 +4,10 @@ import { useState } from "react";
 import { TrendingDown, Store, BarChart2 } from "lucide-react";
 import { usePriceStore } from "@/store/priceStore";
 import { formatDateShort } from "@/lib/dateUtils";
+import { useT } from "@/lib/i18n";
 
 export function PricesView() {
+  const t = useT();
   const { records } = usePriceStore();
 
   // Group by EAN
@@ -24,8 +26,8 @@ export function PricesView() {
           <BarChart2 size={32} strokeWidth={1.5} style={{ color: "var(--green-primary)" }} />
         </div>
         <div className="text-center">
-          <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>Žádná cenová data</p>
-          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Při skenování produktů zadejte cenu pro sledování vývoje.</p>
+          <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>{t("prices.emptyTitle")}</p>
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("prices.emptyDesc")}</p>
         </div>
       </div>
     );
@@ -44,16 +46,16 @@ export function PricesView() {
             <div key={ean} className="card p-4">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <p className="font-bold" style={{ color: "var(--text-primary)" }}>EAN: {ean}</p>
+                  <p className="font-bold" style={{ color: "var(--text-primary)" }}>{t("prices.eanLabel")} {ean}</p>
                   <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-                    {history.length} záznam{history.length > 1 ? "ů" : ""}
+                    {(history.length > 1 ? t("prices.recordsMany") : t("prices.recordsOne")).replace("{n}", String(history.length))}
                   </p>
                 </div>
                 {savings > 0 && (
                   <div className="flex items-center gap-1 px-2 py-1 rounded-full" style={{ background: "#E8F0E4" }}>
                     <TrendingDown size={12} style={{ color: "var(--green-dark)" }} />
                     <span className="text-xs font-semibold" style={{ color: "var(--green-dark)" }}>
-                      Ušetřit {savings.toFixed(0)} CZK
+                      {t("prices.save").replace("{n}", savings.toFixed(0))}
                     </span>
                   </div>
                 )}
@@ -68,7 +70,7 @@ export function PricesView() {
                     <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>{formatDateShort(r.date)}</span>
                     <span className="text-sm font-bold" style={{ color: r === best ? "var(--green-dark)" : "var(--text-primary)" }}>
                       {r.price} CZK
-                      {r === best && <span className="text-xs font-normal ml-1" style={{ color: "var(--green-dark)" }}>nejlevnější</span>}
+                      {r === best && <span className="text-xs font-normal ml-1" style={{ color: "var(--green-dark)" }}>{t("prices.cheapest")}</span>}
                     </span>
                   </div>
                 ))}
@@ -76,7 +78,7 @@ export function PricesView() {
 
               {best.price_per_kg && (
                 <p className="text-xs mt-3 pt-3" style={{ borderTop: "1px solid var(--border)", color: "var(--text-secondary)" }}>
-                  Nejlepší cena: <b>{best.price_per_kg.toFixed(0)} CZK/kg</b> v {best.store}
+                  {t("prices.bestPriceLabel")} <b>{best.price_per_kg.toFixed(0)} CZK/kg</b> {t("prices.bestPriceIn")} {best.store}
                 </p>
               )}
             </div>

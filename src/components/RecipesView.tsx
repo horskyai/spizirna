@@ -10,8 +10,11 @@ import { useModeStore } from "@/store/modeStore";
 import { useRecipeStore } from "@/store/recipeStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
+import { useT, useLocale } from "@/lib/i18n";
+import { localizeRecipe } from "@/lib/localizeRecipe";
 
 function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void }) {
+  const t = useT();
   const [expanded, setExpanded] = useState(false);
   const [step, setStep] = useState(0);
   const [showCookModal, setShowCookModal] = useState(false);
@@ -103,11 +106,13 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
             <div className="flex items-center gap-2 mb-1 flex-wrap">
               <h3 className="font-bold text-base" style={{ color: "var(--text-primary)" }}>{recipe.name}</h3>
               {allAvailable && (
-                <span className="text-xs px-2 py-0.5 rounded-full font-semibold badge-ok">Máš vše ✓</span>
+                <span className="text-xs px-2 py-0.5 rounded-full font-semibold badge-ok">{t("recipes.haveAll")}</span>
               )}
               {!allAvailable && maxServings > 0 && (
                 <span className="text-xs px-2 py-0.5 rounded-full font-semibold badge-warn">
-                  Lze {maxServings} {maxServings === 1 ? "porci" : "porce"}
+                  {t("recipes.canMake")
+                    .replace("{n}", String(maxServings))
+                    .replace("{porce}", maxServings === 1 ? t("recipes.portionOne") : t("recipes.portionMany"))}
                 </span>
               )}
             </div>
@@ -125,19 +130,19 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
           {(recipe.prep_time_min + recipe.cook_time_min) > 0 && (
             <div className="flex items-center gap-1">
               <Clock size={13} style={{ color: "var(--text-tertiary)" }} />
-              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{recipe.prep_time_min + recipe.cook_time_min} min</span>
+              <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{recipe.prep_time_min + recipe.cook_time_min} {t("recipes.min")}</span>
             </div>
           )}
           <div className="flex items-center gap-1">
             <Users size={13} style={{ color: "var(--text-tertiary)" }} />
-            <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{recipe.servings} {recipe.servings === 1 ? "porce" : "porce"}</span>
+            <span className="text-xs" style={{ color: "var(--text-secondary)" }}>{recipe.servings} {t("recipes.servingsUnit")}</span>
           </div>
           {recipe.calories_per_serving && (
-            <span className="text-xs font-semibold" style={{ color: "var(--green-primary)" }}>{recipe.calories_per_serving} kcal/porci</span>
+            <span className="text-xs font-semibold" style={{ color: "var(--green-primary)" }}>{recipe.calories_per_serving} {t("recipes.kcalPerServing")}</span>
           )}
           {totalCount > 0 && (
             <span className="text-xs ml-auto" style={{ color: allAvailable ? "#4A6B3F" : "var(--text-tertiary)" }}>
-              {availableCount}/{totalCount} surovin
+              {t("recipes.ingredientsRatio").replace("{n}", String(availableCount)).replace("{total}", String(totalCount))}
             </span>
           )}
         </div>
@@ -165,7 +170,7 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
               <div className="flex items-start gap-2">
                 <AlertCircle size={15} style={{ color: "#B85C00", flexShrink: 0, marginTop: 1 }} />
                 <p className="text-xs font-semibold flex-1" style={{ color: "#B85C00" }}>
-                  Chybí na {recipe.servings} porcí, ale máš na {maxServings}
+                  {t("recipes.missingForPortions").replace("{n}", String(recipe.servings)).replace("{max}", String(maxServings))}
                 </p>
               </div>
               <button
@@ -173,7 +178,9 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
                 className="mt-2 w-full py-2 rounded-xl text-xs font-semibold"
                 style={{ background: "#E8B84B", color: "white" }}
               >
-                Uvařit {maxServings} {maxServings === 1 ? "porci" : "porce"} z toho co mám
+                {t("recipes.cookFromWhatIHave")
+                  .replace("{n}", String(maxServings))
+                  .replace("{porce}", maxServings === 1 ? t("recipes.portionOne") : t("recipes.portionMany"))}
               </button>
             </div>
           )}
@@ -181,7 +188,7 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
           {/* Ingredients */}
           {recipe.ingredients.length > 0 && (
             <div className="p-4">
-              <p className="text-base font-bold mb-3" style={{ color: "var(--text-primary)" }}>Ingredience</p>
+              <p className="text-base font-bold mb-3" style={{ color: "var(--text-primary)" }}>{t("recipes.ingredients")}</p>
               <div className="space-y-2">
                 {ingredientsWithStatus.map((ing, i) => (
                   <div
@@ -216,12 +223,12 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
                         {ing.name}, {ing.quantity} {ing.unit}
                       </span>
                       {ing.partial && (
-                        <span className="text-xs ml-1" style={{ color: "#B85C00", fontWeight: 600 }}>(chybí {ing.missing})</span>
+                        <span className="text-xs ml-1" style={{ color: "#B85C00", fontWeight: 600 }}>{t("recipes.ingredientMissing").replace("{n}", String(ing.missing))}</span>
                       )}
                     </div>
                     {!ing.available && (
                       <span className="text-xs font-bold flex items-center gap-1 flex-shrink-0" style={{ color: "#E8862E" }}>
-                        Chybí mi <ShoppingCart size={13} />
+                        {t("recipes.missingMe")} <ShoppingCart size={13} />
                       </span>
                     )}
                   </div>
@@ -244,7 +251,7 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
           {/* Instructions */}
           {recipe.instructions.length > 0 && (
             <div className="px-4 pb-2">
-              <p className="text-xs font-semibold uppercase mb-3" style={{ color: "var(--text-tertiary)", letterSpacing: "0.05em" }}>Postup</p>
+              <p className="text-xs font-semibold uppercase mb-3" style={{ color: "var(--text-tertiary)", letterSpacing: "0.05em" }}>{t("recipes.instructions")}</p>
               <div className="space-y-2">
                 {recipe.instructions.map((ins, i) => (
                   <button
@@ -281,8 +288,8 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
                 style={addedToCart ? { background: "#4A6B3F" } : {}}
               >
                 {addedToCart
-                  ? "✓ Přidáno na nákupní seznam"
-                  : <><ShoppingCart size={16} /> Přidat chybějící do nákupu ({missing.length})</>
+                  ? t("recipes.addedToShoppingList")
+                  : <><ShoppingCart size={16} /> {t("recipes.addMissingToShopping").replace("{n}", String(missing.length))}</>
                 }
               </button>
             )}
@@ -291,7 +298,7 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
                 onClick={() => { setCookPortions(allAvailable ? recipe.servings : maxServings); setShowCookModal(true); }}
                 className="btn-secondary"
               >
-                <ChefHat size={16} /> Uvařím teď
+                <ChefHat size={16} /> {t("recipes.cookNow")}
               </button>
             )}
 
@@ -302,7 +309,7 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
                 className="w-full py-2.5 rounded-2xl text-xs font-medium flex items-center justify-center gap-1.5"
                 style={{ color: "var(--text-tertiary)" }}
               >
-                <Trash2 size={13} /> Smazat recept
+                <Trash2 size={13} /> {t("recipes.deleteRecipe")}
               </button>
             ) : (
               <div className="flex gap-2">
@@ -311,14 +318,14 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
                   className="flex-1 py-2.5 rounded-2xl text-sm font-semibold"
                   style={{ background: "#FDE8E8", color: "#C0392B" }}
                 >
-                  Smazat
+                  {t("common.delete")}
                 </button>
                 <button
                   onClick={() => setConfirmDelete(false)}
                   className="flex-1 py-2.5 rounded-2xl text-sm font-semibold"
                   style={{ background: "var(--border)", color: "var(--text-secondary)" }}
                 >
-                  Zrušit
+                  {t("common.cancel")}
                 </button>
               </div>
             )}
@@ -346,6 +353,7 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
   onClose: () => void;
   ingredientsWithStatus: any[];
 }) {
+  const t = useT();
   const consumeItem = usePantryStore((s) => s.consumeItem);
   const pantryItems = usePantryStore((s) => s.items);
   const addItems = useShoppingStore((s) => s.addItems);
@@ -406,12 +414,12 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
           <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{recipe.name}</h3>
 
           <div className="card p-4">
-            <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>POČET PORCÍ</p>
+            <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>{t("recipes.cook.portionsCount")}</p>
             <div className="flex items-center justify-between">
               <button onClick={() => onPortionsChange(Math.max(1, portions - 1))} className="w-10 h-10 rounded-full flex items-center justify-center text-xl" style={{ background: "var(--bg-primary)" }}>−</button>
               <div className="text-center">
                 <p className="text-3xl font-bold" style={{ color: "var(--text-primary)" }}>{portions}</p>
-                {scaledKcal && <p className="text-xs" style={{ color: "var(--green-primary)" }}>{scaledKcal} kcal celkem</p>}
+                {scaledKcal && <p className="text-xs" style={{ color: "var(--green-primary)" }}>{t("recipes.cook.kcalTotal").replace("{n}", String(scaledKcal))}</p>}
               </div>
               <button onClick={() => onPortionsChange(portions + 1)} className="w-10 h-10 rounded-full flex items-center justify-center text-xl" style={{ background: "var(--green-primary)", color: "white" }}>+</button>
             </div>
@@ -419,7 +427,7 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
 
           {ingredientsWithStatus.filter((i) => i.pantryQty > 0).length > 0 && (
             <div className="card p-4">
-              <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>ODEČTE SE ZE SPIŽÍRNY</p>
+              <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>{t("recipes.cook.deductFromPantry")}</p>
               <div className="space-y-2">
                 {ingredientsWithStatus.filter((i) => i.pantryQty > 0).map((ing, i) => {
                   const deduct = Math.min(ing.pantryQty, ing.quantity * ratio);
@@ -436,7 +444,7 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
 
           {missingIngs.length > 0 && (
             <div className="card p-4" style={{ background: "#FEF3E2" }}>
-              <p className="text-xs font-semibold mb-2" style={{ color: "#B85C00" }}>CHYBÍ V SPIŽÍRNĚ</p>
+              <p className="text-xs font-semibold mb-2" style={{ color: "#B85C00" }}>{t("recipes.cook.missingInPantry")}</p>
               <div className="space-y-1.5 mb-3">
                 {missingIngs.map((ing, i) => (
                   <div key={i} className="flex justify-between">
@@ -450,26 +458,45 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
                 className="w-full py-2 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5"
                 style={{ background: addedMissing ? "#4A6B3F" : "#E8B84B", color: "white" }}
               >
-                {addedMissing ? "✓ Přidáno na nákupní seznam" : <><ShoppingCart size={13} /> Přidat chybějící na seznam</>}
+                {addedMissing ? t("recipes.addedToShoppingList") : <><ShoppingCart size={13} /> {t("recipes.cook.addMissingToList")}</>}
               </button>
             </div>
           )}
 
           <button onClick={handleCook} className="btn-primary" style={done ? { background: "#4A6B3F" } : {}}>
-            {done ? "✓ Odečteno ze spižírny!" : <><ChefHat size={18} /> Uvařeno — odečíst ze spižírny</>}
+            {done ? t("recipes.cook.deductedDone") : <><ChefHat size={18} /> {t("recipes.cook.cookedDeduct")}</>}
           </button>
-          <button onClick={onClose} className="btn-secondary">Zrušit</button>
+          <button onClick={onClose} className="btn-secondary">{t("common.cancel")}</button>
         </div>
       </div>
     </div>
   );
 }
 
-const CATEGORIES = ["Vše", "Česká klasika", "Polévky", "Těstoviny", "Kuřecí", "Ryby & mořské plody", "Vegetariánské", "Veganské", "Snídaně", "Saláty", "Mezinárodní", "Dezerty", "Rychlá jídla"];
+// Kategorie: hodnota (value) je kanonický český řetězec použitý pro filtrování
+// proti getCategory() a recipe.category (data ze store) — NEPŘEKLÁDAT.
+// labelKey je překladový klíč pro zobrazený text.
+const CATEGORIES: { value: string; labelKey: string }[] = [
+  { value: "Vše", labelKey: "recipes.cat.vse" },
+  { value: "Česká klasika", labelKey: "recipes.cat.ceskaKlasika" },
+  { value: "Slovenská kuchyně", labelKey: "recipes.cat.slovenskaKuchyne" },
+  { value: "Polévky", labelKey: "recipes.cat.polevky" },
+  { value: "Těstoviny", labelKey: "recipes.cat.testoviny" },
+  { value: "Kuřecí", labelKey: "recipes.cat.kureci" },
+  { value: "Ryby & mořské plody", labelKey: "recipes.cat.ryby" },
+  { value: "Vegetariánské", labelKey: "recipes.cat.vegetarianske" },
+  { value: "Veganské", labelKey: "recipes.cat.veganske" },
+  { value: "Snídaně", labelKey: "recipes.cat.snidane" },
+  { value: "Saláty", labelKey: "recipes.cat.salaty" },
+  { value: "Mezinárodní", labelKey: "recipes.cat.mezinarodni" },
+  { value: "Dezerty", labelKey: "recipes.cat.dezerty" },
+  { value: "Rychlá jídla", labelKey: "recipes.cat.rychlaJidla" },
+];
 
 function getCategory(recipe: Recipe): string {
   if (recipe.category) return recipe.category;
   const t = recipe.tags.map(t => t.toLowerCase());
+  if (t.some(t => ["slovenská kuchyně", "slovenská kuchyňa", "slovensky"].some(k => t.includes(k)))) return "Slovenská kuchyně";
   if (t.some(t => ["česká klasika", "česky", "knedlík", "svíčková", "guláš"].some(k => t.includes(k)))) return "Česká klasika";
   if (t.some(t => ["polévka", "vývar", "soup"].some(k => t.includes(k)))) return "Polévky";
   if (t.some(t => ["těstoviny", "pasta", "špagety", "lasagne"].some(k => t.includes(k)))) return "Těstoviny";
@@ -486,6 +513,8 @@ function getCategory(recipe: Recipe): string {
 }
 
 function TodaySuggestionWidget() {
+  const t = useT();
+  const locale = useLocale();
   const pantryItems = usePantryStore((s) => s.items);
   const { recipes } = useRecipeStore();
   const recordCooked = useGamificationStore((s) => s.recordCooked);
@@ -533,7 +562,10 @@ function TodaySuggestionWidget() {
 
   if (!suggestion) return null;
 
-  const { recipe, matched, total } = suggestion;
+  // matching proběhl nad originálem; pro zobrazení i přidání do nákupu
+  // použijeme lokalizovanou verzi receptu
+  const { recipe: rawRecipe, matched, total } = suggestion;
+  const recipe = localizeRecipe(rawRecipe, locale);
   const percent = Math.round((matched / total) * 100);
   const missing = recipe.ingredients.filter((ing) => {
     const STOP = new Set(["konzervovaná","konzervovaný","konzervované","čerstvý","čerstvá","čerstvé",
@@ -580,7 +612,7 @@ function TodaySuggestionWidget() {
         <div className="flex items-center gap-1.5 mb-2">
           <Sparkles size={13} color="rgba(255,255,255,0.8)" />
           <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.75)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-            Co uvařím dnes?
+            {t("recipes.today.title")}
           </p>
         </div>
         <div className="flex items-start justify-between gap-3">
@@ -594,7 +626,7 @@ function TodaySuggestionWidget() {
             onClick={() => setRefreshKey(k => k + 1)}
             className="w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0"
             style={{ background: "rgba(255,255,255,0.15)" }}
-            title="Jiný návrh"
+            title={t("recipes.today.anotherSuggestion")}
           >
             <RefreshCw size={14} color="white" />
           </button>
@@ -603,7 +635,7 @@ function TodaySuggestionWidget() {
         {/* Progress bar */}
         <div className="mt-3">
           <div className="flex justify-between items-center mb-1">
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>Suroviny v spižírně</span>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.7)" }}>{t("recipes.today.pantryIngredients")}</span>
             <span style={{ fontSize: 12, fontWeight: 700, color: "white" }}>{matched}/{total} ({percent}%)</span>
           </div>
           <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.25)" }}>
@@ -619,17 +651,17 @@ function TodaySuggestionWidget() {
           {(recipe.prep_time_min + recipe.cook_time_min) > 0 && (
             <div className="flex items-center gap-1">
               <Clock size={11} color="rgba(255,255,255,0.65)" />
-              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.65)" }}>{recipe.prep_time_min + recipe.cook_time_min} min</span>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.65)" }}>{recipe.prep_time_min + recipe.cook_time_min} {t("recipes.min")}</span>
             </div>
           )}
           {recipe.servings > 0 && (
             <div className="flex items-center gap-1">
               <Users size={11} color="rgba(255,255,255,0.65)" />
-              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.65)" }}>{recipe.servings} porce</span>
+              <span style={{ fontSize: 11, color: "rgba(255,255,255,0.65)" }}>{recipe.servings} {t("recipes.servingsUnit")}</span>
             </div>
           )}
           {recipe.calories_per_serving && (
-            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.65)" }}>{recipe.calories_per_serving} kcal/porci</span>
+            <span style={{ fontSize: 11, color: "rgba(255,255,255,0.65)" }}>{recipe.calories_per_serving} {t("recipes.kcalPerServing")}</span>
           )}
         </div>
       </div>
@@ -641,7 +673,7 @@ function TodaySuggestionWidget() {
           {recipe.ingredients.length > 0 && (
             <div className="px-4 pt-3 pb-2">
               <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 8 }}>
-                Suroviny
+                {t("recipes.ingredientsAlt")}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
                 {recipe.ingredients.map((ing, i) => {
@@ -668,7 +700,7 @@ function TodaySuggestionWidget() {
           {recipe.instructions.length > 0 && (
             <div className="px-4 pt-2 pb-3" style={{ borderTop: "1px solid rgba(255,255,255,0.12)", marginTop: 6 }}>
               <p style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.55)", letterSpacing: "0.07em", textTransform: "uppercase", marginBottom: 8 }}>
-                Postup
+                {t("recipes.instructions")}
               </p>
               <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                 {recipe.instructions.map((step, i) => (
@@ -709,7 +741,7 @@ function TodaySuggestionWidget() {
           className="w-full py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
           style={{ background: "rgba(255,255,255,0.15)", color: "white", border: "1px solid rgba(255,255,255,0.25)" }}
         >
-          {showDetail ? <><ChevronUp size={15} /> Skrýt recept</> : <><ChevronDown size={15} /> Zobrazit recept</>}
+          {showDetail ? <><ChevronUp size={15} /> {t("recipes.today.hideRecipe")}</> : <><ChevronDown size={15} /> {t("recipes.today.showRecipe")}</>}
         </button>
 
         <div className="flex gap-2">
@@ -719,7 +751,7 @@ function TodaySuggestionWidget() {
               className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
               style={{ background: cookDone ? "rgba(255,255,255,0.3)" : "white", color: cookDone ? "white" : "var(--green-dark)" }}
             >
-              {cookDone ? "✓ Výborně!" : <><ChefHat size={15} /> Uvařím teď</>}
+              {cookDone ? t("recipes.today.greatDone") : <><ChefHat size={15} /> {t("recipes.cookNow")}</>}
             </button>
           ) : (
             <>
@@ -728,7 +760,7 @@ function TodaySuggestionWidget() {
                 className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
                 style={{ background: "rgba(255,255,255,0.2)", color: "white", border: "1px solid rgba(255,255,255,0.3)" }}
               >
-                <ChefHat size={15} /> Uvařím z toho co mám
+                <ChefHat size={15} /> {t("recipes.today.cookFromWhatIHave")}
               </button>
               {missing.length > 0 && (
                 <button
@@ -736,7 +768,7 @@ function TodaySuggestionWidget() {
                   className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
                   style={{ background: "white", color: "var(--green-dark)" }}
                 >
-                  <ShoppingCart size={15} /> +{missing.length} na seznam
+                  <ShoppingCart size={15} /> {t("recipes.today.addToList").replace("{n}", String(missing.length))}
                 </button>
               )}
             </>
@@ -748,16 +780,24 @@ function TodaySuggestionWidget() {
 }
 
 export function RecipesView() {
+  const t = useT();
+  const locale = useLocale();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("Vše");
   const [showAdd, setShowAdd] = useState(false);
   const { recipes, deleteRecipe } = useRecipeStore();
 
+  // Filtrování i kategorizace běží nad ORIGINÁLNÍMI (českými) daty — kategorie
+  // se odvozují z českých názvů/tagů. Hledání navíc bere i slovenské varianty,
+  // ať Slovák najde recept podle slovenského názvu.
+  const q = search.toLowerCase();
   const filtered = recipes.filter((r) => {
     const matchSearch =
-      r.name.toLowerCase().includes(search.toLowerCase()) ||
-      r.tags.some((t) => t.toLowerCase().includes(search.toLowerCase())) ||
-      r.description.toLowerCase().includes(search.toLowerCase());
+      r.name.toLowerCase().includes(q) ||
+      (r.name_sk?.toLowerCase().includes(q) ?? false) ||
+      r.tags.some((tag) => tag.toLowerCase().includes(q)) ||
+      r.description.toLowerCase().includes(q) ||
+      (r.description_sk?.toLowerCase().includes(q) ?? false);
     const matchCategory = activeCategory === "Vše" || getCategory(r) === activeCategory;
     return matchSearch && matchCategory;
   });
@@ -774,7 +814,7 @@ export function RecipesView() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Hledat recepty..."
+            placeholder={t("recipes.searchPlaceholder")}
             style={{ width: "100%", paddingLeft: 38, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 14, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
           />
         </div>
@@ -783,23 +823,23 @@ export function RecipesView() {
         <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 12, scrollbarWidth: "none" }}>
           {CATEGORIES.map((cat) => (
             <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
+              key={cat.value}
+              onClick={() => setActiveCategory(cat.value)}
               style={{
                 flexShrink: 0,
                 padding: "6px 14px",
                 borderRadius: 20,
                 fontSize: 13,
-                fontWeight: activeCategory === cat ? 600 : 500,
+                fontWeight: activeCategory === cat.value ? 600 : 500,
                 border: "none",
-                background: activeCategory === cat ? "var(--green-primary)" : "white",
-                color: activeCategory === cat ? "white" : "var(--text-secondary)",
-                boxShadow: activeCategory === cat ? "0 2px 8px rgba(76,175,130,0.3)" : "0 1px 4px rgba(0,0,0,0.08)",
+                background: activeCategory === cat.value ? "var(--green-primary)" : "white",
+                color: activeCategory === cat.value ? "white" : "var(--text-secondary)",
+                boxShadow: activeCategory === cat.value ? "0 2px 8px rgba(76,175,130,0.3)" : "0 1px 4px rgba(0,0,0,0.08)",
                 transition: "all 0.15s ease",
                 whiteSpace: "nowrap",
               }}
             >
-              {cat}
+              {t(cat.labelKey)}
             </button>
           ))}
         </div>
@@ -811,23 +851,23 @@ export function RecipesView() {
               <BookOpen size={32} strokeWidth={1.5} style={{ color: "var(--green-primary)" }} />
             </div>
             <div className="text-center">
-              <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>Žádné recepty</p>
-              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Přidejte svůj první recept.</p>
+              <p className="text-lg font-bold mb-1" style={{ color: "var(--text-primary)" }}>{t("recipes.empty.title")}</p>
+              <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("recipes.empty.subtitle")}</p>
             </div>
             <button className="btn-primary" style={{ width: "auto", paddingLeft: 24, paddingRight: 24 }} onClick={() => setShowAdd(true)}>
-              <Plus size={18} /> Přidat recept
+              <Plus size={18} /> {t("recipes.addRecipe")}
             </button>
           </div>
         )}
 
-        {/* Recipe cards */}
+        {/* Recipe cards — zobrazí se v aktuálním jazyce (lokalizace až tady) */}
         {filtered.map((recipe) => (
-          <RecipeCard key={recipe.id} recipe={recipe} onDelete={() => deleteRecipe(recipe.id)} />
+          <RecipeCard key={recipe.id} recipe={localizeRecipe(recipe, locale)} onDelete={() => deleteRecipe(recipe.id)} />
         ))}
 
         {recipes.length > 0 && filtered.length === 0 && (
           <div className="text-center py-12">
-            <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>Žádný recept nenalezen</p>
+            <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>{t("recipes.noneFound")}</p>
           </div>
         )}
 
@@ -838,7 +878,7 @@ export function RecipesView() {
             className="w-full py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
             style={{ background: "white", color: "var(--green-primary)", border: "1.5px dashed var(--green-primary)" }}
           >
-            <Plus size={16} /> Přidat recept
+            <Plus size={16} /> {t("recipes.addRecipe")}
           </button>
         )}
       </div>

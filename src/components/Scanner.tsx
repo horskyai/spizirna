@@ -6,12 +6,13 @@ import { useUIStore } from "@/store/uiStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { lookupProductByEAN } from "@/lib/productLookup";
 import { AddProductManual } from "@/components/AddProductManual";
+import { useT } from "@/lib/i18n";
 
 const OPEN_DATABASES = [
-  { id: "food", label: "Open Food Facts", emoji: "🍎", desc: "Potraviny & nápoje", url: "https://world.openfoodfacts.org/cgi/product.pl?type=add&code=" },
-  { id: "beauty", label: "Open Beauty Facts", emoji: "💄", desc: "Kosmetika & drogerie", url: "https://world.openbeautyfacts.org/cgi/product.pl?type=add&code=" },
-  { id: "pet", label: "Open Pet Food Facts", emoji: "🐾", desc: "Krmiva pro zvířata", url: "https://world.openpetfoodfacts.org/cgi/product.pl?type=add&code=" },
-  { id: "products", label: "Open Products Facts", emoji: "🧴", desc: "Ostatní produkty", url: "https://world.openproductsfacts.org/cgi/product.pl?type=add&code=" },
+  { id: "food", label: "Open Food Facts", emoji: "🍎", descKey: "scanner.dbFoodDesc", url: "https://world.openfoodfacts.org/cgi/product.pl?type=add&code=" },
+  { id: "beauty", label: "Open Beauty Facts", emoji: "💄", descKey: "scanner.dbBeautyDesc", url: "https://world.openbeautyfacts.org/cgi/product.pl?type=add&code=" },
+  { id: "pet", label: "Open Pet Food Facts", emoji: "🐾", descKey: "scanner.dbPetDesc", url: "https://world.openpetfoodfacts.org/cgi/product.pl?type=add&code=" },
+  { id: "products", label: "Open Products Facts", emoji: "🧴", descKey: "scanner.dbProductsDesc", url: "https://world.openproductsfacts.org/cgi/product.pl?type=add&code=" },
 ];
 
 type ScanState = "scanning" | "loading" | "found" | "notfound";
@@ -24,6 +25,7 @@ interface ScannerProps {
 }
 
 export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
+  const t = useT();
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -101,7 +103,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
           try {
             const perm = await navigator.permissions.query({ name: "camera" as PermissionName });
             if (perm.state === "denied") {
-              setError("Přístup ke kameře byl zamítnut. Povolte kameru v nastavení prohlížeče nebo zadejte EAN ručně.");
+              setError(t("scanner.cameraDenied"));
               return;
             }
           } catch {}
@@ -121,9 +123,9 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
         }
       } catch (err: any) {
         if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
-          setError("Přístup ke kameře byl zamítnut. Povolte kameru v nastavení prohlížeče nebo zadejte EAN ručně.");
+          setError(t("scanner.cameraDenied"));
         } else {
-          setError("Nepodařilo se spustit kameru. Povolte přístup ke kameře nebo zadejte EAN ručně.");
+          setError(t("scanner.cameraFailed"));
         }
       }
     }
@@ -261,10 +263,10 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
   }[scanState];
 
   const stateLabel = {
-    scanning: zxingReady ? "Namiřte na čárový kód" : "Inicializace skeneru...",
-    loading: "Načítám produkt...",
-    found: "Produkt nalezen!",
-    notfound: "Produkt nebyl nalezen v databázi",
+    scanning: zxingReady ? t("scanner.stateScanning") : t("scanner.stateInit"),
+    loading: t("scanner.stateLoading"),
+    found: t("scanner.stateFound"),
+    notfound: t("scanner.stateNotFound"),
   }[scanState];
 
   return (
@@ -369,7 +371,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
       >
         <button
           onClick={resetScan}
-          aria-label="Skenovat znovu"
+          aria-label={t("scanner.scanAgainAria")}
           style={{
             width: 64, height: 64, borderRadius: "50%",
             background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)",
@@ -389,7 +391,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
             textShadow: "0 1px 6px rgba(0,0,0,0.6)",
           }}
         >
-          Zadat ručně
+          {t("scanner.enterManually")}
         </button>
       </div>
 
@@ -405,7 +407,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
             className="btn-primary"
             style={{ width: "auto", paddingLeft: 24, paddingRight: 24 }}
           >
-            <Keyboard size={16} /> Zadat EAN ručně
+            <Keyboard size={16} /> {t("scanner.enterEanManually")}
           </button>
         </div>
       )}
@@ -422,7 +424,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
           }}
           className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
           style={{ background: "rgba(0,0,0,0.45)", backdropFilter: "blur(8px)" }}
-          title="Zavřít"
+          title={t("scanner.closeTitle")}
         >
           {isEmbedded ? <X size={18} style={{ color: "white" }} /> : <ArrowLeft size={18} style={{ color: "white" }} />}
         </button>
@@ -445,7 +447,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
         </button>
         <button
           onClick={() => setShowHelp(true)}
-          aria-label="Jak skenovat"
+          aria-label={t("scanner.howToScanAria")}
           className="flex items-center justify-center transition-all"
           style={{
             width: 44, height: 44, borderRadius: 14,
@@ -469,7 +471,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
             </div>
             <div className="px-5 pt-2 pb-2">
               <div className="flex items-center justify-between mb-3">
-                <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Jak naskenovat produkt</h3>
+                <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("scanner.helpTitle")}</h3>
                 <button onClick={closeHelp} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
                   <X size={15} style={{ color: "var(--text-secondary)" }} />
                 </button>
@@ -477,11 +479,11 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
 
               <div className="space-y-3">
                 {[
-                  { n: "1", t: "Namiřte na čárový kód", d: "Podržte telefon nad čárovým kódem na obalu (najdete ho většinou na zadní straně). Kód udržte v zeleném rámečku." },
-                  { n: "2", t: "Počkejte na zaměření", d: "Aplikace kód přečte sama, nemusíte nic mačkat. Ve špatném světle si posviťte tlačítkem baterky vpravo nahoře." },
-                  { n: "3", t: "Produkt se najde", d: "Pokud je kód v databázi, načte se název i výživové hodnoty. Vše už máte předvyplněné — jen potvrdíte." },
-                  { n: "4", t: "Když se nenajde", d: "Některé produkty v databázi nejsou. Pak ťukněte na „Zadat ručně“ dole a doplníte údaje (i s vlastní fotkou). Příště už si je aplikace pamatuje — nemusíte se nikam přihlašovat." },
-                  { n: "★", t: "Chcete pomoct ostatním?", d: "U nenalezeného produktu můžete zvolit „Přidat do veřejné databáze“ — výrobek pak najdou i ostatní lidé na celém světě. K tomu je potřeba bezplatná registrace na webu Open Food Facts. Je to dobrovolné." },
+                  { n: "1", t: t("scanner.helpStep1Title"), d: t("scanner.helpStep1Desc") },
+                  { n: "2", t: t("scanner.helpStep2Title"), d: t("scanner.helpStep2Desc") },
+                  { n: "3", t: t("scanner.helpStep3Title"), d: t("scanner.helpStep3Desc") },
+                  { n: "4", t: t("scanner.helpStep4Title"), d: t("scanner.helpStep4Desc") },
+                  { n: "★", t: t("scanner.helpStepStarTitle"), d: t("scanner.helpStepStarDesc") },
                 ].map((s) => (
                   <div key={s.n} className="flex gap-3">
                     <div style={{ width: 28, height: 28, borderRadius: "50%", flexShrink: 0, background: s.n === "★" ? "linear-gradient(135deg, #F7B267 0%, #E8862E 100%)" : "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)", display: "flex", alignItems: "center", justifyContent: "center", color: "white", fontWeight: 800, fontSize: 13 }}>
@@ -496,7 +498,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
               </div>
 
               <button onClick={closeHelp} className="btn-primary" style={{ marginTop: 16 }}>
-                Rozumím, jdu skenovat
+                {t("scanner.helpUnderstood")}
               </button>
             </div>
           </div>
@@ -521,7 +523,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
             </div>
             <div className="px-5 pt-3 pb-8 space-y-4">
               <div className="flex items-center justify-between">
-                <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Zadat EAN ručně</h3>
+                <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("scanner.enterEanManually")}</h3>
                 <button
                   onClick={() => { setShowManualInput(false); setManualEAN(""); }}
                   className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -532,7 +534,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
               </div>
 
               <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-                Zadejte 13-místný EAN kód z obalu produktu.
+                {t("scanner.eanHint")}
               </p>
 
               <input
@@ -553,7 +555,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
 
               {manualEAN.length > 0 && manualEAN.length < 8 && (
                 <p className="text-xs text-center" style={{ color: "var(--text-tertiary)" }}>
-                  EAN kód má obvykle 13 číslic ({manualEAN.length}/13)
+                  {t("scanner.eanLengthHint").replace("{n}", String(manualEAN.length))}
                 </p>
               )}
 
@@ -562,7 +564,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
                 className="btn-primary"
                 disabled={manualEAN.length < 6}
               >
-                Vyhledat produkt
+                {t("scanner.searchProduct")}
               </button>
             </div>
           </div>
@@ -589,13 +591,13 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
                 <X size={20} style={{ color: "#C0392B" }} />
               </div>
               <div>
-                <p className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Produkt nenalezen</p>
+                <p className="font-bold text-base" style={{ color: "var(--text-primary)" }}>{t("scanner.notFoundTitle")}</p>
                 <p className="text-xs" style={{ color: "var(--text-secondary)" }}>EAN: {notFoundEAN}</p>
               </div>
             </div>
 
             <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-              Produkt není v žádné databázi. Co chceš udělat?
+              {t("scanner.notFoundQuestion")}
             </p>
 
             {/* Přidat ručně do Spižírny */}
@@ -611,8 +613,8 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
                 <Plus size={18} color="white" />
               </div>
               <div>
-                <p className="font-bold text-sm" style={{ color: "var(--green-dark)" }}>Přidat ručně do Spižírny</p>
-                <p className="text-xs" style={{ color: "var(--green-primary)" }}>Jen pro tebe, uloženo lokálně</p>
+                <p className="font-bold text-sm" style={{ color: "var(--green-dark)" }}>{t("scanner.addManualToPantry")}</p>
+                <p className="text-xs" style={{ color: "var(--green-primary)" }}>{t("scanner.addManualToPantryDesc")}</p>
               </div>
             </button>
 
@@ -629,20 +631,20 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
                 <ExternalLink size={18} color="white" />
               </div>
               <div>
-                <p className="font-bold text-sm" style={{ color: "#1E3A8A" }}>Přidat do veřejné databáze</p>
-                <p className="text-xs" style={{ color: "#4A6BC4" }}>Otevře web — pomůže všem uživatelům</p>
+                <p className="font-bold text-sm" style={{ color: "#1E3A8A" }}>{t("scanner.addToPublicDb")}</p>
+                <p className="text-xs" style={{ color: "#4A6BC4" }}>{t("scanner.addToPublicDbDesc")}</p>
               </div>
             </button>
 
             {/* Info pro uživatele */}
             <div style={{ background: "#FFFDE7", border: "1px solid #FDD835", borderRadius: 14, padding: "10px 14px" }}>
               <p style={{ fontSize: 12, color: "#6D4C00", margin: 0, lineHeight: 1.5 }}>
-                💡 <b>Produkt chybí v databázi?</b> Přidáním do Open Food Facts pomůžeš ostatním uživatelům najít ho příště automaticky. Stačí vytvořit bezplatný účet na webu.
+                💡 <b>{t("scanner.publicDbInfoBold")}</b> {t("scanner.publicDbInfo")}
               </p>
             </div>
 
             <button onClick={resetScan} style={{ width: "100%", padding: "12px 0", borderRadius: 16, fontSize: 14, fontWeight: 600, color: "var(--text-secondary)", background: "var(--border)" }}>
-              Skenovat znovu
+              {t("scanner.scanAgain")}
             </button>
           </div>
         </div>
@@ -660,13 +662,13 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
               <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
             </div>
             <div className="flex items-center justify-between mb-2">
-              <p className="font-bold text-base" style={{ color: "var(--text-primary)" }}>Vyberte databázi</p>
+              <p className="font-bold text-base" style={{ color: "var(--text-primary)" }}>{t("scanner.pickDbTitle")}</p>
               <button onClick={() => setShowDbPicker(false)}>
                 <X size={18} style={{ color: "var(--text-tertiary)" }} />
               </button>
             </div>
             <p className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>
-              Otevře se web v prohlížeči — EAN <b>{notFoundEAN}</b> bude předvyplněný. Pro přidání je potřeba bezplatná registrace na daném webu.
+              {t("scanner.pickDbInfoBefore")}<b>{notFoundEAN}</b>{t("scanner.pickDbInfoAfter")}
             </p>
             {OPEN_DATABASES.map(db => (
               <a
@@ -685,7 +687,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
                 <span style={{ fontSize: 24 }}>{db.emoji}</span>
                 <div style={{ flex: 1 }}>
                   <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{db.label}</p>
-                  <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0 }}>{db.desc}</p>
+                  <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0 }}>{t(db.descKey)}</p>
                 </div>
                 <ExternalLink size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
               </a>

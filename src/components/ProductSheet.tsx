@@ -7,6 +7,7 @@ import { usePantryStore } from "@/store/pantryStore";
 import { usePriceStore } from "@/store/priceStore";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG } from "@/components/LocationIcons";
 import { daysUntil } from "@/lib/dateUtils";
+import { useT } from "@/lib/i18n";
 
 interface Props {
   product: ProductInfo;
@@ -14,16 +15,17 @@ interface Props {
   fromScanner?: boolean;
 }
 
-const LOCATIONS: { id: StorageLocation; label: string; Icon: React.FC<{ size?: number }> }[] = [
-  { id: "lednice", label: "Lednice", Icon: LedniceSVG },
-  { id: "mrazak", label: "Mrazák", Icon: MrazakSVG },
-  { id: "spiz", label: "Spíž", Icon: SpizSVG },
-  { id: "linka", label: "Skříňka", Icon: SkrinskaSVG },
+const LOCATIONS: { id: StorageLocation; labelKey: string; Icon: React.FC<{ size?: number }> }[] = [
+  { id: "lednice", labelKey: "product.locLednice", Icon: LedniceSVG },
+  { id: "mrazak", labelKey: "product.locMrazak", Icon: MrazakSVG },
+  { id: "spiz", labelKey: "product.locSpiz", Icon: SpizSVG },
+  { id: "linka", labelKey: "product.locSkrinka", Icon: SkrinskaSVG },
 ];
 
 const STORES = ["Lidl", "Albert", "Billa", "Kaufland", "Tesco", "Penny", "Rohlik", "Košík", "Jiný"];
 
 export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
+  const t = useT();
   const addItem = usePantryStore((s) => s.addItem);
   const updateItem = usePantryStore((s) => s.updateItem);
   const pantryItems = usePantryStore((s) => s.items);
@@ -84,10 +86,10 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
 
   const kcal = parseFloat(manualKcal) || product.calories_kcal;
   const macros = [
-    { label: "Bílkoviny", value: parseFloat(manualProtein) || product.protein_g, unit: "g", color: "#6B8F5E" },
-    { label: "Sacharidy", value: parseFloat(manualCarbs) || product.carbs_g, unit: "g", color: "#E8B84B" },
-    { label: "Tuky", value: parseFloat(manualFat) || product.fat_g, unit: "g", color: "#E8845A" },
-    { label: "Vláknina", value: product.fiber_g, unit: "g", color: "#8FA8B8" },
+    { label: t("product.protein"), value: parseFloat(manualProtein) || product.protein_g, unit: "g", color: "#6B8F5E" },
+    { label: t("product.carbs"), value: parseFloat(manualCarbs) || product.carbs_g, unit: "g", color: "#E8B84B" },
+    { label: t("product.fat"), value: parseFloat(manualFat) || product.fat_g, unit: "g", color: "#E8845A" },
+    { label: t("product.fiber"), value: product.fiber_g, unit: "g", color: "#8FA8B8" },
   ];
   const hasNutrition = !!kcal || macros.some(m => m.value !== undefined);
 
@@ -179,7 +181,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
               className="flex items-center gap-1 px-3 py-1.5 rounded-full text-sm font-medium flex-shrink-0"
               style={{ background: "var(--border)", color: "var(--text-secondary)" }}
             >
-              <ChevronLeft size={15} /> Kamera
+              <ChevronLeft size={15} /> {t("product.camera")}
             </button>
           ) : (
             <button
@@ -202,7 +204,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
               color: tab === "info" ? "white" : "var(--text-secondary)",
             }}
           >
-            Informace
+            {t("product.tabInfo")}
           </button>
           <button
             onClick={() => setTab("add")}
@@ -213,7 +215,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
               border: `2px solid ${tab === "add" ? "var(--green-primary)" : "var(--green-primary)"}`,
             }}
           >
-            + Přidat do spižírny
+            + {t("product.addToPantry")}
           </button>
         </div>
 
@@ -226,21 +228,21 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
                 <div className="rounded-2xl p-4 space-y-3" style={{ background: "white" }}>
                   <div className="flex items-center justify-between">
                     <p className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
-                      {editingNutrition ? "Upravit výživové hodnoty" : "Výrobce data neposkytl"}
+                      {editingNutrition ? t("product.editNutrition") : t("product.noNutritionData")}
                     </p>
                     {editingNutrition && (
-                      <button onClick={() => setEditingNutrition(false)} style={{ color: "var(--text-tertiary)", fontSize: 13 }}>Zrušit</button>
+                      <button onClick={() => setEditingNutrition(false)} style={{ color: "var(--text-tertiary)", fontSize: 13 }}>{t("common.cancel")}</button>
                     )}
                   </div>
                   {!editingNutrition && (
-                    <p className="text-xs" style={{ color: "var(--text-secondary)" }}>Zadej hodnoty ručně ze štítku produktu (na 100g/ml).</p>
+                    <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{t("product.enterValuesHint")}</p>
                   )}
                   <div className="grid grid-cols-2 gap-2">
                     {[
-                      { label: "Kalorie (kcal)", val: manualKcal, set: setManualKcal, accent: true },
-                      { label: "Bílkoviny (g)", val: manualProtein, set: setManualProtein },
-                      { label: "Sacharidy (g)", val: manualCarbs, set: setManualCarbs },
-                      { label: "Tuky (g)", val: manualFat, set: setManualFat },
+                      { label: t("product.calories"), val: manualKcal, set: setManualKcal, accent: true },
+                      { label: t("product.proteinG"), val: manualProtein, set: setManualProtein },
+                      { label: t("product.carbsG"), val: manualCarbs, set: setManualCarbs },
+                      { label: t("product.fatG"), val: manualFat, set: setManualFat },
                     ].map(({ label, val, set, accent }) => (
                       <div key={label}>
                         <p className="text-xs mb-1" style={{ color: "var(--text-secondary)" }}>{label}</p>
@@ -261,7 +263,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
                   </div>
                   {editingNutrition && (
                     <button onClick={() => setEditingNutrition(false)} className="btn-primary w-full" style={{ fontSize: 14 }}>
-                      Uložit
+                      {t("common.save")}
                     </button>
                   )}
                 </div>
@@ -275,7 +277,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
                         <Pencil size={14} />
                       </button>
                     </div>
-                    <p className="text-sm" style={{ color: "var(--text-secondary)" }}>kcal / 100g</p>
+                    <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("product.kcalPer100g")}</p>
                   </div>
 
                   {/* Macros */}
@@ -302,7 +304,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
                 <div className="rounded-2xl p-3" style={{ background: "#FEF3E2" }}>
                   <div className="flex items-center gap-2 mb-2">
                     <AlertCircle size={14} style={{ color: "#B85C00" }} />
-                    <p className="text-xs font-semibold" style={{ color: "#B85C00" }}>Alergeny</p>
+                    <p className="text-xs font-semibold" style={{ color: "#B85C00" }}>{t("product.allergens")}</p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
                     {product.allergens.map((a) => (
@@ -317,14 +319,14 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
               {/* Price history */}
               {priceRecords.length > 0 && (
                 <div className="rounded-2xl p-4" style={{ background: "white" }}>
-                  <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>HISTORIE CEN</p>
+                  <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>{t("product.priceHistory")}</p>
                   {/* Best price */}
                   {(() => {
                     const best = priceRecords.reduce((b, r) => r.price < b.price ? r : b);
                     return (
                       <div className="flex items-center justify-between rounded-xl px-3 py-2 mb-2" style={{ background: "var(--green-light)" }}>
                         <div>
-                          <p className="text-xs font-medium" style={{ color: "var(--green-dark)" }}>Nejlepší cena</p>
+                          <p className="text-xs font-medium" style={{ color: "var(--green-dark)" }}>{t("product.bestPrice")}</p>
                           <p className="text-sm font-bold" style={{ color: "var(--green-dark)" }}>{best.store}</p>
                         </div>
                         <p className="text-xl font-bold" style={{ color: "var(--green-primary)" }}>{best.price} Kč</p>
@@ -348,14 +350,14 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
 
               {/* Source */}
               <p className="text-xs text-center" style={{ color: "var(--text-tertiary)" }}>
-                Zdroj: {product.source === "open_food_facts" ? "Open Food Facts" : product.source === "czech_db" ? "Česká databáze" : "Uživatelský vstup"}
+                {t("product.sourceLabel")} {product.source === "open_food_facts" ? "Open Food Facts" : product.source === "czech_db" ? t("product.sourceCzechDb") : t("product.sourceUser")}
               </p>
             </div>
           ) : (
             <div className="space-y-4">
               {/* Quantity */}
               <div className="rounded-2xl p-4" style={{ background: "white" }}>
-                <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>MNOŽSTVÍ</p>
+                <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>{t("product.quantity")}</p>
                 <div className="flex items-center justify-between">
                   <button
                     onClick={() => setQty(q => Math.max(1, q - 1))}
@@ -376,7 +378,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
 
               {/* Location */}
               <div className="rounded-2xl p-4" style={{ background: "white" }}>
-                <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>UMÍSTĚNÍ</p>
+                <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>{t("product.location")}</p>
                 <div className="grid grid-cols-2 gap-2">
                   {LOCATIONS.map((loc) => (
                     <button
@@ -390,7 +392,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
                     >
                       <loc.Icon size={22} />
                       <span className="text-sm font-medium" style={{ color: location === loc.id ? "var(--green-dark)" : "var(--text-primary)" }}>
-                        {loc.label}
+                        {t(loc.labelKey)}
                       </span>
                     </button>
                   ))}
@@ -399,7 +401,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
 
               {/* Spotřebujte do */}
               <div className="rounded-2xl p-4" style={{ background: "white" }}>
-                <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>SPOTŘEBUJTE DO (volitelné)</p>
+                <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>{t("product.expiryOptional")}</p>
                 <input
                   type="date"
                   value={expires}
@@ -410,13 +412,13 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
                 {expires && (() => {
                   const d = daysUntil(expires);
                   const cls = d < 0 ? "badge-danger" : d <= 1 ? "badge-warn" : "badge-ok";
-                  const txt = d < 0 ? "Toto datum už prošlo" : d === 0 ? "Spotřebujte dnes" : d === 1 ? "Spotřebujte zítra" : `Vydrží ještě ${d} dní`;
+                  const txt = d < 0 ? t("product.dateExpired") : d === 0 ? t("product.consumeToday") : d === 1 ? t("product.consumeTomorrow") : t("product.lastsDays").replace("{n}", String(d));
                   return (
                     <div className="mt-2.5 flex items-center gap-2 flex-wrap">
                       <span className={`text-xs font-semibold ${cls}`} style={{ padding: "4px 10px", borderRadius: 10 }}>{txt}</span>
                       {d >= 0 && d <= 3 && (
                         <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-                          Tip: v Receptech najdeš, co z toho uvařit
+                          {t("product.recipeTip")}
                         </span>
                       )}
                     </div>
@@ -424,14 +426,14 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
                 })()}
                 {!expires && (
                   <p className="text-xs mt-2" style={{ color: "var(--text-tertiary)" }}>
-                    Zadejte datum z obalu — připomeneme vám, než potravina projde.
+                    {t("product.expiryHint")}
                   </p>
                 )}
               </div>
 
               {/* Price */}
               <div className="rounded-2xl p-4" style={{ background: "white" }}>
-                <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>CENA (volitelné)</p>
+                <p className="text-xs font-semibold mb-3" style={{ color: "var(--text-secondary)" }}>{t("product.priceOptional")}</p>
                 <div className="flex gap-2">
                   <input
                     type="number"
@@ -464,17 +466,21 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
               {existingItems.length > 0 && !added && !addedToExisting && (
                 <div className="rounded-2xl p-4" style={{ background: "var(--green-light)", border: "1.5px solid var(--green-primary)" }}>
                   <p className="text-sm font-semibold mb-1" style={{ color: "var(--green-dark)" }}>
-                    Už máš ve spižírně
+                    {t("product.alreadyInPantry")}
                   </p>
                   <p className="text-xs mb-3" style={{ color: "var(--green-dark)" }}>
-                    {existingItems.map((i) => `${i.quantity}× v ${LOCATIONS.find(l => l.id === i.location)?.label ?? i.location}`).join(", ")}
+                    {existingItems.map((i) => {
+                      const locItem = LOCATIONS.find(l => l.id === i.location);
+                      const locName = locItem ? t(locItem.labelKey) : i.location;
+                      return t("product.inLocation").replace("{n}", String(i.quantity)).replace("{loc}", locName);
+                    }).join(", ")}
                   </p>
                   <button
                     onClick={handleAddToExisting}
                     className="btn-primary"
                     style={{ background: "var(--green-primary)", fontSize: 14, padding: "10px 16px" }}
                   >
-                    <Plus size={16} /> Přičíst {qty}× k existujícímu
+                    <Plus size={16} /> {t("product.addToExisting").replace("{n}", String(qty))}
                   </button>
                 </div>
               )}
@@ -486,11 +492,11 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
                 style={added || addedToExisting ? { background: "#4A6B3F" } : existingItems.length > 0 ? { background: "var(--border)", color: "var(--text-secondary)" } : {}}
               >
                 {added || addedToExisting ? (
-                  <>✓ Hotovo</>
+                  <>✓ {t("common.done")}</>
                 ) : existingItems.length > 0 ? (
-                  <><Plus size={18} /> Přidat jako nový záznam</>
+                  <><Plus size={18} /> {t("product.addAsNew")}</>
                 ) : (
-                  <><Plus size={18} /> Přidat do spižírny</>
+                  <><Plus size={18} /> {t("product.addToPantry")}</>
                 )}
               </button>
             </div>

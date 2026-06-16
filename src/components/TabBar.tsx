@@ -4,26 +4,28 @@ import { useUIStore } from "@/store/uiStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useRecurringStore } from "@/store/recurringStore";
 import { useModeStore } from "@/store/modeStore";
+import { useT, TranslationKey } from "@/lib/i18n";
 
 const TABS_DOMACNOST = [
-  { id: "spizirna", label: "Spižírna", icon: "/tabs/spizirna.png" },
-  { id: "recepty", label: "Recepty", icon: "/tabs/recepty.png" },
-  { id: "skenovat", label: "Skenovat", icon: "/tabs/skenovat.png" },
-  { id: "nakup", label: "Nákup", icon: "/tabs/nakup.png" },
-  { id: "opakujici", label: "Opakování", icon: "/tabs/opakovani.png" },
+  { id: "spizirna", labelKey: "tab.spizirna", icon: "/tabs/spizirna.png" },
+  { id: "recepty", labelKey: "tab.recepty", icon: "/tabs/recepty.png" },
+  { id: "skenovat", labelKey: "tab.skenovat", icon: "/tabs/skenovat.png" },
+  { id: "nakup", labelKey: "tab.nakup", icon: "/tabs/nakup.png" },
+  { id: "opakujici", labelKey: "tab.opakujici", icon: "/tabs/opakovani.png" },
 ] as const;
 
 const TABS_PROVOZ = [
-  { id: "spizirna", label: "Spižírna", icon: "/tabs/spizirna.png" },
-  { id: "recepty", label: "Recepty", icon: "/tabs/recepty.png" },
-  { id: "skenovat", label: "Skenovat", icon: "/tabs/skenovat.png" },
-  { id: "nakup", label: "Nákup", icon: "/tabs/nakup.png" },
-  { id: "provoz", label: "Provoz", icon: "/tabs/provoz.png" },
+  { id: "spizirna", labelKey: "tab.spizirna", icon: "/tabs/spizirna.png" },
+  { id: "recepty", labelKey: "tab.recepty", icon: "/tabs/recepty.png" },
+  { id: "skenovat", labelKey: "tab.skenovat", icon: "/tabs/skenovat.png" },
+  { id: "nakup", labelKey: "tab.nakup", icon: "/tabs/nakup.png" },
+  { id: "provoz", labelKey: "tab.provoz", icon: "/tabs/provoz.png" },
 ] as const;
 
 export function TabBar() {
   const { activeTab, setTab } = useUIStore();
   const { mode } = useModeStore();
+  const t = useT();
   const shoppingMode = mode === "provoz" ? "provoz" : "domacnost";
   const shoppingCount = useShoppingStore((s) => s.getItems(shoppingMode).filter((i) => !i.checked).length);
   const dueCount = useRecurringStore((s) => s.getDueItems().length);
@@ -42,7 +44,7 @@ export function TabBar() {
       }}
     >
       <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-around" }}>
-        {TABS.map(({ id, label, icon }) => {
+        {TABS.map(({ id, labelKey, icon }) => {
           const active = activeTab === id;
           const isCenter = id === "skenovat";
           const badge = id === "nakup" && shoppingCount > 0 ? shoppingCount
@@ -90,7 +92,7 @@ export function TabBar() {
                 )}
               </div>
               <span style={{ fontSize: 10, fontWeight: active ? 600 : 500, color: active ? "var(--green-primary)" : "var(--text-tertiary)" }}>
-                {label}
+                {t(labelKey as TranslationKey)}
               </span>
             </button>
           );

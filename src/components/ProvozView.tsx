@@ -16,22 +16,30 @@ import {
 } from "@/store/provozStore";
 import { lookupProductByEAN } from "@/lib/productLookup";
 import { Scanner } from "@/components/Scanner";
+import { useT, useLocale } from "@/lib/i18n";
+import type { Locale } from "@/store/localeStore";
+
+type TFn = (key: string) => string;
+
+// Přeloží label kategorie podle jejího id (id se nepřekládá).
+function katLabel(t: TFn, id: string): string {
+  return t(`provoz.kat.${id}`);
+}
 
 // ── Export funkce ─────────────────────────────────────────────────────────────
 
-function exportCSV(inv: Inventura, polozky: InventuraPolozka[]) {
+function exportCSV(inv: Inventura, polozky: InventuraPolozka[], t: TFn) {
   const rows = [
-    ["Název", "Kategorie", "Skutečný stav", "Jednotka", "Min. zásoba", "Cena/jedn.", "Hodnota", "Pod minimem", "Min. trvanlivost do"],
+    [t("provoz.export.nazev"), t("provoz.export.kategorie"), t("provoz.export.skutecnyStav"), t("provoz.export.jednotka"), t("provoz.export.minZasoba"), t("provoz.export.cenaJedn"), t("provoz.export.hodnota"), t("provoz.export.podMinimem"), t("provoz.export.minTrvanlivostDo")],
   ];
   inv.zaznamy.forEach(z => {
     const p = polozky.find(p => p.id === z.polozkaId);
     if (!p) return;
-    const kat = INVENTURA_KATEGORIE.find(k => k.id === p.kategorie);
     const hodnota = p.cenaJednotka ? (z.skutecnyStav * p.cenaJednotka).toFixed(2) : "";
-    const podMin = z.skutecnyStav <= p.minZasoba ? "ANO" : "NE";
+    const podMin = z.skutecnyStav <= p.minZasoba ? t("provoz.export.ano") : t("provoz.export.ne");
     rows.push([
       p.nazev,
-      kat?.label ?? p.kategorie,
+      katLabel(t, p.kategorie),
       String(z.skutecnyStav),
       p.jednotka,
       String(p.minZasoba),
@@ -51,7 +59,8 @@ function exportCSV(inv: Inventura, polozky: InventuraPolozka[]) {
   URL.revokeObjectURL(url);
 }
 
-async function exportPDF(inv: Inventura, polozky: InventuraPolozka[]) {
+async function exportPDF(inv: Inventura, polozky: InventuraPolozka[], t: TFn, locale: Locale) {
+  const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
   const [{ jsPDF }, html2canvas] = await Promise.all([
     import("jspdf"),
     import("html2canvas").then(m => m.default),
@@ -70,15 +79,15 @@ async function exportPDF(inv: Inventura, polozky: InventuraPolozka[]) {
 
   const rows = inv.zaznamy.map(z => {
     const p = polozky.find(p => p.id === z.polozkaId);
-    const kat = INVENTURA_KATEGORIE.find(k => k.id === p?.kategorie);
+    const katLbl = p ? katLabel(t, p.kategorie) : "";
     const podMin = p ? z.skutecnyStav <= p.minZasoba : false;
-    const hodnota = p?.cenaJednotka ? (z.skutecnyStav * p.cenaJednotka).toLocaleString("cs-CZ") + " Kč" : "—";
-    const trv = p?.minTrvanlivost ? new Date(p.minTrvanlivost).toLocaleDateString("cs-CZ") : "—";
+    const hodnota = p?.cenaJednotka ? (z.skutecnyStav * p.cenaJednotka).toLocaleString(dateLocale) + " Kč" : "—";
+    const trv = p?.minTrvanlivost ? new Date(p.minTrvanlivost).toLocaleDateString(dateLocale) : "—";
     const trvExpired = p?.minTrvanlivost && new Date(p.minTrvanlivost) < new Date();
     const trvSoon = p?.minTrvanlivost && !trvExpired && (new Date(p.minTrvanlivost).getTime() - Date.now()) < 7 * 86400000;
     return `<tr style="background:${podMin ? "#FFF3E0" : ""}">
       <td style="padding:6px 8px;border-bottom:1px solid #eee;font-weight:${podMin ? "600" : "400"}">${p?.nazev ?? z.polozkaId}</td>
-      <td style="padding:6px 8px;border-bottom:1px solid #eee;color:#666">${kat?.label ?? ""}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;color:#666">${katLbl}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;font-weight:700;color:${podMin ? "#E65100" : "#1a1a1a"}">${z.skutecnyStav} ${p?.jednotka ?? ""}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;color:#666">${p?.minZasoba ?? ""} ${p?.jednotka ?? ""}</td>
       <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">${hodnota}</td>
@@ -89,29 +98,29 @@ async function exportPDF(inv: Inventura, polozky: InventuraPolozka[]) {
 
   container.innerHTML = `
     <div style="background:#4CAF82;color:#fff;padding:12px 16px;border-radius:10px 10px 0 0;display:flex;justify-content:space-between;align-items:center;margin-bottom:0">
-      <span style="font-size:13px;font-weight:700;letter-spacing:.05em">INVENTURA</span>
-      <span style="font-size:11px;opacity:.85">Spižírna — Provoz</span>
+      <span style="font-size:13px;font-weight:700;letter-spacing:.05em">${t("provoz.export.headerInventura")}</span>
+      <span style="font-size:11px;opacity:.85">${t("provoz.export.headerSpizirna")}</span>
     </div>
     <div style="border:1px solid #e0e0e0;border-top:none;border-radius:0 0 10px 10px;padding:20px 20px 16px;margin-bottom:20px">
       <h1 style="margin:0 0 4px;font-size:22px;color:#1a1a1a">${inv.nazev}</h1>
-      <p style="margin:0;font-size:12px;color:#888">Datum: ${inv.datum} &nbsp;·&nbsp; Počet položek: ${inv.zaznamy.length} &nbsp;·&nbsp; Vygenerováno: ${new Date().toLocaleDateString("cs-CZ")}</p>
-      ${celkovaHodnota > 0 ? `<div style="margin-top:12px;background:#F1FAF5;border:1px solid #4CAF82;border-radius:8px;padding:10px 14px;display:inline-block"><span style="font-size:13px;font-weight:700;color:#2E7D32">Celková hodnota skladu: ${celkovaHodnota.toLocaleString("cs-CZ")} Kč</span></div>` : ""}
+      <p style="margin:0;font-size:12px;color:#888">${t("provoz.export.datum")}: ${inv.datum} &nbsp;·&nbsp; ${t("provoz.export.pocetPolozek")}: ${inv.zaznamy.length} &nbsp;·&nbsp; ${t("provoz.export.vygenerovano")}: ${new Date().toLocaleDateString(dateLocale)}</p>
+      ${celkovaHodnota > 0 ? `<div style="margin-top:12px;background:#F1FAF5;border:1px solid #4CAF82;border-radius:8px;padding:10px 14px;display:inline-block"><span style="font-size:13px;font-weight:700;color:#2E7D32">${t("provoz.export.celkovaHodnota")}: ${celkovaHodnota.toLocaleString(dateLocale)} Kč</span></div>` : ""}
     </div>
     <table style="width:100%;border-collapse:collapse;font-size:12px">
       <thead>
         <tr style="background:#2d2d2d;color:#fff">
-          <th style="padding:8px;text-align:left;border-radius:6px 0 0 0">Název</th>
-          <th style="padding:8px;text-align:left">Kategorie</th>
-          <th style="padding:8px;text-align:right">Skutečný stav</th>
-          <th style="padding:8px;text-align:right">Min. zásoba</th>
-          <th style="padding:8px;text-align:right">Hodnota</th>
-          <th style="padding:8px;text-align:center">Min. trvanlivost</th>
-          <th style="padding:8px;text-align:center;border-radius:0 6px 0 0">OK?</th>
+          <th style="padding:8px;text-align:left;border-radius:6px 0 0 0">${t("provoz.export.nazev")}</th>
+          <th style="padding:8px;text-align:left">${t("provoz.export.kategorie")}</th>
+          <th style="padding:8px;text-align:right">${t("provoz.export.skutecnyStav")}</th>
+          <th style="padding:8px;text-align:right">${t("provoz.export.minZasoba")}</th>
+          <th style="padding:8px;text-align:right">${t("provoz.export.hodnota")}</th>
+          <th style="padding:8px;text-align:center">${t("provoz.export.minTrvanlivost")}</th>
+          <th style="padding:8px;text-align:center;border-radius:0 6px 0 0">${t("provoz.export.ok")}</th>
         </tr>
       </thead>
       <tbody>${rows}</tbody>
     </table>
-    <p style="margin-top:16px;font-size:10px;color:#bbb;text-align:right">Spižírna &mdash; Provoz &amp; Inventura</p>
+    <p style="margin-top:16px;font-size:10px;color:#bbb;text-align:right">${t("provoz.export.footer")}</p>
   `;
 
   document.body.appendChild(container);
@@ -141,22 +150,29 @@ async function exportPDF(inv: Inventura, polozky: InventuraPolozka[]) {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-function trvanlivostStatus(datum?: string): { label: string; color: string; bg: string } | null {
+function trvanlivostStatus(datum: string | undefined, t: TFn, locale: Locale): { label: string; color: string; bg: string } | null {
   if (!datum) return null;
   const dnes = new Date();
   dnes.setHours(0, 0, 0, 0);
   const exp = new Date(datum);
   const diffDni = Math.round((exp.getTime() - dnes.getTime()) / 86400000);
-  if (diffDni < 0) return { label: `Vypršelo před ${Math.abs(diffDni)} dny`, color: "#C62828", bg: "#FFEBEE" };
-  if (diffDni === 0) return { label: "Vyprší dnes!", color: "#E65100", bg: "#FFF3E0" };
-  if (diffDni <= 3) return { label: `Vyprší za ${diffDni} ${diffDni === 1 ? "den" : diffDni <= 4 ? "dny" : "dní"}`, color: "#E65100", bg: "#FFF3E0" };
-  if (diffDni <= 7) return { label: `Vyprší za ${diffDni} dní`, color: "#F9A825", bg: "#FFFDE7" };
-  const d = exp.toLocaleDateString("cs-CZ", { day: "numeric", month: "numeric", year: "numeric" });
-  return { label: `Min. trvanlivost: ${d}`, color: "var(--text-secondary)", bg: "transparent" };
+  if (diffDni < 0) return { label: t("provoz.trv.vyprselo").replace("{n}", String(Math.abs(diffDni))), color: "#C62828", bg: "#FFEBEE" };
+  if (diffDni === 0) return { label: t("provoz.trv.vyprsiDnes"), color: "#E65100", bg: "#FFF3E0" };
+  if (diffDni <= 3) {
+    const label = diffDni === 1
+      ? t("provoz.trv.vyprsiZa1")
+      : t("provoz.trv.vyprsiZaDny").replace("{n}", String(diffDni));
+    return { label, color: "#E65100", bg: "#FFF3E0" };
+  }
+  if (diffDni <= 7) return { label: t("provoz.trv.vyprsiZaDni").replace("{n}", String(diffDni)), color: "#F9A825", bg: "#FFFDE7" };
+  const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
+  const d = exp.toLocaleDateString(dateLocale, { day: "numeric", month: "numeric", year: "numeric" });
+  return { label: t("provoz.trv.minTrvanlivost").replace("{d}", d), color: "var(--text-secondary)", bg: "transparent" };
 }
 
 // ── Formulář nové položky skladu ──────────────────────────────────────────────
 function AddPolozkaModal({ onClose }: { onClose: () => void }) {
+  const t = useT();
   const { addPolozka } = useProvozStore();
   const [nazev, setNazev] = useState("");
   const [kategorie, setKategorie] = useState<InventuraKategorie>("potraviny");
@@ -242,7 +258,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
       <div className="relative rounded-t-3xl px-5 pt-5 pb-8 space-y-4 animate-slide-up"
         style={{ background: "var(--bg-primary)", paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))", maxHeight: "90dvh", overflowY: "auto" }}>
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Nová položka skladu</h3>
+          <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("provoz.novaPolozka")}</h3>
           <button onClick={onClose}><X size={20} style={{ color: "var(--text-tertiary)" }} /></button>
         </div>
 
@@ -258,7 +274,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
               border: `1.5px solid ${inputMode === "name" ? "var(--green-primary)" : "var(--border)"}`,
             }}
           >
-            <Keyboard size={14} /> Zadat ručně
+            <Keyboard size={14} /> {t("provoz.zadatRucne")}
           </button>
           <button
             onClick={() => setInputMode("ean")}
@@ -270,7 +286,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
               border: `1.5px solid ${inputMode === "ean" ? "var(--green-primary)" : "var(--border)"}`,
             }}
           >
-            <ScanLine size={14} /> Skenovat EAN
+            <ScanLine size={14} /> {t("provoz.skenovatEan")}
           </button>
         </div>
 
@@ -285,11 +301,11 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
                 boxShadow: "0 4px 14px rgba(76,175,130,0.4)",
               }}
             >
-              <ScanLine size={18} /> Otevřít fotoaparát
+              <ScanLine size={18} /> {t("provoz.otevritFotoaparat")}
             </button>
             <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
               <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
-              <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>nebo zadat EAN číslo</span>
+              <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{t("provoz.neboZadatEan")}</span>
               <div style={{ flex: 1, height: 1, background: "var(--border)" }} />
             </div>
             <div style={{ display: "flex", gap: 8 }}>
@@ -298,7 +314,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
                 value={eanInput}
                 onChange={e => setEanInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && handleEanManual()}
-                placeholder="např. 8594013425054"
+                placeholder={t("provoz.eanPlaceholder")}
                 style={{
                   flex: 1, padding: "10px 14px", borderRadius: 14, fontSize: 14, fontWeight: 600,
                   border: "1.5px solid var(--border)", background: "white", outline: "none",
@@ -314,21 +330,21 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
                   color: eanInput.length >= 6 ? "white" : "var(--text-tertiary)",
                 }}
               >
-                {scanLoading ? "..." : "Hledat"}
+                {scanLoading ? "..." : t("provoz.hledat")}
               </button>
             </div>
             {nazev && (
               <div style={{ padding: "10px 14px", borderRadius: 14, background: "var(--green-light)", border: "1px solid var(--green-primary)" }}>
-                <p style={{ fontSize: 12, color: "var(--green-dark)", fontWeight: 600 }}>✓ Nalezeno: {nazev}</p>
+                <p style={{ fontSize: 12, color: "var(--green-dark)", fontWeight: 600 }}>{t("provoz.nalezeno").replace("{n}", nazev)}</p>
               </div>
             )}
           </div>
         ) : (
           <div>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Název</label>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.nazev")}</label>
             <input
               autoFocus value={nazev} onChange={e => setNazev(e.target.value)}
-              placeholder="např. Kuřecí prsa, Vodka Absolut..."
+              placeholder={t("provoz.nazevPlaceholder")}
               className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
               style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }}
             />
@@ -339,7 +355,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
         {(nazev.trim() || inputMode === "name") && (
           <>
             <div>
-              <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-tertiary)" }}>Kategorie</label>
+              <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.kategorie")}</label>
               <div className="grid grid-cols-2 gap-2">
                 {INVENTURA_KATEGORIE.map((k) => (
                   <button key={k.id} onClick={() => setKategorie(k.id)}
@@ -349,7 +365,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
                       border: `1.5px solid ${kategorie === k.id ? "var(--green-primary)" : "var(--border)"}`,
                       color: kategorie === k.id ? "var(--green-dark)" : "var(--text-primary)",
                     }}>
-                    <span>{k.emoji}</span> {k.label}
+                    <span>{k.emoji}</span> {katLabel(t, k.id)}
                   </button>
                 ))}
               </div>
@@ -357,14 +373,14 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
 
             <div className="flex gap-3">
               <div style={{ flex: 1 }}>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Jednotka</label>
+                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.jednotka")}</label>
                 <select value={jednotka} onChange={e => setJednotka(e.target.value)}
                   style={{ width: "100%", background: "white", border: "1.5px solid var(--border)", borderRadius: 12, padding: "10px 12px", fontSize: 14, outline: "none", color: "var(--text-primary)" }}>
                   {JEDNOTKY.map(j => <option key={j} value={j}>{j}</option>)}
                 </select>
               </div>
               <div style={{ flex: 1 }}>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Min. zásoba</label>
+                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.minZasoba")}</label>
                 <input type="number" value={minZasoba} onChange={e => setMinZasoba(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none text-center"
                   style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
@@ -373,21 +389,21 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
 
             <div className="flex gap-3">
               <div style={{ flex: 1 }}>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Cena/jedn. (Kč)</label>
-                <input type="number" value={cena} onChange={e => setCena(e.target.value)} placeholder="volitelné"
+                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.cenaJedn")}</label>
+                <input type="number" value={cena} onChange={e => setCena(e.target.value)} placeholder={t("provoz.volitelne")}
                   className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
                   style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
               </div>
               <div style={{ flex: 1 }}>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Dodavatel</label>
-                <input value={dodavatel} onChange={e => setDodavatel(e.target.value)} placeholder="volitelné"
+                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.dodavatel")}</label>
+                <input value={dodavatel} onChange={e => setDodavatel(e.target.value)} placeholder={t("provoz.volitelne")}
                   className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
                   style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
               </div>
             </div>
 
             <div>
-              <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Min. trvanlivost do</label>
+              <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.minTrvanlivostDo")}</label>
               <input type="date" value={minTrvanlivost} onChange={e => setMinTrvanlivost(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
                 style={{ border: "1.5px solid var(--border)", background: "white", color: minTrvanlivost ? "var(--text-primary)" : "var(--text-tertiary)" }} />
@@ -396,7 +412,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
         )}
 
         <button onClick={save} className="btn-primary" disabled={!nazev.trim()}>
-          <Plus size={16} /> Přidat položku
+          <Plus size={16} /> {t("provoz.pridatPolozku")}
         </button>
       </div>
     </div>
@@ -405,6 +421,9 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
 
 // ── Aktivní inventura — zadávání stavů ────────────────────────────────────────
 function AktivniInventura({ inventura }: { inventura: Inventura }) {
+  const t = useT();
+  const locale = useLocale();
+  const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
   const { polozky, zadatZaznam, zavritInventuru, getHodnotaSkladu } = useProvozStore();
   const [aktivniKat, setAktivniKat] = useState<InventuraKategorie | "vse">("vse");
   const [vstupy, setVstupy] = useState<Record<string, string>>({});
@@ -443,14 +462,14 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
         <div className="flex justify-between items-start mb-2">
           <div>
             <p style={{ fontSize: 11, fontWeight: 700, color: "rgba(255,255,255,0.65)", letterSpacing: "0.06em", textTransform: "uppercase" }}>
-              Probíhající inventura
+              {t("provoz.probihajiciInventura")}
             </p>
             <h3 className="font-bold text-lg" style={{ color: "white" }}>{inventura.nazev}</h3>
             <p style={{ fontSize: 12, color: "rgba(255,255,255,0.7)" }}>{inventura.datum}</p>
           </div>
           <div style={{ textAlign: "right" }}>
             <p style={{ fontSize: 26, fontWeight: 800, color: "white", lineHeight: 1 }}>{zadano}/{celkem}</p>
-            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.65)" }}>položek</p>
+            <p style={{ fontSize: 11, color: "rgba(255,255,255,0.65)" }}>{t("provoz.polozek")}</p>
           </div>
         </div>
         <div style={{ height: 6, borderRadius: 6, background: "rgba(255,255,255,0.2)", overflow: "hidden", marginBottom: 10 }}>
@@ -458,28 +477,28 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
         </div>
         {hodnotaSkladu > 0 && (
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginBottom: 10 }}>
-            💰 Hodnota skladu: <b>{hodnotaSkladu.toLocaleString("cs-CZ")} Kč</b>
+            💰 {t("provoz.hodnotaSkladu")}: <b>{hodnotaSkladu.toLocaleString(dateLocale)} Kč</b>
           </p>
         )}
         <button
           onClick={() => setShowZavrit(true)}
           style={{ width: "100%", padding: "9px 0", borderRadius: 14, fontSize: 13, fontWeight: 600, color: "white", background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)" }}
         >
-          Uzavřít inventuru
+          {t("provoz.uzavritInventuru")}
         </button>
       </div>
 
       {/* Potvrzení uzavření */}
       {showZavrit && (
         <div className="card p-4 mb-4 animate-fade-in" style={{ background: "#FFF3E0", border: "1px solid #FFE0B2" }}>
-          <p className="text-sm font-bold mb-2" style={{ color: "#E65100" }}>Uzavřít inventuru?</p>
-          <p className="text-xs mb-3" style={{ color: "#BF360C" }}>Po uzavření nelze editovat zadané stavy.</p>
+          <p className="text-sm font-bold mb-2" style={{ color: "#E65100" }}>{t("provoz.uzavritInventuruQ")}</p>
+          <p className="text-xs mb-3" style={{ color: "#BF360C" }}>{t("provoz.poUzavreni")}</p>
           <div className="flex gap-2">
             <button onClick={() => zavritInventuru(inventura.id)} className="flex-1 py-2 rounded-xl text-sm font-bold" style={{ background: "#E65100", color: "white" }}>
-              Ano, uzavřít
+              {t("provoz.anoUzavrit")}
             </button>
             <button onClick={() => setShowZavrit(false)} className="flex-1 py-2 rounded-xl text-sm font-bold" style={{ background: "var(--border)", color: "var(--text-secondary)" }}>
-              Zpět
+              {t("common.back")}
             </button>
           </div>
         </div>
@@ -491,14 +510,14 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
           <button
             onClick={() => setAktivniKat("vse")}
             style={{ flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: aktivniKat === "vse" ? 700 : 500, background: aktivniKat === "vse" ? "var(--green-primary)" : "white", color: aktivniKat === "vse" ? "white" : "var(--text-secondary)", border: "none", boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>
-            Vše ({celkem})
+            {t("provoz.vse").replace("{n}", String(celkem))}
           </button>
           {kategoriePouzite.map(k => {
             const pocet = polozky.filter(p => p.kategorie === k.id).length;
             return (
               <button key={k.id} onClick={() => setAktivniKat(k.id)}
                 style={{ flexShrink: 0, padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: aktivniKat === k.id ? 700 : 500, background: aktivniKat === k.id ? "var(--green-primary)" : "white", color: aktivniKat === k.id ? "white" : "var(--text-secondary)", border: "none", boxShadow: "0 1px 4px rgba(0,0,0,0.08)", whiteSpace: "nowrap" }}>
-                {k.emoji} {k.label} ({pocet})
+                {k.emoji} {katLabel(t, k.id)} ({pocet})
               </button>
             );
           })}
@@ -508,7 +527,7 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
       {/* Položky */}
       {filtrovane.length === 0 ? (
         <div className="text-center py-8">
-          <p style={{ color: "var(--text-tertiary)", fontSize: 14 }}>Žádné položky v této kategorii</p>
+          <p style={{ color: "var(--text-tertiary)", fontSize: 14 }}>{t("provoz.zadnePolozkyKat")}</p>
         </div>
       ) : (
         <div className="card overflow-hidden">
@@ -530,12 +549,12 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
                     {zaznam !== undefined && (
                       <p style={{ fontSize: 12, color: jePod ? "#F57C00" : "var(--text-secondary)", marginTop: 2 }}>
                         {zaznam} {polozka.jednotka}
-                        {jePod ? " — pod minimem!" : " ✓"}
-                        {polozka.cenaJednotka ? ` · ${(zaznam * polozka.cenaJednotka).toLocaleString("cs-CZ")} Kč` : ""}
+                        {jePod ? t("provoz.podMinimem") : " ✓"}
+                        {polozka.cenaJednotka ? ` · ${(zaznam * polozka.cenaJednotka).toLocaleString(dateLocale)} Kč` : ""}
                       </p>
                     )}
                     {(() => {
-                      const s = trvanlivostStatus(polozka.minTrvanlivost);
+                      const s = trvanlivostStatus(polozka.minTrvanlivost, t, locale);
                       if (!s) return null;
                       return (
                         <p style={{ fontSize: 11, color: s.color, marginTop: 2 }}>🗓 {s.label}</p>
@@ -583,13 +602,16 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
 
 // ── Přehled minulých inventur ─────────────────────────────────────────────────
 function HistorieInventur() {
+  const t = useT();
+  const locale = useLocale();
+  const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
   const { inventury, polozky, removeInventura, getHodnotaSkladu } = useProvozStore();
   const [otevreneId, setOtevreneId] = useState<string | null>(null);
   const zavrene = inventury.filter(i => i.zavrena);
 
   if (zavrene.length === 0) return (
     <div className="text-center py-8">
-      <p style={{ color: "var(--text-tertiary)", fontSize: 14 }}>Zatím žádná uzavřená inventura</p>
+      <p style={{ color: "var(--text-tertiary)", fontSize: 14 }}>{t("provoz.zadnaUzavrena")}</p>
     </div>
   );
 
@@ -615,37 +637,38 @@ function HistorieInventur() {
             >
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{inv.nazev}</p>
-                <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{inv.datum} · {inv.zaznamy.length} položek</p>
+                <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{inv.datum} · {t("provoz.polozekDatum").replace("{n}", String(inv.zaznamy.length))}</p>
                 <div style={{ display: "flex", gap: 8, marginTop: 3, flexWrap: "wrap" }}>
-                  {hodnota > 0 && <span style={{ fontSize: 11, color: "var(--green-primary)", fontWeight: 600 }}>💰 {hodnota.toLocaleString("cs-CZ")} Kč</span>}
-                  {podMin > 0 && <span style={{ fontSize: 11, color: "#F57C00", fontWeight: 600 }}>⚠️ {podMin} pod minimem</span>}
+                  {hodnota > 0 && <span style={{ fontSize: 11, color: "var(--green-primary)", fontWeight: 600 }}>💰 {hodnota.toLocaleString(dateLocale)} Kč</span>}
+                  {podMin > 0 && <span style={{ fontSize: 11, color: "#F57C00", fontWeight: 600 }}>{t("provoz.podMinimemBadge").replace("{n}", String(podMin))}</span>}
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
                 <ChevronRight size={16} style={{ color: "var(--text-tertiary)", transform: otevreno ? "rotate(90deg)" : "none", transition: "transform 0.2s" }} />
                 <button
-                  onClick={e => { e.stopPropagation(); exportCSV(inv, polozky); }}
+                  onClick={e => { e.stopPropagation(); exportCSV(inv, polozky, t); }}
                   style={{ width: 30, height: 30, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "#E8F5E9" }}
-                  title="Stáhnout CSV (Excel)"
+                  title={t("provoz.stahnoutCsv")}
                 >
                   <FileSpreadsheet size={14} style={{ color: "#2E7D32" }} />
                 </button>
                 <button
-                  onClick={e => { e.stopPropagation(); exportPDF(inv, polozky); }}
+                  onClick={e => { e.stopPropagation(); exportPDF(inv, polozky, t, locale); }}
                   style={{ width: 30, height: 30, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "#FDE8E8" }}
-                  title="Stáhnout PDF"
+                  title={t("provoz.stahnoutPdf")}
                 >
                   <FileText size={14} style={{ color: "#C0392B" }} />
                 </button>
                 <button
                   onClick={e => {
                     e.stopPropagation();
-                    const text = `📋 Inventura: ${inv.nazev}\n📅 ${inv.datum}\n📦 ${inv.zaznamy.length} položek${hodnota > 0 ? `\n💰 Hodnota: ${hodnota.toLocaleString("cs-CZ")} Kč` : ""}\n${zaznamy.filter(z => z.podMin).length > 0 ? `⚠️ ${zaznamy.filter(z => z.podMin).length} pod minimem` : ""}`;
+                    const podMinPocet = zaznamy.filter(z => z.podMin).length;
+                    const text = `📋 ${t("provoz.tab.inventura")}: ${inv.nazev}\n📅 ${inv.datum}\n📦 ${t("provoz.polozekDatum").replace("{n}", String(inv.zaznamy.length))}${hodnota > 0 ? `\n💰 ${t("provoz.export.hodnota")}: ${hodnota.toLocaleString(dateLocale)} Kč` : ""}\n${podMinPocet > 0 ? t("provoz.podMinimemBadge").replace("{n}", String(podMinPocet)) : ""}`;
                     if (navigator.share) navigator.share({ title: inv.nazev, text });
                     else window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
                   }}
                   style={{ width: 30, height: 30, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "#E8F4FD" }}
-                  title="Sdílet"
+                  title={t("provoz.sdilet")}
                 >
                   <Share2 size={14} style={{ color: "#1565C0" }} />
                 </button>
@@ -662,7 +685,7 @@ function HistorieInventur() {
             {otevreno && (
               <div style={{ borderTop: "1px solid var(--border)" }}>
                 {zaznamy.length === 0 ? (
-                  <p style={{ padding: "12px 16px", fontSize: 13, color: "var(--text-tertiary)" }}>Žádné záznamy</p>
+                  <p style={{ padding: "12px 16px", fontSize: 13, color: "var(--text-tertiary)" }}>{t("provoz.zadneZaznamy")}</p>
                 ) : (
                   zaznamy.map((z, idx) => (
                     <div
@@ -681,12 +704,12 @@ function HistorieInventur() {
                         </p>
                         {z.polozka && (
                           <p style={{ fontSize: 11, color: z.podMin ? "#F57C00" : "var(--text-secondary)", margin: 0 }}>
-                            Min. {z.polozka.minZasoba} {z.polozka.jednotka}
-                            {z.podMin ? " — pod minimem!" : ""}
+                            {t("provoz.min")} {z.polozka.minZasoba} {z.polozka.jednotka}
+                            {z.podMin ? t("provoz.podMinimem") : ""}
                           </p>
                         )}
                         {(() => {
-                          const s = trvanlivostStatus(z.polozka?.minTrvanlivost);
+                          const s = trvanlivostStatus(z.polozka?.minTrvanlivost, t, locale);
                           if (!s) return null;
                           return <p style={{ fontSize: 11, color: s.color, margin: 0 }}>🗓 {s.label}</p>;
                         })()}
@@ -697,7 +720,7 @@ function HistorieInventur() {
                         </p>
                         {z.polozka?.cenaJednotka && (
                           <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: 0 }}>
-                            {(z.skutecnyStav * z.polozka.cenaJednotka).toLocaleString("cs-CZ")} Kč
+                            {(z.skutecnyStav * z.polozka.cenaJednotka).toLocaleString(dateLocale)} Kč
                           </p>
                         )}
                       </div>
@@ -715,6 +738,7 @@ function HistorieInventur() {
 
 // ── Editace položky skladu ────────────────────────────────────────────────────
 function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onClose: () => void }) {
+  const t = useT();
   const { updatePolozka } = useProvozStore();
   const [nazev, setNazev] = useState(polozka.nazev);
   const [jednotka, setJednotka] = useState(polozka.jednotka);
@@ -742,25 +766,25 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
       <div className="relative rounded-t-3xl px-5 pt-5 pb-8 space-y-4 animate-slide-up"
         style={{ background: "var(--bg-primary)", paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))", maxHeight: "90dvh", overflowY: "auto" }}>
         <div className="flex items-center justify-between">
-          <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Upravit položku</h3>
+          <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("provoz.upravitPolozku")}</h3>
           <button onClick={onClose}><X size={20} style={{ color: "var(--text-tertiary)" }} /></button>
         </div>
         <div>
-          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Název</label>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.nazev")}</label>
           <input value={nazev} onChange={e => setNazev(e.target.value)} autoFocus
             className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
             style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
         </div>
         <div className="flex gap-3">
           <div style={{ flex: 1 }}>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Jednotka</label>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.jednotka")}</label>
             <select value={jednotka} onChange={e => setJednotka(e.target.value)}
               style={{ width: "100%", background: "white", border: "1.5px solid var(--border)", borderRadius: 12, padding: "10px 12px", fontSize: 14, outline: "none", color: "var(--text-primary)" }}>
               {JEDNOTKY.map(j => <option key={j} value={j}>{j}</option>)}
             </select>
           </div>
           <div style={{ flex: 1 }}>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Min. zásoba</label>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.minZasoba")}</label>
             <input type="number" value={minZasoba} onChange={e => setMinZasoba(e.target.value)}
               className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none text-center"
               style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
@@ -768,26 +792,26 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
         </div>
         <div className="flex gap-3">
           <div style={{ flex: 1 }}>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Cena/jedn. (Kč)</label>
-            <input type="number" value={cena} onChange={e => setCena(e.target.value)} placeholder="volitelné"
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.cenaJedn")}</label>
+            <input type="number" value={cena} onChange={e => setCena(e.target.value)} placeholder={t("provoz.volitelne")}
               className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
               style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
           </div>
           <div style={{ flex: 1 }}>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Dodavatel</label>
-            <input value={dodavatel} onChange={e => setDodavatel(e.target.value)} placeholder="volitelné"
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.dodavatel")}</label>
+            <input value={dodavatel} onChange={e => setDodavatel(e.target.value)} placeholder={t("provoz.volitelne")}
               className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
               style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
           </div>
         </div>
         <div>
-          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>Min. trvanlivost do</label>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.minTrvanlivostDo")}</label>
           <input type="date" value={minTrvanlivost} onChange={e => setMinTrvanlivost(e.target.value)}
             className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
             style={{ border: "1.5px solid var(--border)", background: "white", color: minTrvanlivost ? "var(--text-primary)" : "var(--text-tertiary)" }} />
         </div>
         <button onClick={save} className="btn-primary" disabled={!nazev.trim()}>
-          <Check size={16} /> Uložit změny
+          <Check size={16} /> {t("common.saveChanges")}
         </button>
       </div>
     </div>
@@ -811,6 +835,8 @@ function guessSkladKategorie(name: string): InventuraKategorie {
 // Samostatný hlasový mikrofon pro sklad Provozu (oddělený od Nákupu).
 // Naparsované položky zakládá rovnou do skladu Provozu.
 function SkladVoiceFab({ onItems }: { onItems: (items: { name: string; quantity: number; unit: string }[]) => void }) {
+  const t = useT();
+  const locale = useLocale();
   const [state, setState] = useState<"idle" | "listening" | "processing">("idle");
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -821,11 +847,11 @@ function SkladVoiceFab({ onItems }: { onItems: (items: { name: string; quantity:
     setTranscript("");
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     if (!SpeechRecognition) {
-      setError("Prohlížeč nepodporuje hlasové zadávání. Zkuste Chrome nebo Safari.");
+      setError(t("provoz.voice.nepodporovano"));
       return;
     }
     const recognition = new SpeechRecognition();
-    recognition.lang = "cs-CZ";
+    recognition.lang = locale === "sk" ? "sk-SK" : "cs-CZ";
     recognition.continuous = false;
     recognition.interimResults = true;
     recognition.maxAlternatives = 1;
@@ -841,14 +867,14 @@ function SkladVoiceFab({ onItems }: { onItems: (items: { name: string; quantity:
         const items = parseSpokenText(text);
         setTimeout(() => {
           if (items.length > 0) onItems(items);
-          else setError("Nerozuměl jsem. Zkuste to znovu.");
+          else setError(t("provoz.voice.nerozumel"));
           setState("idle");
           setTranscript("");
         }, 300);
       }
     };
     recognition.onerror = (event: any) => {
-      setError(event.error === "not-allowed" ? "Přístup k mikrofonu byl odmítnut." : "Nic jsem neslyšel. Zkuste znovu.");
+      setError(event.error === "not-allowed" ? t("provoz.voice.odmitnut") : t("provoz.voice.neslysel"));
       setState("idle");
     };
     recognition.onend = () => setState((s) => (s === "listening" ? "idle" : s));
@@ -870,12 +896,12 @@ function SkladVoiceFab({ onItems }: { onItems: (items: { name: string; quantity:
             borderRadius: 14, padding: "10px 14px", fontSize: 13, lineHeight: 1.45, zIndex: 60,
           }}
         >
-          {error ? error : transcript ? `„${transcript}"` : "Poslouchám… např. „dvanáct lahví vína, pět kilo mouky\""}
+          {error ? error : transcript ? `„${transcript}"` : t("provoz.voice.poslouchamHint")}
         </div>
       )}
       <button
         onClick={listening ? stop : start}
-        aria-label="Přidat položku hlasem"
+        aria-label={t("provoz.voice.aria")}
         style={{
           position: "fixed", right: 20,
           bottom: "calc(92px + env(safe-area-inset-bottom, 0px))",
@@ -897,6 +923,8 @@ function SkladVoiceFab({ onItems }: { onItems: (items: { name: string; quantity:
 
 // ── Správa skladu (seznam položek) ────────────────────────────────────────────
 function SpravaSkladu() {
+  const t = useT();
+  const locale = useLocale();
   const { polozky, inventury, removePolozka, getPolozkyCritical, addPolozka } = useProvozStore();
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
@@ -914,7 +942,7 @@ function SpravaSkladu() {
         minZasoba: 0,
       });
     });
-    setToast(items.length === 1 ? `${items[0].name} přidáno do skladu` : `${items.length} položky přidány do skladu`);
+    setToast(items.length === 1 ? t("provoz.pridanoDoSkladu").replace("{n}", items[0].name) : t("provoz.polozkyPridany").replace("{n}", String(items.length)));
     setTimeout(() => setToast(null), 3000);
   };
 
@@ -942,10 +970,10 @@ function SpravaSkladu() {
           <AlertTriangle size={16} style={{ color: "#F57C00", flexShrink: 0, marginTop: 1 }} />
           <div>
             <p className="text-sm font-bold" style={{ color: "#E65100" }}>
-              {critical.length} položek pod minimální zásobou!
+              {t("provoz.podMinZasobou").replace("{n}", String(critical.length))}
             </p>
             <p className="text-xs mt-0.5" style={{ color: "#BF360C" }}>
-              {critical.slice(0, 3).map(p => p.nazev).join(", ")}{critical.length > 3 ? ` a ${critical.length - 3} další` : ""}
+              {critical.slice(0, 3).map(p => p.nazev).join(", ")}{critical.length > 3 ? t("provoz.aDalsi").replace("{n}", String(critical.length - 3)) : ""}
             </p>
           </div>
         </div>
@@ -962,7 +990,7 @@ function SpravaSkladu() {
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Hledat ve skladu..."
+            placeholder={t("provoz.hledatVeSkladu")}
             style={{ border: "none", outline: "none", background: "transparent", fontSize: 14, width: "100%", color: "var(--text-primary)" }}
           />
           {search && (
@@ -976,7 +1004,7 @@ function SpravaSkladu() {
       {byKategorie.length === 0 ? (
         q ? (
           <div className="text-center py-12">
-            <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>Nic nenalezeno pro „{search}“</p>
+            <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>{t("provoz.nicNenalezeno").replace("{q}", search)}</p>
           </div>
         ) : (
         <div className="flex flex-col items-center justify-center py-16 gap-4">
@@ -984,11 +1012,11 @@ function SpravaSkladu() {
             <Package size={28} style={{ color: "var(--green-primary)" }} strokeWidth={1.5} />
           </div>
           <div className="text-center">
-            <p className="font-bold text-base mb-1" style={{ color: "var(--text-primary)" }}>Sklad je prázdný</p>
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Přidejte položky které chcete inventarizovat.</p>
+            <p className="font-bold text-base mb-1" style={{ color: "var(--text-primary)" }}>{t("provoz.skladPrazdny")}</p>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("provoz.skladPrazdnyDesc")}</p>
           </div>
           <button className="btn-primary" style={{ width: "auto", paddingLeft: 24, paddingRight: 24 }} onClick={() => setShowAdd(true)}>
-            <Plus size={16} /> Přidat položku
+            <Plus size={16} /> {t("provoz.pridatPolozku")}
           </button>
         </div>
         )
@@ -997,7 +1025,7 @@ function SpravaSkladu() {
           {byKategorie.map(k => (
             <div key={k.id}>
               <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>
-                {k.emoji} {k.label}
+                {k.emoji} {katLabel(t, k.id)}
               </p>
               <div className="card overflow-hidden">
                 {k.polozky.map((p, idx) => {
@@ -1008,12 +1036,12 @@ function SpravaSkladu() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{p.nazev}</p>
                         <p className="text-xs" style={{ color: isCritical ? "#F57C00" : "var(--text-secondary)" }}>
-                          Min. {p.minZasoba} {p.jednotka}
+                          {t("provoz.min")} {p.minZasoba} {p.jednotka}
                           {p.dodavatel ? ` · ${p.dodavatel}` : ""}
                           {isCritical ? " ⚠️" : ""}
                         </p>
                         {(() => {
-                          const s = trvanlivostStatus(p.minTrvanlivost);
+                          const s = trvanlivostStatus(p.minTrvanlivost, t, locale);
                           if (!s) return null;
                           return (
                             <p className="text-xs font-semibold mt-0.5" style={{ color: s.color }}>
@@ -1049,7 +1077,7 @@ function SpravaSkladu() {
             className="w-full py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
             style={{ background: "white", color: "var(--green-primary)", border: "1.5px dashed var(--green-primary)" }}
           >
-            <Plus size={16} /> Přidat položku
+            <Plus size={16} /> {t("provoz.pridatPolozku")}
           </button>
         </div>
       )}
@@ -1081,6 +1109,7 @@ function SpravaSkladu() {
 
 // ── Dodavatelé ────────────────────────────────────────────────────────────────
 function DodavateleView() {
+  const t = useT();
   const { dodavatele, addDodavatel, removeDodavatel } = useProvozStore();
   const [showAdd, setShowAdd] = useState(false);
   const [nazev, setNazev] = useState("");
@@ -1103,11 +1132,11 @@ function DodavateleView() {
             <Truck size={28} style={{ color: "var(--green-primary)" }} strokeWidth={1.5} />
           </div>
           <div className="text-center">
-            <p className="font-bold text-base mb-1" style={{ color: "var(--text-primary)" }}>Žádní dodavatelé</p>
-            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>Přidejte dodavatele pro rychlý přístup ke kontaktům.</p>
+            <p className="font-bold text-base mb-1" style={{ color: "var(--text-primary)" }}>{t("provoz.zadniDodavatele")}</p>
+            <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("provoz.dodavateleDesc")}</p>
           </div>
           <button className="btn-primary" style={{ width: "auto", paddingLeft: 24, paddingRight: 24 }} onClick={() => setShowAdd(true)}>
-            <Plus size={16} /> Přidat dodavatele
+            <Plus size={16} /> {t("provoz.pridatDodavatele")}
           </button>
         </div>
       ) : (
@@ -1148,26 +1177,26 @@ function DodavateleView() {
 
           {showAdd ? (
             <div className="card p-4 space-y-3 animate-fade-in">
-              <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>Nový dodavatel</p>
+              <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{t("provoz.novyDodavatel")}</p>
               {[
-                { label: "Název *", value: nazev, set: setNazev, placeholder: "Makro, Albert, řezník..." },
-                { label: "Telefon", value: telefon, set: setTelefon, placeholder: "+420 xxx xxx xxx" },
-                { label: "Email", value: email, set: setEmail, placeholder: "objednavky@..." },
-                { label: "Poznámka", value: poznamka, set: setPoznamka, placeholder: "Pondělí–Pátek do 10h..." },
+                { labelKey: "provoz.dod.nazev", value: nazev, set: setNazev, placeholderKey: "provoz.dod.nazevPlaceholder" },
+                { labelKey: "provoz.dod.telefon", value: telefon, set: setTelefon, placeholderKey: "provoz.dod.telefonPlaceholder" },
+                { labelKey: "provoz.dod.email", value: email, set: setEmail, placeholderKey: "provoz.dod.emailPlaceholder" },
+                { labelKey: "provoz.dod.poznamka", value: poznamka, set: setPoznamka, placeholderKey: "provoz.dod.poznamkaPlaceholder" },
               ].map(f => (
-                <div key={f.label}>
-                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{f.label}</label>
-                  <input value={f.value} onChange={e => f.set(e.target.value)} placeholder={f.placeholder}
+                <div key={f.labelKey}>
+                  <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t(f.labelKey)}</label>
+                  <input value={f.value} onChange={e => f.set(e.target.value)} placeholder={t(f.placeholderKey)}
                     className="w-full px-3 py-2 rounded-xl text-sm outline-none"
                     style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
                 </div>
               ))}
               <div className="flex gap-2">
                 <button onClick={save} className="flex-1 py-2.5 rounded-2xl text-sm font-bold" style={{ background: "var(--green-primary)", color: "white" }}>
-                  Uložit
+                  {t("common.save")}
                 </button>
                 <button onClick={() => setShowAdd(false)} className="flex-1 py-2.5 rounded-2xl text-sm font-bold" style={{ background: "var(--border)", color: "var(--text-secondary)" }}>
-                  Zrušit
+                  {t("common.cancel")}
                 </button>
               </div>
             </div>
@@ -1175,7 +1204,7 @@ function DodavateleView() {
             <button onClick={() => setShowAdd(true)}
               className="w-full py-3 rounded-2xl text-sm font-semibold flex items-center justify-center gap-2"
               style={{ background: "white", color: "var(--green-primary)", border: "1.5px dashed var(--green-primary)" }}>
-              <Plus size={16} /> Přidat dodavatele
+              <Plus size={16} /> {t("provoz.pridatDodavatele")}
             </button>
           )}
         </div>
@@ -1186,20 +1215,21 @@ function DodavateleView() {
 
 // ── Co dokoupit (kritické zásoby) ─────────────────────────────────────────────
 function CoDokoupit() {
-  const { polozky, getPolozkyCritical } = useProvozStore();
+  const t = useT();
+  const { getPolozkyCritical } = useProvozStore();
   const critical = getPolozkyCritical();
   if (critical.length === 0) return null;
   return (
     <div style={{ marginBottom: 16 }}>
       <p style={{ fontSize: 11, fontWeight: 700, color: "#E65100", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
-        🛒 Co dokoupit ({critical.length})
+        {t("provoz.coDokoupit").replace("{n}", String(critical.length))}
       </p>
       <div style={{ background: "#FFF3E0", border: "1px solid #FFE0B2", borderRadius: 16, overflow: "hidden" }}>
         {critical.map((p, idx) => (
           <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", borderBottom: idx < critical.length - 1 ? "1px solid #FFE0B2" : "none" }}>
             <div>
               <p style={{ fontSize: 13, fontWeight: 700, color: "#BF360C", margin: 0 }}>{p.nazev}</p>
-              <p style={{ fontSize: 11, color: "#E65100", margin: 0 }}>Min. zásoba: {p.minZasoba} {p.jednotka}</p>
+              <p style={{ fontSize: 11, color: "#E65100", margin: 0 }}>{t("provoz.minZasobaLabel").replace("{n}", String(p.minZasoba)).replace("{j}", p.jednotka)}</p>
             </div>
             <AlertTriangle size={16} style={{ color: "#F57C00" }} />
           </div>
@@ -1213,6 +1243,7 @@ function CoDokoupit() {
 type ProvozTab = "inventura" | "sklad" | "historie" | "dodavatele";
 
 export function ProvozView() {
+  const t = useT();
   const { polozky, inventury, vytvorInventuru, aktivniInventuraId, setAktivniInventura } = useProvozStore();
   const [tab, setTab] = useState<ProvozTab>("inventura");
   const [showNazevModal, setShowNazevModal] = useState(false);
@@ -1229,11 +1260,11 @@ export function ProvozView() {
     setTab("inventura");
   };
 
-  const TABS: { id: ProvozTab; label: string; icon: React.ReactNode }[] = [
-    { id: "inventura", label: "Inventura", icon: <ClipboardList size={15} /> },
-    { id: "sklad", label: "Sklad", icon: <Package size={15} /> },
-    { id: "historie", label: "Historie", icon: <BarChart3 size={15} /> },
-    { id: "dodavatele", label: "Dodavatelé", icon: <Truck size={15} /> },
+  const TABS: { id: ProvozTab; labelKey: string; icon: React.ReactNode }[] = [
+    { id: "inventura", labelKey: "provoz.tab.inventura", icon: <ClipboardList size={15} /> },
+    { id: "sklad", labelKey: "provoz.tab.sklad", icon: <Package size={15} /> },
+    { id: "historie", labelKey: "provoz.tab.historie", icon: <BarChart3 size={15} /> },
+    { id: "dodavatele", labelKey: "provoz.tab.dodavatele", icon: <Truck size={15} /> },
   ];
 
   return (
@@ -1242,17 +1273,17 @@ export function ProvozView() {
 
         {/* Interní navigace */}
         <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto", scrollbarWidth: "none" }}>
-          {TABS.map(t => (
-            <button key={t.id} onClick={() => setTab(t.id)}
+          {TABS.map(tb => (
+            <button key={tb.id} onClick={() => setTab(tb.id)}
               style={{
                 flexShrink: 0, display: "flex", alignItems: "center", gap: 6,
-                padding: "8px 14px", borderRadius: 20, fontSize: 13, fontWeight: tab === t.id ? 700 : 500,
-                background: tab === t.id ? "var(--green-primary)" : "white",
-                color: tab === t.id ? "white" : "var(--text-secondary)",
+                padding: "8px 14px", borderRadius: 20, fontSize: 13, fontWeight: tab === tb.id ? 700 : 500,
+                background: tab === tb.id ? "var(--green-primary)" : "white",
+                color: tab === tb.id ? "white" : "var(--text-secondary)",
                 boxShadow: "0 1px 4px rgba(0,0,0,0.08)", border: "none",
                 whiteSpace: "nowrap",
               }}>
-              {t.icon} {t.label}
+              {tb.icon} {t(tb.labelKey)}
             </button>
           ))}
         </div>
@@ -1269,14 +1300,14 @@ export function ProvozView() {
                 {rozpracovane.length > 0 && (
                   <div className="mb-4">
                     <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>
-                      Rozpracované
+                      {t("provoz.rozpracovane")}
                     </p>
                     {rozpracovane.map(inv => (
                       <button key={inv.id} onClick={() => setAktivniInventura(inv.id)}
                         className="card w-full p-4 mb-2 flex items-center justify-between text-left">
                         <div>
                           <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{inv.nazev}</p>
-                          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{inv.datum} · {inv.zaznamy.length}/{polozky.length} položek</p>
+                          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{inv.datum} · {t("provoz.polozekZ").replace("{a}", String(inv.zaznamy.length)).replace("{b}", String(polozky.length))}</p>
                         </div>
                         <ChevronRight size={16} style={{ color: "var(--text-tertiary)" }} />
                       </button>
@@ -1288,13 +1319,13 @@ export function ProvozView() {
                 {polozky.length === 0 ? (
                   <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                     <div style={{ textAlign: "center", padding: "16px 0 8px" }}>
-                      <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>Jak začít s Provozem?</p>
-                      <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>3 jednoduché kroky k první inventuře</p>
+                      <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", marginBottom: 4 }}>{t("provoz.jakZacit")}</p>
+                      <p style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t("provoz.triKroky")}</p>
                     </div>
                     {[
-                      { step: 1, icon: <Package size={20} style={{ color: "var(--green-primary)" }} />, title: "Nastavte sklad", desc: "Přidejte položky, které chcete sledovat — suroviny, nápoje, zásoby.", action: () => setTab("sklad"), btn: "Přejít na Sklad →" },
-                      { step: 2, icon: <ClipboardList size={20} style={{ color: "#E8862E" }} />, title: "Spusťte inventuru", desc: "Projděte sklad a zadejte skutečné množství každé položky.", action: null, btn: null },
-                      { step: 3, icon: <FileText size={20} style={{ color: "#E87D35" }} />, title: "Exportujte výsledky", desc: "Stáhněte PDF nebo Excel report pro evidenci nebo účetnictví.", action: null, btn: null },
+                      { step: 1, icon: <Package size={20} style={{ color: "var(--green-primary)" }} />, title: t("provoz.krok1.title"), desc: t("provoz.krok1.desc"), action: () => setTab("sklad"), btn: t("provoz.krok1.btn") },
+                      { step: 2, icon: <ClipboardList size={20} style={{ color: "#E8862E" }} />, title: t("provoz.krok2.title"), desc: t("provoz.krok2.desc"), action: null, btn: null },
+                      { step: 3, icon: <FileText size={20} style={{ color: "#E87D35" }} />, title: t("provoz.krok3.title"), desc: t("provoz.krok3.desc"), action: null, btn: null },
                     ].map(({ step, icon, title, desc, action, btn }) => (
                       <div key={step} style={{ display: "flex", gap: 14, padding: "14px 16px", background: "white", borderRadius: 16, boxShadow: "0 1px 4px rgba(0,0,0,0.06)", border: "1.5px solid var(--border)", opacity: step === 1 ? 1 : 0.55 }}>
                         <div style={{ width: 38, height: 38, borderRadius: "50%", background: step === 1 ? "var(--green-light)" : "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -1302,7 +1333,7 @@ export function ProvozView() {
                         </div>
                         <div style={{ flex: 1 }}>
                           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 3 }}>
-                            <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-tertiary)" }}>KROK {step}</span>
+                            <span style={{ fontSize: 10, fontWeight: 700, color: "var(--text-tertiary)" }}>{t("provoz.krok").replace("{n}", String(step))}</span>
                           </div>
                           <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", marginBottom: 3 }}>{title}</p>
                           <p style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.5 }}>{desc}</p>
@@ -1321,13 +1352,13 @@ export function ProvozView() {
                       <ClipboardList size={32} style={{ color: "var(--green-primary)" }} strokeWidth={1.5} />
                     </div>
                     <div className="text-center">
-                      <p className="font-bold text-lg mb-1" style={{ color: "var(--text-primary)" }}>Spustit inventuru</p>
+                      <p className="font-bold text-lg mb-1" style={{ color: "var(--text-primary)" }}>{t("provoz.spustitInventuru")}</p>
                       <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
-                        Projdete {polozky.length} položek a zadáte skutečné stavy.
+                        {t("provoz.projdetePolozek").replace("{n}", String(polozky.length))}
                       </p>
                     </div>
                     <button className="btn-primary" style={{ width: "auto", paddingLeft: 28, paddingRight: 28 }} onClick={() => setShowNazevModal(true)}>
-                      <ClipboardList size={16} /> Začít inventuru
+                      <ClipboardList size={16} /> {t("provoz.zacitInventuru")}
                     </button>
                   </div>
                 )}
@@ -1347,16 +1378,16 @@ export function ProvozView() {
           <div onClick={() => setShowNazevModal(false)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
           <div className="relative rounded-t-3xl px-5 pt-5 pb-10 space-y-4 animate-slide-up"
             style={{ background: "var(--bg-primary)", paddingBottom: "max(40px, env(safe-area-inset-bottom, 40px))" }}>
-            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>Název inventury</h3>
+            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("provoz.nazevInventury")}</h3>
             <input
               autoFocus value={novyNazev} onChange={e => setNovyNazev(e.target.value)}
               onKeyDown={e => e.key === "Enter" && handleVytvorit()}
-              placeholder="např. Týdenní inventura, Inventura alkoholu..."
+              placeholder={t("provoz.nazevInventuryPlaceholder")}
               className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
               style={{ background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
             />
             <button onClick={handleVytvorit} className="btn-primary" disabled={!novyNazev.trim()}>
-              <ClipboardList size={16} /> Spustit inventuru
+              <ClipboardList size={16} /> {t("provoz.spustitInventuru")}
             </button>
           </div>
         </div>
