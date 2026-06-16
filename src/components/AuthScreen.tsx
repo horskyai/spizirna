@@ -14,7 +14,9 @@ export function AuthScreen() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
-  const { signIn, signUp } = useAuthStore();
+  // "auth" = login/registrace, "reset" = zadání e-mailu, "resetSent" = potvrzení
+  const [view, setView] = useState<"auth" | "reset" | "resetSent">("auth");
+  const { signIn, signUp, resetPassword } = useAuthStore();
 
   // Přeloží nejčastější anglické chyby ze Supabase do zvoleného jazyka.
   const translateError = (msg: string): string => {
@@ -48,6 +50,70 @@ export function AuthScreen() {
     if (err) setError(translateError(err));
     setLoading(false);
   };
+
+  const submitReset = async () => {
+    setError(null);
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError(t("auth.errEmail")); return; }
+    setLoading(true);
+    const err = await resetPassword(email);
+    setLoading(false);
+    // Pro bezpečnost potvrzení ukážeme i tak (neprozrazujeme, zda účet existuje).
+    if (err) { setError(translateError(err)); return; }
+    setView("resetSent");
+  };
+
+  // Obrazovka: zadání e-mailu pro obnovu hesla
+  if (view === "reset") {
+    return (
+      <div className="flex flex-col min-h-dvh px-5 justify-center" style={{ background: "var(--bg-primary)", paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
+        <div className="flex flex-col items-center mb-6">
+          <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-3" style={{ background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)", boxShadow: "0 6px 20px rgba(76,175,130,0.4)" }}>
+            <Lock size={26} color="white" />
+          </div>
+          <h1 className="text-xl font-bold" style={{ color: "var(--text-primary)" }}>{t("auth.resetTitle")}</h1>
+          <p className="text-xs mt-1 text-center px-6" style={{ color: "var(--text-secondary)" }}>{t("auth.resetHint")}</p>
+        </div>
+        <div className="space-y-2.5">
+          <div style={{ position: "relative" }}>
+            <Mail size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
+            <input
+              type="email"
+              value={email}
+              onChange={e => setEmail(e.target.value)}
+              placeholder={t("auth.emailPlaceholder")}
+              onKeyDown={e => e.key === "Enter" && submitReset()}
+              style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+            />
+          </div>
+          {error && <p className="text-sm px-1" style={{ color: "#C0392B" }}>{error}</p>}
+          <button onClick={submitReset} disabled={loading} className="btn-primary" style={{ opacity: loading ? 0.7 : 1 }}>
+            {loading ? t("auth.loading") : t("auth.resetSend")}
+          </button>
+          <button onClick={() => { setView("auth"); setError(null); }} className="text-sm w-full text-center py-1" style={{ color: "var(--text-secondary)" }}>
+            {t("auth.resetBack")}
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Obrazovka: potvrzení odeslání resetu
+  if (view === "resetSent") {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-dvh px-6 text-center" style={{ background: "var(--bg-primary)" }}>
+        <div className="w-20 h-20 rounded-full flex items-center justify-center mb-6" style={{ background: "var(--green-light)" }}>
+          <Mail size={36} style={{ color: "var(--green-primary)" }} />
+        </div>
+        <h2 className="text-2xl font-bold mb-2" style={{ color: "var(--text-primary)" }}>{t("auth.resetSentTitle")}</h2>
+        <p className="text-sm mb-6" style={{ color: "var(--text-secondary)" }}>
+          {t("auth.resetSent")} <b>{email}</b> {t("auth.resetSentTail")}
+        </p>
+        <button onClick={() => { setView("auth"); setMode("login"); setError(null); }} className="btn-primary" style={{ width: "auto", paddingLeft: 32, paddingRight: 32 }}>
+          {t("auth.resetBack")}
+        </button>
+      </div>
+    );
+  }
 
   if (success) {
     return (
@@ -136,6 +202,16 @@ export function AuthScreen() {
 
         {error && (
           <p className="text-sm px-1" style={{ color: "#C0392B" }}>{error}</p>
+        )}
+
+        {mode === "login" && (
+          <button
+            onClick={() => { setView("reset"); setError(null); }}
+            className="text-xs w-full text-right px-1 -mt-0.5"
+            style={{ color: "var(--green-primary)", fontWeight: 600 }}
+          >
+            {t("auth.forgotPassword")}
+          </button>
         )}
 
         <button

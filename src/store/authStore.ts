@@ -23,6 +23,10 @@ interface AuthStore {
   // potvrzování e-mailem, vznikne rovnou session a needsConfirmation = false.
   signUp: (email: string, password: string, name: string) => Promise<{ error: string | null; needsConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<string | null>;
+  // Pošle e-mail s odkazem na obnovu hesla (text e-mailu řídí Supabase šablona).
+  resetPassword: (email: string) => Promise<string | null>;
+  // Nastaví nové heslo přihlášenému uživateli (po kliknutí na odkaz z e-mailu).
+  updatePassword: (newPassword: string) => Promise<string | null>;
   signOut: () => Promise<void>;
   isTrialActive: () => boolean;
   isPaidPlan: () => boolean;
@@ -67,6 +71,17 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   signIn: async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return error?.message ?? null;
+  },
+
+  resetPassword: async (email) => {
+    const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/reset` : undefined;
+    const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+    return error?.message ?? null;
+  },
+
+  updatePassword: async (newPassword) => {
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
     return error?.message ?? null;
   },
 

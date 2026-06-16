@@ -48,4 +48,38 @@ export const auth: Record<string, Translation> = {
   "auth.checkEmail": { cs: "Zkontrolujte email", sk: "Skontrolujte e-mail" },
   "auth.confirmSent": { cs: "Poslali jsme vám potvrzovací odkaz na", sk: "Poslali sme vám potvrdzovací odkaz na" },
   "auth.confirmThenLogin": { cs: "Po potvrzení se přihlaste.", sk: "Po potvrdení sa prihláste." },
+
+  // ── Zapomenuté heslo ──
+  "auth.forgotPassword": { cs: "Zapomněli jste heslo?", sk: "Zabudli ste heslo?" },
+  "auth.resetTitle": { cs: "Obnova hesla", sk: "Obnova hesla" },
+  "auth.resetHint": {
+    cs: "Zadejte e-mail a pošleme vám odkaz pro nastavení nového hesla.",
+    sk: "Zadajte e-mail a pošleme vám odkaz na nastavenie nového hesla.",
+  },
+  "auth.resetSend": { cs: "Odeslat odkaz", sk: "Odoslať odkaz" },
+  "auth.resetBack": { cs: "Zpět na přihlášení", sk: "Späť na prihlásenie" },
+  "auth.resetSentTitle": { cs: "Odkaz odeslán", sk: "Odkaz odoslaný" },
+  "auth.resetSent": {
+    cs: "Pokud k tomuto e-mailu existuje účet, poslali jsme na",
+    sk: "Ak k tomuto e-mailu existuje účet, poslali sme na",
+  },
+  "auth.resetSentTail": {
+    cs: "odkaz pro obnovu hesla.",
+    sk: "odkaz na obnovu hesla.",
+  },
+
+  // ── Nastavení nového hesla (stránka /reset) ──
+  "auth.newPasswordTitle": { cs: "Nové heslo", sk: "Nové heslo" },
+  "auth.newPasswordHint": { cs: "Zadejte nové heslo k vašemu účtu.", sk: "Zadajte nové heslo k vášmu účtu." },
+  "auth.newPasswordPlaceholder": { cs: "Nové heslo", sk: "Nové heslo" },
+  "auth.newPasswordConfirm": { cs: "Heslo znovu", sk: "Heslo znova" },
+  "auth.newPasswordSave": { cs: "Uložit heslo", sk: "Uložiť heslo" },
+  "auth.errPasswordMatch": { cs: "Hesla se neshodují", sk: "Heslá sa nezhodujú" },
+  "auth.newPasswordDone": { cs: "Heslo bylo změněno", sk: "Heslo bolo zmenené" },
+  "auth.newPasswordDoneHint": { cs: "Nyní se můžete přihlásit novým heslem.", sk: "Teraz sa môžete prihlásiť novým heslom." },
+  "auth.resetLinkInvalid": {
+    cs: "Odkaz pro obnovu je neplatný nebo vypršel. Požádejte o nový.",
+    sk: "Odkaz na obnovu je neplatný alebo vypršal. Požiadajte o nový.",
+  },
+  "auth.goToApp": { cs: "Pokračovat do aplikace", sk: "Pokračovať do aplikácie" },
 };

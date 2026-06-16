@@ -18,10 +18,26 @@ Hotovo — registrace teď nepošle žádný e-mail a uživatel jde rovnou do ap
 
 ---
 
-## 2) (Volitelné) Dvojjazyčné šablony e-mailů
+## 1b) Reset hesla — Redirect URL
 
-Pokud někdy potvrzování zapneš zpět, nebo chceš lokalizovat reset hesla,
-zkopíruj níže uvedené HTML do dashboardu:
+Obnova hesla je v aplikaci napojená: na přihlašovací obrazovce je odkaz
+**„Zapomněli jste heslo?"**, který pošle e-mail s odkazem. Odkaz vede na stránku
+`/reset`, kde uživatel zadá nové heslo.
+
+Aby Supabase ten odkaz povolil, přidej `/reset` mezi povolené redirecty:
+
+**Supabase Dashboard → Authentication → URL Configuration → Redirect URLs**
+- Přidej `https://<tvoje-doména>/reset` (a pro vývoj `http://localhost:3000/reset`).
+
+V šabloně **Reset password** níže musí být odkaz `{{ .ConfirmationURL }}` —
+ten už na `/reset` ukazuje sám (řídí ho `redirectTo` v kódu).
+
+---
+
+## 2) Dvojjazyčné šablony e-mailů
+
+Reset hesla používá šablonu níže. Confirm signup / Magic Link jsou volitelné
+(potvrzování je teď vypnuté). Zkopíruj HTML do dashboardu:
 
 **Supabase Dashboard → Authentication → Emails → Templates**
 
