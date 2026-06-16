@@ -38,10 +38,10 @@ export const auth: Record<string, Translation> = {
 
   // ── Poznámka o zkušební době ──
   "auth.trialNote": { cs: "Po registraci máte", sk: "Po registrácii máte" },
-  "auth.trialDays": { cs: "14 dní zdarma", sk: "14 dní zadarmo" },
+  "auth.trialDays": { cs: "2 týdny zdarma", sk: "2 týždne zadarmo" },
   "auth.planNote": {
-    cs: "Základní plán 99 Kč/měsíc, Rodinný 149 Kč/měsíc.",
-    sk: "Základný plán 99 Kč/mesiac, Rodinný 149 Kč/mesiac.",
+    cs: "Domácnost 119 Kč/měsíc, Provozovna 219 Kč/měsíc.",
+    sk: "Domácnosť 119 Kč/mesiac, Prevádzka 219 Kč/mesiac.",
   },
 
   // ── Úspěšná registrace ──

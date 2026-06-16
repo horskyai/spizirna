@@ -97,3 +97,52 @@ Subject: `Přihlášení · Prihlásenie — Spižírna`
 Aby Čech dostal jen CS a Slovák jen SK e-mail, by se muselo přejít na vlastní
 posílání (Supabase **Auth Hook** / vlastní SMTP s logikou podle jazyka). To je
 výrazně víc práce na backendu — dvojjazyčná šablona výše je praktický kompromis.
+
+---
+
+## 3) Vlastní SMTP (Resend) — aby e-maily chodily česky/slovensky
+
+**Proč:** Bez vlastního SMTP posílá Supabase e-maily ze sdíleného serveru — chodí
+**anglicky** (nejde editovat šablonu) a s limitem pár e-mailů/hodinu. Vlastní SMTP
+odemkne editaci šablon (vložíš dvojjazyčný text výše) a zruší limit.
+
+**Čeká na:** vlastní doménu (např. spizirna.cz). Bez domény jde jen Resend test
+režim (chodí z onboarding@resend.dev jen na tvůj ověřený e-mail — pro test, ne pro
+reálné uživatele).
+
+### Postup krok za krokem (až bude doména)
+
+**A) Resend účet + doména**
+1. Registrace na **resend.com** (free tier: 3 000 e-mailů/měsíc).
+2. **Domains → Add Domain** → zadej svou doménu (např. `spizirna.cz`).
+3. Resend ukáže pár **DNS záznamů** (SPF, DKIM, většinou TXT/CNAME). Ty přidej
+   u svého registrátora domény (kde jsi doménu koupil → správa DNS).
+4. Počkej na ověření (pár minut až hodin). Až je doména „Verified", pokračuj.
+
+**B) SMTP údaje z Resendu**
+5. V Resendu **API Keys → Create API Key** (nebo sekce SMTP) → získáš:
+   - Host: `smtp.resend.com`
+   - Port: `465` (SSL) nebo `587` (TLS)
+   - User: `resend`
+   - Password: tvůj **API klíč** (začíná `re_...`)
+
+**C) Zapojení do Supabase**
+6. **Supabase Dashboard → Project Settings → Authentication → SMTP Settings**
+   (nebo Authentication → Emails → SMTP).
+7. Zapni **Custom SMTP** a vyplň:
+   - Sender email: `noreply@spizirna.cz` (musí být na ověřené doméně!)
+   - Sender name: `Spižírna`
+   - Host / Port / User / Password z kroku 5.
+8. Ulož.
+
+**D) Vložit dvojjazyčné šablony**
+9. Teď už **Authentication → Emails → Templates** dovolí editaci (Subject + Body).
+   Vlož HTML šablony ze sekce 2 výše (Confirm signup / Reset password / Magic Link).
+
+**E) Test**
+10. V appce zkus „Zapomněli jste heslo?" → e-mail by měl dorazit z `noreply@spizirna.cz`,
+    dvojjazyčně (CZ + SK), bez limitu.
+
+> Pozn.: Sender email musí být na **ověřené doméně** v Resendu. Z Gmailu
+> (`spizirnacz@gmail.com`) odesílat přes Resend NELZE — Gmail je jen kontaktní
+> schránka, ne odesílací doména.
