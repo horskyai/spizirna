@@ -1,8 +1,0 @@
-Nastaveni: pryc s prepinanim rezimu, denni cil jen v domacnosti
-
-- Smazana sekce "Rezim" - rezim se vybira jen jednou pri onboardingu,
-  uzivatel ho v nastaveni nesmi prepinat
-- Sekce "Denni cil" se zobrazi jen v rezimu domacnost (pro provozovnu
-  nedava smysl)
-
-Co-Authored-By: Claude Opus 4.8 (1M context) <noreply@anthropic.com>
