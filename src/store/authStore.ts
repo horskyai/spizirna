@@ -19,7 +19,9 @@ interface AuthStore {
   profile: Profile | null;
   loading: boolean;
   init: () => Promise<void>;
-  signUp: (email: string, password: string, name: string) => Promise<string | null>;
+  // signUp vrací { error, needsConfirmation } — pokud je v Supabase vypnuté
+  // potvrzování e-mailem, vznikne rovnou session a needsConfirmation = false.
+  signUp: (email: string, password: string, name: string) => Promise<{ error: string | null; needsConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<string | null>;
   signOut: () => Promise<void>;
   isTrialActive: () => boolean;
@@ -52,12 +54,15 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   signUp: async (email, password, name) => {
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: { data: { display_name: name } },
     });
-    return error?.message ?? null;
+    // Když je session rovnou k dispozici, potvrzování e-mailem je vypnuté
+    // a uživatel je přihlášený (onAuthStateChange ho pustí dovnitř).
+    const needsConfirmation = !error && !data.session;
+    return { error: error?.message ?? null, needsConfirmation };
   },
 
   signIn: async (email, password) => {

@@ -14,6 +14,7 @@ export const auth: Record<string, Translation> = {
   "auth.namePlaceholder": { cs: "Jméno", sk: "Meno" },
   "auth.emailPlaceholder": { cs: "Email", sk: "E-mail" },
   "auth.passwordPlaceholder": { cs: "Heslo", sk: "Heslo" },
+  "auth.passwordHint": { cs: "Alespoň 8 znaků", sk: "Aspoň 8 znakov" },
 
   // ── Tlačítka / stavy ──
   "auth.loading": { cs: "Načítám...", sk: "Načítavam..." },
@@ -21,6 +22,19 @@ export const auth: Record<string, Translation> = {
 
   // ── Chybové hlášky ──
   "auth.errEnterName": { cs: "Zadejte jméno", sk: "Zadajte meno" },
+  "auth.errEmail": { cs: "Zadejte platný e-mail", sk: "Zadajte platný e-mail" },
+  "auth.errPassword": {
+    cs: "Heslo musí mít alespoň 8 znaků",
+    sk: "Heslo musí mať aspoň 8 znakov",
+  },
+  "auth.errInvalidLogin": {
+    cs: "Nesprávný e-mail nebo heslo",
+    sk: "Nesprávny e-mail alebo heslo",
+  },
+  "auth.errEmailTaken": {
+    cs: "Tento e-mail je už zaregistrovaný",
+    sk: "Tento e-mail je už zaregistrovaný",
+  },
 
   // ── Poznámka o zkušební době ──
   "auth.trialNote": { cs: "Po registraci máte", sk: "Po registrácii máte" },

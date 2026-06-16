@@ -3,6 +3,7 @@
 import { useState, useEffect, Component, ReactNode } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { useModeStore } from "@/store/modeStore";
+import { useAuthStore } from "@/store/authStore";
 import { TabBar } from "@/components/TabBar";
 import { AppHeader } from "@/components/AppHeader";
 import { PantryView } from "@/components/PantryView";
@@ -15,6 +16,8 @@ import { ProvozView } from "@/components/ProvozView";
 import { ProductSheet } from "@/components/ProductSheet";
 import { ModeSelect } from "@/components/ModeSelect";
 import { LanguageSelect } from "@/components/LanguageSelect";
+import { AuthScreen } from "@/components/AuthScreen";
+import { SettingsModal } from "@/components/SettingsModal";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   constructor(props: { children: ReactNode }) {
@@ -43,6 +46,13 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
 export default function Home() {
   const { activeTab, activeSheet, scannedProduct, closeSheet } = useUIStore();
   const { mode } = useModeStore();
+  const { user, loading: authLoading, init: authInit } = useAuthStore();
+  const [showSettings, setShowSettings] = useState(false);
+
+  // Inicializace přihlášení — načte session ze Supabase a poslouchá změny
+  useEffect(() => {
+    authInit();
+  }, [authInit]);
 
   // Úplný reset aplikace: otevřením /?reset se smažou všechna lokální data
   // a appka začne od splash screenu a onboardingu jako při první instalaci
@@ -85,10 +95,26 @@ export default function Home() {
     );
   }
 
+  // 3) Přihlášení — dokud načítáme session, počkáme; bez přihlášení AuthScreen
+  if (authLoading) {
+    return (
+      <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-primary)" }}>
+        <div style={{ width: 36, height: 36, border: "3px solid var(--border)", borderTopColor: "var(--green-primary)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      </div>
+    );
+  }
+  if (!user) {
+    return (
+      <ErrorBoundary>
+        <AuthScreen />
+      </ErrorBoundary>
+    );
+  }
+
   return (
     <ErrorBoundary>
     <div className="relative flex-1 flex flex-col overflow-hidden" style={{ background: "var(--bg-primary)" }}>
-      <AppHeader />
+      <AppHeader onOpenSettings={() => setShowSettings(true)} />
 
       <main className="flex-1 overflow-hidden flex flex-col">
         {activeTab === "spizirna" && <PantryView />}
@@ -105,6 +131,8 @@ export default function Home() {
       {activeSheet === "product" && scannedProduct && (
         <ProductSheet product={scannedProduct} onClose={() => closeSheet()} fromScanner={activeTab === "skenovat"} />
       )}
+
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
 
     </div>
     </ErrorBoundary>

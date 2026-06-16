@@ -16,18 +16,36 @@ export function AuthScreen() {
   const [success, setSuccess] = useState(false);
   const { signIn, signUp } = useAuthStore();
 
+  // Přeloží nejčastější anglické chyby ze Supabase do zvoleného jazyka.
+  const translateError = (msg: string): string => {
+    const m = msg.toLowerCase();
+    if (m.includes("invalid login") || m.includes("invalid credentials")) return t("auth.errInvalidLogin");
+    if (m.includes("already registered") || m.includes("already been registered") || m.includes("user already")) return t("auth.errEmailTaken");
+    if (m.includes("password") && (m.includes("6") || m.includes("8") || m.includes("characters"))) return t("auth.errPassword");
+    if (m.includes("valid email") || m.includes("invalid email")) return t("auth.errEmail");
+    return msg; // neznámou chybu necháme tak, jak přišla
+  };
+
   const submit = async () => {
     setError(null);
+
+    // Validace na straně appky — hezká hláška ještě před voláním Supabase
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { setError(t("auth.errEmail")); return; }
+    if (mode === "signup" && !name.trim()) { setError(t("auth.errEnterName")); return; }
+    if (password.length < 8) { setError(t("auth.errPassword")); return; }
+
     setLoading(true);
     let err: string | null = null;
     if (mode === "login") {
       err = await signIn(email, password);
     } else {
-      if (!name.trim()) { setError(t("auth.errEnterName")); setLoading(false); return; }
-      err = await signUp(email, password, name);
-      if (!err) { setSuccess(true); setLoading(false); return; }
+      const res = await signUp(email, password, name);
+      err = res.error;
+      // Obrazovku „zkontrolujte e-mail" ukážeme jen když Supabase vyžaduje
+      // potvrzení. Pokud je potvrzování vypnuté, uživatel je rovnou přihlášen.
+      if (!err && res.needsConfirmation) { setSuccess(true); setLoading(false); return; }
     }
-    if (err) setError(err);
+    if (err) setError(translateError(err));
     setLoading(false);
   };
 
@@ -111,6 +129,10 @@ export function AuthScreen() {
             style={{ width: "100%", paddingLeft: 40, paddingRight: 16, paddingTop: 12, paddingBottom: 12, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
           />
         </div>
+
+        {mode === "signup" && !error && (
+          <p className="text-xs px-1" style={{ color: "var(--text-tertiary)" }}>{t("auth.passwordHint")}</p>
+        )}
 
         {error && (
           <p className="text-sm px-1" style={{ color: "#C0392B" }}>{error}</p>

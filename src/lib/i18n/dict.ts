@@ -18,6 +18,7 @@ import { addrecipe } from "./addrecipe";
 import { voice } from "./voice";
 import { prices } from "./prices";
 import { auth } from "./auth";
+import { settings } from "./settings";
 
 export interface Translation {
   cs: string;
@@ -40,4 +41,5 @@ export const DICT: Record<string, Translation> = {
   ...voice,
   ...prices,
   ...auth,
+  ...settings,
 };

@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useModeStore } from "@/store/modeStore";
-import { Plus, Bell, AlertTriangle, ScanLine, PenLine, Home, Briefcase } from "lucide-react";
+import { Plus, Bell, AlertTriangle, ScanLine, PenLine, Home, Briefcase, Settings } from "lucide-react";
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { daysUntil } from "@/lib/dateUtils";
@@ -20,7 +20,7 @@ const TITLES: Record<string, string> = {
   provoz: "header.title.provoz",
 };
 
-export function AppHeader() {
+export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const t = useT();
   const { activeTab, setTab } = useUIStore();
   const { mode } = useModeStore();
@@ -30,7 +30,9 @@ export function AppHeader() {
     cutoff.setDate(cutoff.getDate() + 3);
     return pantryItems.filter((i) => i.expires_at && new Date(i.expires_at) <= cutoff);
   }, [pantryItems]);
-  const expiringCount = expiringItems.length;
+  // Upozornění na expiraci respektuje přepínač v nastavení
+  const expiryNotifOn = typeof window === "undefined" || localStorage.getItem("expiry-notifications") !== "off";
+  const expiringCount = expiryNotifOn ? expiringItems.length : 0;
   const [showAddMenu, setShowAddMenu] = useState(false);
   const [showManual, setShowManual] = useState(false);
   const [showAddRecipe, setShowAddRecipe] = useState(false);
@@ -86,6 +88,14 @@ export function AppHeader() {
                 </button>
               )}
               <button
+                onClick={onOpenSettings}
+                className="w-10 h-10 rounded-full flex items-center justify-center"
+                style={{ background: "white", border: "1px solid var(--border)" }}
+                aria-label="Nastavení"
+              >
+                <Settings size={18} style={{ color: "var(--text-secondary)" }} />
+              </button>
+              <button
                 onClick={() => setShowAddMenu(true)}
                 className="w-10 h-10 rounded-full flex items-center justify-center transition-all"
                 style={{ background: "var(--green-primary)", boxShadow: "0 4px 14px rgba(76,175,130,0.4)" }}
@@ -114,6 +124,14 @@ export function AppHeader() {
                 <Plus size={19} color="white" strokeWidth={2.5} />
               </button>
             )}
+            <button
+              onClick={onOpenSettings}
+              className="w-10 h-10 rounded-full flex items-center justify-center"
+              style={{ background: "white", border: "1px solid var(--border)" }}
+              aria-label="Nastavení"
+            >
+              <Settings size={18} style={{ color: "var(--text-secondary)" }} />
+            </button>
           </div>
         </header>
       )}
