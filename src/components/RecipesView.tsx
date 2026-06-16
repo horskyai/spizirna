@@ -7,6 +7,7 @@ import { usePantryStore } from "@/store/pantryStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useUIStore } from "@/store/uiStore";
 import { useModeStore } from "@/store/modeStore";
+import { useProvozStore } from "@/store/provozStore";
 import { useRecipeStore } from "@/store/recipeStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
@@ -516,6 +517,7 @@ function TodaySuggestionWidget() {
   const t = useT();
   const locale = useLocale();
   const pantryItems = usePantryStore((s) => s.items);
+  const provozPolozky = useProvozStore((s) => s.polozky);
   const { recipes } = useRecipeStore();
   const recordCooked = useGamificationStore((s) => s.recordCooked);
   const addItems = useShoppingStore((s) => s.addItems);
@@ -524,8 +526,17 @@ function TodaySuggestionWidget() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [cookDone, setCookDone] = useState(false);
 
+  // Co uvařím dnes počítá podle aktuálního režimu: domácnost = spížírna,
+  // provoz = sklad provozovny. Sjednotíme na seznam názvů surovin.
+  const stockNames = useMemo(
+    () => appMode === "provoz"
+      ? provozPolozky.map((p) => p.nazev)
+      : pantryItems.map((p) => p.product.product_name),
+    [appMode, provozPolozky, pantryItems]
+  );
+
   const suggestion = useMemo(() => {
-    if (recipes.length === 0 || pantryItems.length === 0) return null;
+    if (recipes.length === 0 || stockNames.length === 0) return null;
 
     const STOP = new Set(["konzervovaná","konzervovaný","konzervované","čerstvý","čerstvá","čerstvé",
       "sušený","sušená","sušené","mražený","mražená","mražené","celý","celá","celé",
@@ -535,14 +546,15 @@ function TodaySuggestionWidget() {
         .map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, ""))
         .filter(w => w.length > 2 && !STOP.has(w));
 
+    const stockWords = stockNames.map((n) => keywords(n));
+
     const scored = recipes.map((r) => {
       let matched = 0;
       r.ingredients.forEach((ing) => {
         const ingWords = keywords(ing.name);
-        const found = pantryItems.some((p) => {
-          const prodWords = keywords(p.product.product_name);
-          return ingWords.some(iw => prodWords.some(pw => pw.includes(iw) || iw.includes(pw)));
-        });
+        const found = stockWords.some((prodWords) =>
+          ingWords.some(iw => prodWords.some(pw => pw.includes(iw) || iw.includes(pw)))
+        );
         if (found) matched++;
       });
       const total = r.ingredients.length || 1;
@@ -558,7 +570,7 @@ function TodaySuggestionWidget() {
     // refreshKey slouží k přepínání návrhu
     const idx = refreshKey % Math.min(best.length, 5);
     return best[idx];
-  }, [recipes, pantryItems, refreshKey]);
+  }, [recipes, stockNames, refreshKey]);
 
   if (!suggestion) return null;
 
