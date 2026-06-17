@@ -132,4 +132,26 @@ export const guide: Record<string, Translation> = {
     cs: "Appka spočítá celkovou hodnotu skladu. Inventuru vyexportuješ do PDF nebo CSV (Excel).",
     sk: "Appka spočíta celkovú hodnotu skladu. Inventúru vyexportuješ do PDF alebo CSV (Excel).",
   },
+
+  // ── Sklad v provozu (tab Spižírna ukazuje sklad) ──
+  "guide.sklad.title": { cs: "Sklad", sk: "Sklad" },
+  "guide.sklad.intro": {
+    cs: "Rychlý přehled toho, co máš ve skladu provozovny.",
+    sk: "Rýchly prehľad toho, čo máš v sklade prevádzky.",
+  },
+  "guide.sklad.s1t": { cs: "Přehled skladu", sk: "Prehľad skladu" },
+  "guide.sklad.s1d": {
+    cs: "Vidíš všechny položky skladu s množstvím, minimem a cenou. Co je pod minimem, se zvýrazní.",
+    sk: "Vidíš všetky položky skladu s množstvom, minimom a cenou. Čo je pod minimom, sa zvýrazní.",
+  },
+  "guide.sklad.s2t": { cs: "Přidávej položky", sk: "Pridávaj položky" },
+  "guide.sklad.s2d": {
+    cs: "Nové položky přidáš naskenováním, ručně nebo hlasem v sekci Provoz.",
+    sk: "Nové položky pridáš naskenovaním, ručne alebo hlasom v sekcii Prevádzka.",
+  },
+  "guide.sklad.s3t": { cs: "Inventura", sk: "Inventúra" },
+  "guide.sklad.s3d": {
+    cs: "Pro plnou inventuru a export přejdi do sekce Provoz.",
+    sk: "Pre plnú inventúru a export prejdi do sekcie Prevádzka.",
+  },
 };

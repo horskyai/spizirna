@@ -15,6 +15,8 @@ import { useT } from "@/lib/i18n";
 // Skener má vlastní nápovědu, proto tu není.
 const GUIDES: Record<string, { id: string; title: string; intro: string; steps: string[] }> = {
   spizirna: { id: "pantry", title: "guide.pantry.title", intro: "guide.pantry.intro", steps: ["guide.pantry.s1", "guide.pantry.s2", "guide.pantry.s3"] },
+  // V provozu tab Spižírna ukazuje sklad → vlastní příručka o skladu.
+  spizirna_provoz: { id: "sklad", title: "guide.sklad.title", intro: "guide.sklad.intro", steps: ["guide.sklad.s1", "guide.sklad.s2", "guide.sklad.s3"] },
   recepty: { id: "recipes", title: "guide.recipes.title", intro: "guide.recipes.intro", steps: ["guide.recipes.s1", "guide.recipes.s2", "guide.recipes.s3"] },
   nakup: { id: "shopping", title: "guide.shopping.title", intro: "guide.shopping.intro", steps: ["guide.shopping.s1", "guide.shopping.s2", "guide.shopping.s3"] },
   opakujici: { id: "recurring", title: "guide.recurring.title", intro: "guide.recurring.intro", steps: ["guide.recurring.s1", "guide.recurring.s2"] },
@@ -51,7 +53,9 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const title = t(TITLES[activeTab] ?? "header.title.spizirna");
 
   // Příručka aktuálního okna — poprvé se ukáže sama, pak přes "?".
-  const guideCfg = GUIDES[activeTab];
+  // V provozu má tab Spižírna příručku o skladu (ne o domácí spižírně).
+  const guideKey = activeTab === "spizirna" && mode === "provoz" ? "spizirna_provoz" : activeTab;
+  const guideCfg = GUIDES[guideKey];
   const guide = useScreenGuide(guideCfg?.id ?? "none");
   const hasGuide = !!guideCfg;
 
