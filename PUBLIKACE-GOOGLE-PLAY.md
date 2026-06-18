@@ -199,3 +199,26 @@ napojí na reálné notifikace, až bude Capacitor.
 4. **Předplatné** (RevenueCat + tlačítka + backend)
 5. **Push notifikace** (připomínky + návykové) — viz sekce 8
 6. **Interní test → vydání**
+
+---
+
+## 9) Supabase — provoz a důležité poznámky
+
+**Uspání projektu (Free plan):**
+- Po **7 dnech bez aktivity** se projekt uspí (Paused). Appka pak nefunguje
+  (přihlášení/data selžou), ale **data se neztratí**.
+- Probuzení: Supabase Dashboard → **Restore project** (pár minut).
+- Prevence: stačí se párkrát týdně přihlásit. Při testování s více lidmi
+  se obvykle udrží vzhůru sám.
+- **Při vydání na Google Play přejít na Pro plan (25 $/měs)** → projekt se
+  nikdy neuspí + odemkne vlastní SMTP (CZ/SK e-maily).
+
+**Provedené optimalizace databáze (2026-06):**
+- ✅ Trigger `handle_new_user` opravený (prázdný mode → NULL) + zpevněný
+  (search_path, EXECUTE odebráno) — registrace nepadá.
+- ✅ Indexy na všechny cizí klíče (rychlejší dotazy při škálování).
+- ✅ RLS policies zrychlené (`auth.uid()` → `(select auth.uid())`).
+- ✅ Všechny tabulky mají RLS (data uživatelů oddělená).
+
+**Limity Free planu:** ~50 000 aktivních uživatelů/měsíc, 500 MB DB,
+~3-4 auth e-maily/hodinu. Pro start dostačující.
