@@ -6,6 +6,7 @@ export const wheel: Record<string, Translation> = {
   "wheel.subtitle": { cs: "Zatoč kolem a získej roční předplatné se slevou", sk: "Zatoč kolesom a získaj ročné predplatné so zľavou" },
   "wheel.spin": { cs: "Zatočit kolem", sk: "Zatočiť kolesom" },
   "wheel.spinning": { cs: "Točí se…", sk: "Točí sa…" },
+  "wheel.wonTitle": { cs: "Vyhráli jste!", sk: "Vyhrali ste!" },
   "wheel.won": { cs: "Roční jen za 990 Kč místo 1 490 Kč!", sk: "Ročné len za 39,90 € namiesto 59,90 €!" },
   "wheel.wonHint": {
     cs: "Zvýhodněná cena se uplatní při přechodu na roční plán.",

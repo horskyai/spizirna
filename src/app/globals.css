@@ -291,6 +291,30 @@ body {
   50% { transform: translateY(-5px); }
 }
 
+/* Konfety — padají a otáčí se (kolo štěstí / výhra) */
+@keyframes confettiFall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(105vh) rotate(720deg); opacity: 0.9; }
+}
+.confetti-piece {
+  position: fixed;
+  top: 0;
+  width: 10px;
+  height: 14px;
+  border-radius: 2px;
+  z-index: 500;
+  animation: confettiFall linear forwards;
+  pointer-events: none;
+}
+
+/* Výherní pulz — text/odznak při výhře */
+@keyframes winPop {
+  0% { transform: scale(0.5); opacity: 0; }
+  60% { transform: scale(1.15); opacity: 1; }
+  100% { transform: scale(1); opacity: 1; }
+}
+.animate-win-pop { animation: winPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards; }
+
 @keyframes checkBounce {
   0% { transform: scale(1); }
   40% { transform: scale(1.35); }

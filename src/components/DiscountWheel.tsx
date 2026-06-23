@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useDiscountStore, DISCOUNT_YEARLY, REGULAR_YEARLY } from "@/store/discountStore";
+import { playWinFanfare, vibrateWin } from "@/lib/winFx";
+import { Confetti } from "@/components/Confetti";
 import { useT } from "@/lib/i18n";
 
 // Kolo štěstí — uvítací sleva na roční plán. Vždy dojede na zvýhodněnou
@@ -31,6 +33,9 @@ export function DiscountWheel({ onClose }: { onClose: () => void }) {
       setDone(true);
       setWon(DISCOUNT_YEARLY);
       setSpinning(false);
+      // Oslava výhry — fanfára, vibrace, konfety.
+      playWinFanfare();
+      vibrateWin();
     }, 4200);
   };
 
@@ -79,15 +84,15 @@ export function DiscountWheel({ onClose }: { onClose: () => void }) {
             {spinning ? t("wheel.spinning") : t("wheel.spin")}
           </button>
         ) : (
-          <>
-            <p className="text-lg font-bold mb-1" style={{ color: "var(--green-dark)" }}>
-              🎉 {t("wheel.won")}
-            </p>
+          <div className="animate-win-pop">
+            <p className="font-bold mb-1" style={{ fontSize: 26, color: "var(--text-primary)" }}>🎉 {t("wheel.wonTitle")}</p>
+            <p className="font-bold mb-1" style={{ fontSize: 20, color: "var(--green-dark)" }}>{t("wheel.won")}</p>
             <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>{t("wheel.wonHint")}</p>
             <button onClick={onClose} className="btn-primary">{t("wheel.claim")}</button>
-          </>
+          </div>
         )}
       </div>
+      {done && <Confetti />}
     </div>
   );
 }
