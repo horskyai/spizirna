@@ -90,23 +90,34 @@ function tone(ctx: AudioContext, f: number, start: number, d: number, vol: numbe
   osc.stop(start + d + 0.05);
 }
 
-// Oslavná fanfára na konci — výrazná vzestupná melodie + závěrečný akord.
+// Oslavná "jackpot" hudba — vrstvená: rychlé arpeggio, melodická linka,
+// basový tón a závěrečný třpytivý akord. Zní jako herní výhra.
 export function playWinFanfare() {
   const ctx = getCtx();
   if (!ctx) return;
   const base = ctx.currentTime + 0.03;
-  // Veselá melodie: G–C–E–G–vysoké C.
+
+  // 1) Rychlé vzestupné arpeggio (C–E–G–C–E–G–vysoké C) — "rozjezd" výhry.
+  const arp = [523.25, 659.25, 783.99, 1046.5, 1318.5, 1568.0, 2093.0];
+  arp.forEach((f, i) => tone(ctx, f, base + i * 0.06, 0.12, 0.18, "triangle"));
+
+  // 2) Melodická linka nad tím — výraznější, vítězná.
   const melody = [
-    { f: 392.0, t: 0.0, d: 0.13 },
-    { f: 523.25, t: 0.11, d: 0.13 },
-    { f: 659.25, t: 0.22, d: 0.13 },
-    { f: 783.99, t: 0.33, d: 0.13 },
-    { f: 1046.5, t: 0.44, d: 0.45 },
+    { f: 783.99, t: 0.42, d: 0.18 },
+    { f: 1046.5, t: 0.56, d: 0.18 },
+    { f: 1318.5, t: 0.70, d: 0.55 },
   ];
-  melody.forEach(({ f, t, d }) => tone(ctx, f, base + t, d, 0.32, "triangle"));
-  // Závěrečný durový akord (C–E–G) pro plný "vítězný" zvuk.
-  const chordStart = base + 0.44;
-  [523.25, 659.25, 783.99].forEach((f) => tone(ctx, f, chordStart, 0.6, 0.18, "sine"));
+  melody.forEach(({ f, t, d }) => tone(ctx, f, base + t, d, 0.3, "sine"));
+
+  // 3) Basový tón pro plnost.
+  tone(ctx, 130.81, base + 0.42, 0.8, 0.22, "sawtooth");
+
+  // 4) Závěrečný durový akord (C–E–G–C) — "zazvoní" výhra.
+  const chord = base + 0.70;
+  [523.25, 659.25, 783.99, 1046.5].forEach((f) => tone(ctx, f, chord, 0.9, 0.14, "sine"));
+
+  // 5) Třpyt — pár vysokých rychlých tónů navrch (jako jiskřičky).
+  [1568.0, 2093.0, 2637.0].forEach((f, i) => tone(ctx, f, base + 0.75 + i * 0.08, 0.25, 0.08, "triangle"));
 }
 
 // Jemné zavibrování (haptika), pokud to zařízení umí.

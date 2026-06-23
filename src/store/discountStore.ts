@@ -7,7 +7,7 @@ import { persist } from "zustand/middleware";
 
 export const DISCOUNT_YEARLY = 990;   // zvýhodněná roční cena z kola
 export const REGULAR_YEARLY = 1490;   // běžná roční cena
-export const WHEEL_AFTER_DAYS = 0;    // DOČASNĚ 0 kvůli testu vzhledu (vrátit na 7!)
+export const WHEEL_AFTER_DAYS = 7;    // kolo se nabídne po tolika dnech
 
 export interface DiscountStore {
   firstSeenAt: number | null; // čas prvního vstupu (ms), od něj počítáme 7 dní
