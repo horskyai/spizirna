@@ -29,7 +29,6 @@ export function ProgressBadge() {
   // Postup v rámci aktuální úrovně (0–100 %).
   const span = level.next === Infinity ? 1 : level.next - level.min;
   const progress = level.next === Infinity ? 100 : Math.min(100, Math.round(((score - level.min) / span) * 100));
-  const toNext = level.next === Infinity ? null : level.next - score;
 
   const streakText =
     streak === 0 ? t("game.streakZero")
@@ -43,39 +42,32 @@ export function ProgressBadge() {
 
   return (
     <div className="card overflow-hidden mb-4">
-      <div className="px-4 pt-3.5 pb-3">
-        {/* Úroveň + skóre */}
-        <div className="flex items-center gap-3 mb-2.5">
-          <span style={{ fontSize: 28, lineHeight: 1 }}>{level.emoji}</span>
-          <div className="flex-1 min-w-0">
-            <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{t(level.levelKey)}</p>
-            <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>
-              {toNext === null ? t("game.maxLevel") : t("game.toNext").replace("{n}", String(toNext))}
-            </p>
-          </div>
-          <span className="text-sm font-bold" style={{ color: "var(--green-dark)" }}>
-            {t("game.points").replace("{n}", String(score))}
+      <div className="px-3.5 py-2.5">
+        {/* Řádek: úroveň + body vlevo, série + zachráněno vpravo */}
+        <div className="flex items-center gap-2 mb-2">
+          <span style={{ fontSize: 18, lineHeight: 1 }}>{level.emoji}</span>
+          <span className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{t(level.levelKey)}</span>
+          <span className="text-xs font-bold" style={{ color: "var(--green-dark)" }}>
+            · {t("game.points").replace("{n}", String(score))}
           </span>
+          <div className="flex items-center gap-2.5 ml-auto">
+            <span className="flex items-center gap-1 text-xs font-medium" style={{ color: "var(--text-secondary)" }} title={streakText}>
+              <Flame size={13} style={{ color: streak > 0 ? "#F59E42" : "var(--text-tertiary)" }} />
+              {streak}
+            </span>
+            <span className="flex items-center gap-1 text-xs font-medium" style={{ color: "var(--text-secondary)" }} title={savedText}>
+              <Sprout size={13} style={{ color: totalSaved > 0 ? "var(--green-primary)" : "var(--text-tertiary)" }} />
+              {totalSaved}
+            </span>
+          </div>
         </div>
 
-        {/* Progress bar k další úrovni */}
-        <div className="h-2 rounded-full overflow-hidden mb-3" style={{ background: "var(--green-light)" }}>
+        {/* Tenký progress bar k další úrovni */}
+        <div className="h-1.5 rounded-full overflow-hidden" style={{ background: "var(--green-light)" }}>
           <div
             className="h-full rounded-full"
             style={{ width: `${progress}%`, background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)", transition: "width 0.4s ease" }}
           />
-        </div>
-
-        {/* Série + zachráněno */}
-        <div className="flex items-center gap-4">
-          <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-            <Flame size={14} style={{ color: streak > 0 ? "#F59E42" : "var(--text-tertiary)" }} />
-            {streakText}
-          </span>
-          <span className="flex items-center gap-1.5 text-xs font-medium" style={{ color: "var(--text-secondary)" }}>
-            <Sprout size={14} style={{ color: totalSaved > 0 ? "var(--green-primary)" : "var(--text-tertiary)" }} />
-            {savedText}
-          </span>
         </div>
       </div>
     </div>

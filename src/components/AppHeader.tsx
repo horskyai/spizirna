@@ -93,16 +93,16 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)", lineHeight: 1.2 }}>{t("header.myPantry")}</h1>
                 <span
+                  title={mode === "provoz" ? t("plan.provoz") : t("plan.domacnost")}
                   style={{
-                    display: "flex", alignItems: "center", gap: 4,
-                    padding: "3px 9px", borderRadius: 99, fontSize: 11, fontWeight: 700,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    width: 26, height: 26, borderRadius: 99,
                     background: mode === "provoz" ? "#FDEBD7" : "var(--green-light)",
                     color: mode === "provoz" ? "#B85C00" : "var(--green-dark)",
                     border: `1px solid ${mode === "provoz" ? "#F59E42" : "var(--green-primary)"}`,
                   }}
                 >
-                  {mode === "provoz" ? <Briefcase size={11} /> : <Home size={11} />}
-                  {mode === "provoz" ? t("plan.provoz") : t("plan.domacnost")}
+                  {mode === "provoz" ? <Briefcase size={13} /> : <Home size={13} />}
                 </span>
               </div>
             </div>

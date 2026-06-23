@@ -428,7 +428,16 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
                   value={expires}
                   onChange={(e) => setExpires(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl text-sm font-medium outline-none"
-                  style={{ background: "var(--bg-primary)", color: expires ? "var(--text-primary)" : "var(--text-tertiary)", border: "1.5px solid var(--border)" }}
+                  style={{
+                    background: "var(--bg-primary)",
+                    color: expires ? "var(--text-primary)" : "var(--text-tertiary)",
+                    border: "1.5px solid var(--border)",
+                    // iOS: nativní date input má vlastni min. sirku a pretekal kartu
+                    minWidth: 0,
+                    maxWidth: "100%",
+                    WebkitAppearance: "none",
+                    appearance: "none",
+                  }}
                 />
                 {expires && (() => {
                   const d = daysUntil(expires);

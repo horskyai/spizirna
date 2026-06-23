@@ -147,23 +147,23 @@ export function TodaySummary() {
 
   return (
     <div className="card overflow-hidden mb-4">
-      <div className="px-4 pt-3.5 pb-2">
+      <div className="px-5 pt-4 pb-2.5">
         <p className="text-xs font-bold uppercase" style={{ color: "var(--text-tertiary)", letterSpacing: "0.04em" }}>
           {t("pantry.summary.title")}
         </p>
       </div>
 
       {rows.length === 0 ? (
-        <p className="px-4 pb-4 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
+        <p className="px-5 pb-4 text-sm font-medium" style={{ color: "var(--text-secondary)" }}>
           {t("pantry.summary.allClear")}
         </p>
       ) : (
-        <div className="pb-1">
+        <div className="pb-1.5">
           {rows.map((row, idx) => (
             <button
               key={row.key}
               onClick={row.onClick}
-              className="w-full flex items-center gap-3 px-4 py-2.5 text-left transition-all"
+              className="w-full flex items-center gap-3 px-5 py-2.5 text-left transition-all"
               style={{ borderTop: idx === 0 ? "1px solid var(--border)" : "none" }}
             >
               <div
