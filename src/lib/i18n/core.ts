@@ -19,6 +19,10 @@ export const core: Record<string, Translation> = {
   "onb.freeTrial": { cs: "Domácnost zdarma · provoz s 14denní zkušební verzí", sk: "Domácnosť zadarmo · prevádzka s 14-dňovou skúšobnou verziou" },
   "onb.free": { cs: "Zdarma", sk: "Zadarmo" },
   "onb.trial": { cs: "testovací", sk: "testovacia" },
+  // Domácnost — freemium: zdarma do 50 položek, pak měsíčně/ročně.
+  "onb.domFreeLimit": { cs: "do 50 položek", sk: "do 50 položiek" },
+  "onb.domPaid": { cs: "poté 149 Kč/měs", sk: "potom 6,90 €/mes" },
+  "onb.domYearly": { cs: "nebo 990 Kč/rok (ušetříš 45 %)", sk: "alebo 39,90 €/rok (ušetríš 45 %)" },
   // Cena provozovny — měsíčně i ročně. Roční = 2 měsíce zdarma.
   "onb.provozPrice": { cs: "299 Kč", sk: "13,90 €" },
   "onb.provozPriceMonth": { cs: "/měs", sk: "/mes" },
@@ -27,8 +31,8 @@ export const core: Record<string, Translation> = {
   "onb.forever": { cs: "navždy", sk: "navždy" },
   "onb.select": { cs: "Vybrat", sk: "Vybrať" },
   "onb.planNote": {
-    cs: "Domácnost je zdarma napořád. Provoz má 14 dní zdarma, pak 299 Kč/měs. Plán lze změnit v nastavení.",
-    sk: "Domácnosť je zadarmo navždy. Prevádzka má 14 dní zadarmo, potom 13,90 €/mes. Plán je možné zmeniť v nastaveniach.",
+    cs: "Domácnost je zdarma do 50 položek, pak 149 Kč/měs (nebo 990 Kč/rok). Provoz má 14 dní zdarma, pak 299 Kč/měs. Plán lze změnit v nastavení.",
+    sk: "Domácnosť je zadarmo do 50 položiek, potom 6,90 €/mes (alebo 39,90 €/rok). Prevádzka má 14 dní zadarmo, potom 13,90 €/mes. Plán je možné zmeniť v nastaveniach.",
   },
   "onb.forFamilies": { cs: "Pro rodiny", sk: "Pre rodiny" },
   "onb.forBusiness": { cs: "PRO FIRMY", sk: "PRE FIRMY" },
