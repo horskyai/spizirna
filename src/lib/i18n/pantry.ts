@@ -43,4 +43,23 @@ export const pantry: Record<string, Translation> = {
   // Hledání a seznam
   "pantry.search.placeholder": { cs: "Hledat potraviny...", sk: "Hľadať potraviny..." },
   "pantry.list.empty": { cs: "Žádné produkty v této kategorii", sk: "Žiadne produkty v tejto kategórii" },
+
+  // Dnešní přehled (karta navrch spížírny)
+  "pantry.summary.title": { cs: "Dnešní přehled", sk: "Dnešný prehľad" },
+  "pantry.summary.allClear": {
+    cs: "Vše v pořádku — nic nekončí ani nedochází 🎉",
+    sk: "Všetko v poriadku — nič nekončí ani nedochádza 🎉",
+  },
+  "pantry.summary.expiring": { cs: "Brzy expiruje", sk: "Čoskoro expiruje" },
+  "pantry.summary.expiringItems": { cs: "{n} potravin končí do 3 dnů", sk: "{n} potravín končí do 3 dní" },
+  "pantry.summary.expiringOne": { cs: "1 potravina končí do 3 dnů", sk: "1 potravina končí do 3 dní" },
+  "pantry.summary.lowStock": { cs: "Dochází", sk: "Dochádza" },
+  "pantry.summary.lowStockItems": { cs: "{n} potravin už skoro došlo", sk: "{n} potravín už takmer došlo" },
+  "pantry.summary.lowStockOne": { cs: "1 potravina už skoro došla", sk: "1 potravina už takmer došla" },
+  "pantry.summary.shopping": { cs: "K nákupu", sk: "Na nákup" },
+  "pantry.summary.shoppingItems": { cs: "{n} položek na nákupním seznamu", sk: "{n} položiek na nákupnom zozname" },
+  "pantry.summary.shoppingOne": { cs: "1 položka na nákupním seznamu", sk: "1 položka na nákupnom zozname" },
+  "pantry.summary.recurring": { cs: "Čas doplnit", sk: "Čas doplniť" },
+  "pantry.summary.recurringItems": { cs: "{n} pravidelných nákupů je na řadě", sk: "{n} pravidelných nákupov je na rade" },
+  "pantry.summary.recurringOne": { cs: "1 pravidelný nákup je na řadě", sk: "1 pravidelný nákup je na rade" },
 };

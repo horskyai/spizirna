@@ -19,7 +19,7 @@ export interface GamificationStore {
   recordWasted: () => void;
   recordAdded: () => void;
   getScore: () => number;
-  getLevel: () => { label: string; emoji: string; next: number };
+  getLevel: () => { levelKey: string; emoji: string; min: number; next: number };
 }
 
 function getMonday(date: Date): string {
@@ -111,12 +111,14 @@ export const useGamificationStore = create<GamificationStore>()(
       },
 
       getLevel: () => {
+        // Vrací klíč úrovně (lokalizace v komponentě), emoji a hranice skóre
+        // (min = začátek úrovně, next = skóre další úrovně) pro progress bar.
         const score = get().getScore();
-        if (score < 50) return { label: "Začátečník", emoji: "🌱", next: 50 };
-        if (score < 150) return { label: "Domácí kuchař", emoji: "🍳", next: 150 };
-        if (score < 350) return { label: "Spořivý šéfkuchař", emoji: "👨‍🍳", next: 350 };
-        if (score < 700) return { label: "Mistr spižírny", emoji: "🏆", next: 700 };
-        return { label: "Legendární hospodář", emoji: "⭐", next: Infinity };
+        if (score < 50) return { levelKey: "game.level.beginner", emoji: "🌱", min: 0, next: 50 };
+        if (score < 150) return { levelKey: "game.level.cook", emoji: "🍳", min: 50, next: 150 };
+        if (score < 350) return { levelKey: "game.level.chef", emoji: "👨‍🍳", min: 150, next: 350 };
+        if (score < 700) return { levelKey: "game.level.master", emoji: "🏆", min: 350, next: 700 };
+        return { levelKey: "game.level.legend", emoji: "⭐", min: 700, next: Infinity };
       },
     }),
     { name: `gamification-store-${getCurrentMode()}` }

@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Search, X, AlertTriangle, Package } from "lucide-react";
 import { useProvozStore, INVENTURA_KATEGORIE } from "@/store/provozStore";
 import { useUIStore } from "@/store/uiStore";
+import { TodaySummary } from "@/components/TodaySummary";
 import { useT } from "@/lib/i18n";
 
 // Přehled skladu provozovny v tabu "Spižírna" — rychlý seznam položek skladu
@@ -47,6 +48,9 @@ export function ProvozSkladView() {
   return (
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-0 pb-4">
+        {/* Dnešní přehled — pod minimem, k nákupu */}
+        <TodaySummary />
+
         {/* Hledání */}
         <div className="flex items-center gap-2.5 mb-4" style={{ background: "white", borderRadius: 16, padding: "12px 14px", boxShadow: "var(--shadow)" }}>
           <Search size={17} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />

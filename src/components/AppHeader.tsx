@@ -255,7 +255,7 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
                           {item.product.product_name}
                         </p>
                         <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-                          {item.quantity}× · {item.location}
+                          {item.quantity}× · {t(`pantry.location.${item.location}`)}
                         </p>
                       </div>
                       <span
