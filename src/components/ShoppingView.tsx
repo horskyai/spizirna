@@ -19,6 +19,7 @@ const CATEGORIES = [
   { id: "mlecne", labelKey: "shopping.cat.mlecne", emoji: "🧀" },
   { id: "pecivo", labelKey: "shopping.cat.pecivo", emoji: "🍞" },
   { id: "suche", labelKey: "shopping.cat.suche", emoji: "🌾" },
+  { id: "oleje-tuky", labelKey: "shopping.cat.oleje-tuky", emoji: "🫒" },
   { id: "napoje", labelKey: "shopping.cat.napoje", emoji: "🥤" },
   { id: "mrazene", labelKey: "shopping.cat.mrazene", emoji: "❄️" },
   { id: "ostatni", labelKey: "shopping.cat.ostatni", emoji: "🛒" },

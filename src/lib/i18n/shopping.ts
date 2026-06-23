@@ -8,6 +8,7 @@ export const shopping: Record<string, Translation> = {
   "shopping.cat.mlecne": { cs: "Mléčné výrobky", sk: "Mliečne výrobky" },
   "shopping.cat.pecivo": { cs: "Pečivo", sk: "Pečivo" },
   "shopping.cat.suche": { cs: "Suché potraviny", sk: "Suché potraviny" },
+  "shopping.cat.oleje-tuky": { cs: "Oleje a tuky", sk: "Oleje a tuky" },
   "shopping.cat.napoje": { cs: "Nápoje", sk: "Nápoje" },
   "shopping.cat.mrazene": { cs: "Mražené", sk: "Mrazené" },
   "shopping.cat.ostatni": { cs: "Ostatní", sk: "Ostatné" },

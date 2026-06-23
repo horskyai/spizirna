@@ -115,10 +115,20 @@ const RULES: Rule[] = [
     ],
   },
   {
+    // Oleje a tuky — vlastní kategorie (musí být PŘED "Omáčky a koření",
+    // aby "olej" chytlo sem a ne do koření).
+    id: "oleje-tuky",
+    name: "Oleje a tuky",
+    keywords: [
+      "olej", "olivov", "sádlo", "sadlo", "ghí", "ghi", "tuk ", "ztužen",
+      "ztuzen", "margarín", "margarin", "rama", "hera",
+    ],
+  },
+  {
     id: "suche",
     name: "Omáčky a koření",
     keywords: [
-      "sůl", "sul", "pepř", "pepr", "koření", "koreni", "olej", "ocet",
+      "sůl", "sul", "pepř", "pepr", "koření", "koreni", "ocet",
       "kečup", "kecup", "hořčic", "horcic", "majonéz", "majonez", "omáčk",
       "omack", "dresink", "bujón", "bujon", "vývar", "vyvar", "skořic",
       "skoric", "vanil", "kmín", "kmin", "bobkov", "tymián", "tymian",

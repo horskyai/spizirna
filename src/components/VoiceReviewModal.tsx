@@ -20,7 +20,7 @@ function plural(t: (k: TranslationKey) => string, n: number, acc = false): strin
 const DEFAULT_CATEGORIES = [
   "Maso", "Ryby", "Mléčné výrobky", "Zelenina", "Ovoce",
   "Pekárenské výrobky", "Luštěniny", "Obiloviny", "Nápoje",
-  "Omáčky a koření", "Sladkosti", "Mražené", "Konzervy", "Jiné",
+  "Oleje a tuky", "Omáčky a koření", "Sladkosti", "Mražené", "Konzervy", "Jiné",
 ];
 
 interface ReviewItem extends ParsedItem {
