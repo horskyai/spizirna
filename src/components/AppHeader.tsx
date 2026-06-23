@@ -5,6 +5,7 @@ import { useUIStore } from "@/store/uiStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useModeStore } from "@/store/modeStore";
 import { useAuthStore } from "@/store/authStore";
+import { useBusinessStore } from "@/store/businessStore";
 import { Plus, Bell, AlertTriangle, ScanLine, PenLine, Home, Briefcase, Settings, HelpCircle } from "lucide-react";
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
@@ -46,9 +47,13 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const t = useT();
   const { activeTab, setTab } = useUIStore();
   const { mode } = useModeStore();
-  // Křestní jméno pro osobní oslovení (první slovo z display_name).
+  // Oslovení: v provozu název provozovny, v domácnosti křestní jméno.
   const profile = useAuthStore((s) => s.profile);
-  const firstName = profile?.display_name?.trim().split(/\s+/)[0] || "";
+  const businessName = useBusinessStore((s) => s.name);
+  const firstName =
+    mode === "provoz"
+      ? businessName.trim()
+      : profile?.display_name?.trim().split(/\s+/)[0] || "";
   const pantryItems = usePantryStore((s) => s.items);
   const expiringItems = useMemo(() => {
     const cutoff = new Date();

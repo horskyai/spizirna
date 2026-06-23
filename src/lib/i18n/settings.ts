@@ -31,6 +31,10 @@ export const settings: Record<string, Translation> = {
     sk: "Prepnutím sa aplikácia reštartuje a načíta dáta daného režimu.",
   },
 
+  // ── Název provozovny (jen provoz) ──
+  "settings.businessName": { cs: "Název provozovny", sk: "Názov prevádzky" },
+  "settings.businessNamePlaceholder": { cs: "Např. Kavárna U Lípy", sk: "Napr. Kaviareň U Lipy" },
+
   // ── Denní cíl ──
   "settings.goal": { cs: "Denní cíl", sk: "Denný cieľ" },
   "settings.goalCalories": { cs: "Kalorie", sk: "Kalórie" },

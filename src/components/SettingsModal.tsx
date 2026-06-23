@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle } from "lucide-react";
+import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useModeStore } from "@/store/modeStore";
+import { useBusinessStore } from "@/store/businessStore";
 import { useFoodLogStore } from "@/store/foodLogStore";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/dateUtils";
@@ -24,6 +25,9 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const mode = useModeStore((s) => s.mode);
   const goal = useFoodLogStore((s) => s.goal);
   const setGoal = useFoodLogStore((s) => s.setGoal);
+  // Název provozovny — jen v provozním režimu.
+  const businessName = useBusinessStore((s) => s.name);
+  const setBusinessName = useBusinessStore((s) => s.setName);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [notif, setNotif] = useState(() => {
@@ -168,6 +172,19 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                 </div>
               ))}
             </div>
+          </Section>
+          )}
+
+          {/* ── Název provozovny ── jen v provozu */}
+          {mode === "provoz" && (
+          <Section icon={<Store size={15} />} title={t("settings.businessName")}>
+            <input
+              type="text"
+              value={businessName}
+              onChange={(e) => setBusinessName(e.target.value)}
+              placeholder={t("settings.businessNamePlaceholder")}
+              style={{ width: "100%", background: "var(--bg-primary)", borderRadius: 12, padding: "12px 14px", border: "1.5px solid var(--border)", outline: "none", fontSize: 15, color: "var(--text-primary)" }}
+            />
           </Section>
           )}
 
