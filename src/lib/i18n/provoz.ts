@@ -16,6 +16,7 @@ export const provoz: Record<string, Translation> = {
   "provoz.tab.inventura": { cs: "Inventura", sk: "Inventúra" },
   "provoz.tab.sklad": { cs: "Sklad", sk: "Sklad" },
   "provoz.tab.historie": { cs: "Historie", sk: "História" },
+  "provoz.tab.odpisy": { cs: "Odpisy", sk: "Odpisy" },
   "provoz.tab.dodavatele": { cs: "Dodavatelé", sk: "Dodávatelia" },
 
   // ── Export (CSV/PDF) ──
@@ -33,6 +34,8 @@ export const provoz: Record<string, Translation> = {
   "provoz.export.headerInventura": { cs: "INVENTURA", sk: "INVENTÚRA" },
   "provoz.export.headerSpizirna": { cs: "Spižírna — Provoz", sk: "Špajza — Prevádzka" },
   "provoz.export.datum": { cs: "Datum", sk: "Dátum" },
+  "provoz.export.podpisSestavil": { cs: "Sestavil (podpis)", sk: "Zostavil (podpis)" },
+  "provoz.export.podpisSchvalil": { cs: "Schválil (podpis)", sk: "Schválil (podpis)" },
   "provoz.export.pocetPolozek": { cs: "Počet položek", sk: "Počet položiek" },
   "provoz.export.vygenerovano": { cs: "Vygenerováno", sk: "Vygenerované" },
   "provoz.export.celkovaHodnota": { cs: "Celková hodnota skladu", sk: "Celková hodnota skladu" },
@@ -94,6 +97,22 @@ export const provoz: Record<string, Translation> = {
   "provoz.sestava.manka": { cs: "Manka", sk: "Manká" },
   "provoz.sestava.prebytky": { cs: "Přebytky", sk: "Prebytky" },
   "provoz.sestava.bilance": { cs: "Bilance", sk: "Bilancia" },
+
+  // ── Odpisy (waste report) ──
+  "provoz.odpis.celkovaZtrata": { cs: "Celková ztráta odpisy", sk: "Celková strata odpismi" },
+  "provoz.odpis.pridat": { cs: "Přidat odpis", sk: "Pridať odpis" },
+  "provoz.odpis.zadne": { cs: "Zatím žádné odpisy", sk: "Zatiaľ žiadne odpisy" },
+  "provoz.odpis.protokol": { cs: "Odpisový protokol", sk: "Odpisový protokol" },
+  "provoz.odpis.polozka": { cs: "Položka", sk: "Položka" },
+  "provoz.odpis.vyberPolozku": { cs: "— vyber položku —", sk: "— vyber položku —" },
+  "provoz.odpis.mnozstvi": { cs: "Množství", sk: "Množstvo" },
+  "provoz.odpis.duvodCol": { cs: "Důvod", sk: "Dôvod" },
+  "provoz.odpis.poznamka": { cs: "Poznámka (nepovinné)", sk: "Poznámka (nepovinné)" },
+  "provoz.odpis.ulozit": { cs: "Zapsat odpis", sk: "Zapísať odpis" },
+  "provoz.odpis.duvod.expirace": { cs: "Prošlá expirace", sk: "Prešlá expirácia" },
+  "provoz.odpis.duvod.zkazeni": { cs: "Zkažení", sk: "Skazenie" },
+  "provoz.odpis.duvod.rozbiti": { cs: "Rozbití", sk: "Rozbitie" },
+  "provoz.odpis.duvod.jine": { cs: "Jiné", sk: "Iné" },
 
   // ── Editace položky ──
   "provoz.upravitPolozku": { cs: "Upravit položku", sk: "Upraviť položku" },

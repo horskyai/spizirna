@@ -5,7 +5,7 @@ import {
   ClipboardList, Plus, X, ChevronRight,
   AlertTriangle, Check, Truck, Package, BarChart3, Trash2, ScanLine, Keyboard,
   FileText, Download, FileSpreadsheet, Pencil, Share2, Mic, MicOff, Loader, Search,
-  Camera, Image as ImageIcon
+  Camera, Image as ImageIcon, TrendingDown
 } from "lucide-react";
 import { parseSpokenText } from "@/components/VoiceInput";
 import {
@@ -14,6 +14,8 @@ import {
   InventuraKategorie,
   InventuraPolozka,
   Inventura,
+  Odpis,
+  OdpisDuvod,
 } from "@/store/provozStore";
 import { lookupProductByEAN } from "@/lib/productLookup";
 import { Scanner } from "@/components/Scanner";
@@ -121,6 +123,27 @@ async function exportPDF(inv: Inventura, polozky: InventuraPolozka[], t: TFn, lo
       </thead>
       <tbody>${rows}</tbody>
     </table>
+    ${(() => {
+      // Rozdílová sestava — spočítej z očekávaných stavů přímo v záznamech.
+      let manka = 0, prebytky = 0, pocet = 0;
+      inv.zaznamy.forEach(z => {
+        if (z.ocekavanyStav === undefined || z.skutecnyStav === z.ocekavanyStav) return;
+        pocet++;
+        const cena = polozky.find(p => p.id === z.polozkaId)?.cenaJednotka ?? 0;
+        const kc = (z.skutecnyStav - z.ocekavanyStav) * cena;
+        if (kc < 0) manka += Math.abs(kc); else prebytky += kc;
+      });
+      if (pocet === 0) return "";
+      const bilance = prebytky - manka;
+      return `<div style="margin-top:18px;padding:14px 16px;background:#FFFBF5;border:1px solid #f0e0c8;border-radius:8px">
+        <p style="margin:0 0 8px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:#888">${t("provoz.sestava.titulek")}</p>
+        <p style="margin:0;font-size:13px;color:#333">${t("provoz.sestava.manka")}: <b style="color:#C0392B">−${manka.toLocaleString(dateLocale)} Kč</b> &nbsp;·&nbsp; ${t("provoz.sestava.prebytky")}: <b style="color:#2E7D32">+${prebytky.toLocaleString(dateLocale)} Kč</b> &nbsp;·&nbsp; ${t("provoz.sestava.bilance")}: <b style="color:${bilance < 0 ? "#C0392B" : "#2E7D32"}">${bilance >= 0 ? "+" : "−"}${Math.abs(bilance).toLocaleString(dateLocale)} Kč</b></p>
+      </div>`;
+    })()}
+    <div style="margin-top:32px;display:flex;justify-content:space-between;gap:40px">
+      <div style="flex:1"><div style="border-top:1px solid #999;padding-top:6px;font-size:11px;color:#888">${t("provoz.export.podpisSestavil")}</div></div>
+      <div style="flex:1"><div style="border-top:1px solid #999;padding-top:6px;font-size:11px;color:#888">${t("provoz.export.podpisSchvalil")}</div></div>
+    </div>
     <p style="margin-top:16px;font-size:10px;color:#bbb;text-align:right">${t("provoz.export.footer")}</p>
   `;
 
@@ -144,6 +167,74 @@ async function exportPDF(inv: Inventura, polozky: InventuraPolozka[], t: TFn, lo
     }
 
     pdf.save(`inventura-${inv.nazev.replace(/[\s/\\]/g, "-")}-${inv.datum}.pdf`);
+  } finally {
+    document.body.removeChild(container);
+  }
+}
+
+// Odpisový protokol (waste report) do PDF — daňový doklad o znehodnoceném zboží.
+async function exportOdpisyPDF(odpisy: Odpis[], t: TFn, locale: Locale) {
+  const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
+  const [{ jsPDF }, html2canvas] = await Promise.all([
+    import("jspdf"),
+    import("html2canvas").then(m => m.default),
+  ]);
+
+  const celkem = odpisy.reduce((sum, o) => sum + (o.cenaJednotka ? o.mnozstvi * o.cenaJednotka : 0), 0);
+  const duvodLabel = (d: OdpisDuvod) => t(`provoz.odpis.duvod.${d}`);
+
+  const container = document.createElement("div");
+  container.style.cssText = "position:fixed;left:-9999px;top:0;width:794px;background:#fff;font-family:-apple-system,sans-serif;padding:32px";
+
+  const rows = odpisy.map(o => {
+    const hodnota = o.cenaJednotka ? `${(o.mnozstvi * o.cenaJednotka).toLocaleString(dateLocale)} Kč` : "—";
+    return `<tr>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee">${o.datum}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;font-weight:600">${o.nazev}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right">${o.mnozstvi} ${o.jednotka}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee">${duvodLabel(o.duvod)}</td>
+      <td style="padding:6px 8px;border-bottom:1px solid #eee;text-align:right;font-weight:700;color:#C0392B">${hodnota}</td>
+    </tr>`;
+  }).join("");
+
+  container.innerHTML = `
+    <div style="background:#C0392B;color:#fff;padding:14px 18px;border-radius:10px;display:flex;justify-content:space-between;align-items:center">
+      <span style="font-size:13px;font-weight:700;letter-spacing:.05em">${t("provoz.odpis.protokol")}</span>
+      <span style="font-size:11px;opacity:.85">${t("provoz.export.headerSpizirna")}</span>
+    </div>
+    <div style="padding:16px 4px">
+      <p style="margin:0;font-size:12px;color:#888">${t("provoz.export.vygenerovano")}: ${new Date().toLocaleDateString(dateLocale)} &nbsp;·&nbsp; ${t("provoz.export.pocetPolozek")}: ${odpisy.length}</p>
+      <div style="margin-top:12px;background:#FDF1F1;border:1px solid #C0392B;border-radius:8px;padding:10px 14px;display:inline-block">
+        <span style="font-size:13px;font-weight:700;color:#C0392B">${t("provoz.odpis.celkovaZtrata")}: ${celkem.toLocaleString(dateLocale)} Kč</span>
+      </div>
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:12px">
+      <thead>
+        <tr style="background:#f4f4f4;color:#333">
+          <th style="padding:8px;text-align:left;border-radius:6px 0 0 0">${t("provoz.export.datum")}</th>
+          <th style="padding:8px;text-align:left">${t("provoz.export.nazev")}</th>
+          <th style="padding:8px;text-align:right">${t("provoz.odpis.mnozstvi")}</th>
+          <th style="padding:8px;text-align:left">${t("provoz.odpis.duvodCol")}</th>
+          <th style="padding:8px;text-align:right;border-radius:0 6px 0 0">${t("provoz.export.hodnota")}</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <p style="margin-top:16px;font-size:10px;color:#bbb;text-align:right">${t("provoz.export.footer")}</p>`;
+
+  document.body.appendChild(container);
+  try {
+    const canvas = await html2canvas(container, { scale: 2 });
+    const imgData = canvas.toDataURL("image/png");
+    const pdf = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+    const imgW = 210, imgH = (canvas.height * imgW) / canvas.width;
+    let posY = 0;
+    while (posY < imgH) {
+      if (posY > 0) pdf.addPage();
+      pdf.addImage(imgData, "PNG", 0, -posY, imgW, imgH);
+      posY += 297;
+    }
+    pdf.save(`odpisy-${new Date().toISOString().slice(0, 10)}.pdf`);
   } finally {
     document.body.removeChild(container);
   }
@@ -610,6 +701,167 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
           })}
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Odpisy (waste report) ─────────────────────────────────────────────────────
+const ODPIS_DUVODY: OdpisDuvod[] = ["expirace", "zkazeni", "rozbiti", "jine"];
+
+function OdpisyView() {
+  const t = useT();
+  const locale = useLocale();
+  const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
+  const { odpisy, polozky, addOdpis, removeOdpis } = useProvozStore();
+  const [showModal, setShowModal] = useState(false);
+
+  const celkem = odpisy.reduce((sum, o) => sum + (o.cenaJednotka ? o.mnozstvi * o.cenaJednotka : 0), 0);
+
+  return (
+    <div>
+      {/* Souhrn ztráty */}
+      <div className="card mb-4" style={{ padding: 16, display: "flex", alignItems: "center", gap: 14 }}>
+        <div style={{ width: 44, height: 44, borderRadius: 14, background: "#FDE8E8", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+          <TrendingDown size={22} style={{ color: "#C0392B" }} />
+        </div>
+        <div style={{ flex: 1 }}>
+          <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>{t("provoz.odpis.celkovaZtrata")}</p>
+          <p style={{ fontSize: 22, fontWeight: 800, color: "#C0392B", lineHeight: 1.1 }}>{celkem.toLocaleString(dateLocale)} Kč</p>
+        </div>
+        {odpisy.length > 0 && (
+          <button
+            onClick={() => exportOdpisyPDF(odpisy, t, locale)}
+            style={{ width: 38, height: 38, borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", background: "#FDE8E8" }}
+            title={t("provoz.stahnoutPdf")}
+          >
+            <FileText size={16} style={{ color: "#C0392B" }} />
+          </button>
+        )}
+      </div>
+
+      <button className="btn-primary mb-4" onClick={() => setShowModal(true)}>
+        <Plus size={16} /> {t("provoz.odpis.pridat")}
+      </button>
+
+      {/* Seznam odpisů */}
+      {odpisy.length === 0 ? (
+        <div className="text-center py-8">
+          <p style={{ color: "var(--text-tertiary)", fontSize: 14 }}>{t("provoz.odpis.zadne")}</p>
+        </div>
+      ) : (
+        <div className="card overflow-hidden">
+          {odpisy.map((o, idx) => (
+            <div key={o.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 16px", borderBottom: idx < odpisy.length - 1 ? "1px solid var(--border)" : "none" }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{o.nazev}</p>
+                <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                  {o.datum} · {t(`provoz.odpis.duvod.${o.duvod}`)}{o.poznamka ? ` · ${o.poznamka}` : ""}
+                </p>
+              </div>
+              <div style={{ textAlign: "right", flexShrink: 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{o.mnozstvi} {o.jednotka}</p>
+                {o.cenaJednotka && <p style={{ fontSize: 11, color: "#C0392B", fontWeight: 600 }}>−{(o.mnozstvi * o.cenaJednotka).toLocaleString(dateLocale)} Kč</p>}
+              </div>
+              <button onClick={() => removeOdpis(o.id)} style={{ width: 30, height: 30, borderRadius: 8, display: "flex", alignItems: "center", justifyContent: "center", background: "var(--border)", flexShrink: 0 }}>
+                <Trash2 size={13} style={{ color: "var(--text-tertiary)" }} />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showModal && <AddOdpisModal polozky={polozky} onClose={() => setShowModal(false)} onSave={addOdpis} />}
+    </div>
+  );
+}
+
+function AddOdpisModal({ polozky, onClose, onSave }: {
+  polozky: InventuraPolozka[];
+  onClose: () => void;
+  onSave: (o: Omit<Odpis, "id" | "datum">) => void;
+}) {
+  const t = useT();
+  const [polozkaId, setPolozkaId] = useState("");
+  const [mnozstvi, setMnozstvi] = useState("");
+  const [duvod, setDuvod] = useState<OdpisDuvod>("expirace");
+  const [poznamka, setPoznamka] = useState("");
+
+  const polozka = polozky.find(p => p.id === polozkaId);
+
+  const ulozit = () => {
+    const m = parseFloat(mnozstvi);
+    if (!polozka || !m || m <= 0) return;
+    onSave({
+      polozkaId: polozka.id,
+      nazev: polozka.nazev,
+      mnozstvi: m,
+      jednotka: polozka.jednotka,
+      duvod,
+      cenaJednotka: polozka.cenaJednotka,
+      poznamka: poznamka.trim() || undefined,
+    });
+    onClose();
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
+      <div className="relative rounded-t-3xl px-5 pt-5 pb-10 space-y-4 animate-slide-up"
+        style={{ background: "var(--bg-primary)", paddingBottom: "max(40px, env(safe-area-inset-bottom, 40px))", maxHeight: "85vh", overflowY: "auto" }}>
+        <div className="flex items-center justify-between">
+          <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("provoz.odpis.pridat")}</h3>
+          <button onClick={onClose}><X size={20} style={{ color: "var(--text-tertiary)" }} /></button>
+        </div>
+
+        {/* Výběr položky */}
+        <div>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.odpis.polozka")}</label>
+          <select
+            value={polozkaId}
+            onChange={e => setPolozkaId(e.target.value)}
+            className="w-full px-3 py-3 rounded-2xl text-sm outline-none"
+            style={{ background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+          >
+            <option value="">{t("provoz.odpis.vyberPolozku")}</option>
+            {polozky.map(p => <option key={p.id} value={p.id}>{p.nazev}</option>)}
+          </select>
+        </div>
+
+        {/* Množství */}
+        <div>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.odpis.mnozstvi")}{polozka ? ` (${polozka.jednotka})` : ""}</label>
+          <input
+            type="number" value={mnozstvi} onChange={e => setMnozstvi(e.target.value)} placeholder="0"
+            className="w-full px-3 py-3 rounded-2xl text-sm outline-none"
+            style={{ background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+          />
+        </div>
+
+        {/* Důvod */}
+        <div>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.odpis.duvodCol")}</label>
+          <div className="flex gap-2 flex-wrap">
+            {ODPIS_DUVODY.map(d => (
+              <button key={d} onClick={() => setDuvod(d)}
+                className="px-3 py-1.5 rounded-full text-xs font-semibold"
+                style={{ background: duvod === d ? "var(--green-primary)" : "white", color: duvod === d ? "white" : "var(--text-secondary)", border: `1.5px solid ${duvod === d ? "var(--green-primary)" : "var(--border)"}` }}>
+                {t(`provoz.odpis.duvod.${d}`)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Poznámka */}
+        <input
+          type="text" value={poznamka} onChange={e => setPoznamka(e.target.value)} placeholder={t("provoz.odpis.poznamka")}
+          className="w-full px-3 py-3 rounded-2xl text-sm outline-none"
+          style={{ background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+        />
+
+        <button onClick={ulozit} className="btn-primary" disabled={!polozka || !parseFloat(mnozstvi)}>
+          <Check size={16} /> {t("provoz.odpis.ulozit")}
+        </button>
+      </div>
     </div>
   );
 }
@@ -1329,7 +1581,7 @@ function CoDokoupit() {
 }
 
 // ── Hlavní view ───────────────────────────────────────────────────────────────
-type ProvozTab = "inventura" | "sklad" | "historie" | "dodavatele";
+type ProvozTab = "inventura" | "sklad" | "historie" | "odpisy" | "dodavatele";
 
 export function ProvozView() {
   const t = useT();
@@ -1355,6 +1607,7 @@ export function ProvozView() {
     { id: "inventura", labelKey: "provoz.tab.inventura", icon: <ClipboardList size={15} /> },
     { id: "sklad", labelKey: "provoz.tab.sklad", icon: <Package size={15} /> },
     { id: "historie", labelKey: "provoz.tab.historie", icon: <BarChart3 size={15} /> },
+    { id: "odpisy", labelKey: "provoz.tab.odpisy", icon: <TrendingDown size={15} /> },
     { id: "dodavatele", labelKey: "provoz.tab.dodavatele", icon: <Truck size={15} /> },
   ];
 
@@ -1460,6 +1713,7 @@ export function ProvozView() {
 
         {tab === "sklad" && <SpravaSkladu />}
         {tab === "historie" && <HistorieInventur />}
+        {tab === "odpisy" && <OdpisyView />}
         {tab === "dodavatele" && <DodavateleView />}
       </div>
 
