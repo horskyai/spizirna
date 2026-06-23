@@ -15,9 +15,9 @@ export const settings: Record<string, Translation> = {
 
   // ── Plán / předplatné ──
   "settings.plan": { cs: "Plán", sk: "Plán" },
-  "settings.planFree": { cs: "Zdarma", sk: "Zadarmo" },
-  "settings.planBasic": { cs: "Basic", sk: "Basic" },
-  "settings.planFamily": { cs: "Rodina", sk: "Rodina" },
+  // Plán odpovídá režimu: domácnost je zdarma, provoz je placený.
+  "settings.planDomacnostFree": { cs: "Domácnost · Zdarma", sk: "Domácnosť · Zadarmo" },
+  "settings.planProvozPaid": { cs: "Provozovna · 299 Kč/měs", sk: "Prevádzka · 13,90 €/mes" },
   "settings.trialActive": { cs: "Zkušební verze aktivní", sk: "Skúšobná verzia aktívna" },
   "settings.trialEnds": { cs: "Zkušební verze končí {date}", sk: "Skúšobná verzia končí {date}" },
   // Tlačítka plánu — zatím šablona (bez napojení na platby).

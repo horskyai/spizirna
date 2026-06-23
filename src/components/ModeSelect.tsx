@@ -256,7 +256,7 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                 <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 2px" }}>{t("plan.domacnost")}</p>
                 <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: "0 0 8px" }}>{t("onb.forFamilies")}</p>
                 <p style={{ fontSize: 18, fontWeight: 800, color: "var(--green-primary)", margin: "0 0 10px", lineHeight: 1 }}>
-                  {t("onb.free")}<span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)" }}> · {t("onb.trial")}</span>
+                  {t("onb.free")}<span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)" }}> · {t("onb.forever")}</span>
                 </p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
                   {DOMACNOST_FEATURES.map(f => (
@@ -313,9 +313,11 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
                 </div>
                 <p style={{ fontSize: 15, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 2px" }}>{t("plan.provoz")}</p>
                 <p style={{ fontSize: 11, color: "var(--text-secondary)", margin: "0 0 8px" }}>{t("onb.restaurants")}</p>
-                <p style={{ fontSize: 18, fontWeight: 800, color: "#E8862E", margin: "0 0 10px", lineHeight: 1 }}>
-                  {t("onb.free")}<span style={{ fontSize: 10, fontWeight: 500, color: "var(--text-tertiary)" }}> · {t("onb.trial")}</span>
+                <p style={{ fontSize: 18, fontWeight: 800, color: "#E8862E", margin: "0 0 1px", lineHeight: 1 }}>
+                  {t("onb.provozPrice")}<span style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)" }}>{t("onb.provozPriceMonth")}</span>
                 </p>
+                <p style={{ fontSize: 10, fontWeight: 700, color: "var(--green-primary)", margin: "0 0 1px" }}>{t("onb.provozTrial")}</p>
+                <p style={{ fontSize: 9, fontWeight: 500, color: "var(--text-tertiary)", margin: "0 0 8px", lineHeight: 1.3 }}>{t("onb.provozYearly")}</p>
                 <div style={{ display: "flex", flexDirection: "column", gap: 5, flex: 1 }}>
                   {PROVOZ_FEATURES.map(f => (
                     <div key={f.text.cs} style={{ display: "flex", alignItems: "flex-start", gap: 6 }}>

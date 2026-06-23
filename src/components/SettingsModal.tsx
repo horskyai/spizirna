@@ -17,7 +17,7 @@ const EXPIRY_NOTIF_KEY = "expiry-notifications";
 export function SettingsModal({ onClose }: { onClose: () => void }) {
   const t = useT();
   const locale = useLocale();
-  const { profile, user, signOut, isTrialActive, isPaidPlan } = useAuthStore();
+  const { profile, user, signOut, isTrialActive } = useAuthStore();
   const supportSubject = locale === "sk" ? "Špajza – podpora" : "Spižírna – podpora";
   const supportHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(supportSubject)}`;
   // Denní cíl má smysl jen v domácnosti — v provozovně se sekce skrývá.
@@ -46,11 +46,10 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
     setGoal({ ...goal, [field]: parseInt(value) || 0 });
   };
 
-  const planLabel = profile?.plan === "family"
-    ? t("settings.planFamily")
-    : profile?.plan === "basic"
-    ? t("settings.planBasic")
-    : t("settings.planFree");
+  // Plán odpovídá režimu: domácnost je zdarma, provoz je placený (299 Kč/měs).
+  const planLabel = mode === "provoz"
+    ? t("settings.planProvozPaid")
+    : t("settings.planDomacnostFree");
 
   const displayName = profile?.display_name || user?.email?.split("@")[0] || "—";
   const email = profile?.email || user?.email || "";
@@ -138,7 +137,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             <button onClick={() => { /* TODO: zmenit plan */ }} style={rowBtn("var(--green-light)", "var(--green-dark)")}>
               <Crown size={15} /> {t("settings.changePlan")}
             </button>
-            {isPaidPlan() && (
+            {mode === "provoz" && (
               <button onClick={() => { /* TODO: zrusit predplatne */ }} style={{ ...rowBtn("transparent", "var(--text-secondary)"), marginTop: 8 }}>
                 {t("settings.cancelPlan")}
               </button>
