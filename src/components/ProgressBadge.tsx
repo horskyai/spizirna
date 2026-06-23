@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { Flame, Sprout } from "lucide-react";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { useT } from "@/lib/i18n";
@@ -8,10 +9,22 @@ import { useT } from "@/lib/i18n";
 // série dnů a počet zachráněných potravin. Data počítá gamificationStore.
 export function ProgressBadge() {
   const t = useT();
-  const score = useGamificationStore((s) => s.getScore());
-  const level = useGamificationStore((s) => s.getLevel());
+  // Selektujeme jen surová čísla (stabilní primitivy) — kdybychom v selektoru
+  // vraceli getLevel(), vznikl by pokaždé nový objekt → nekonečné re-rendery
+  // (React #185). score/level proto počítáme z metod mimo reaktivní selektor.
   const streak = useGamificationStore((s) => s.streak);
   const totalSaved = useGamificationStore((s) => s.totalSaved);
+  const totalScanned = useGamificationStore((s) => s.totalScanned);
+  const totalCooked = useGamificationStore((s) => s.totalCooked);
+  const totalWasted = useGamificationStore((s) => s.totalWasted);
+
+  // score/level počítáme přes metody storu, ale přepočet vážeme na surová
+  // čísla (useMemo) — getScore/getLevel se tak nevolají v reaktivním selektoru.
+  const { score, level } = useMemo(() => {
+    const s = useGamificationStore.getState();
+    return { score: s.getScore(), level: s.getLevel() };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [streak, totalSaved, totalScanned, totalCooked, totalWasted]);
 
   // Postup v rámci aktuální úrovně (0–100 %).
   const span = level.next === Infinity ? 1 : level.next - level.min;
