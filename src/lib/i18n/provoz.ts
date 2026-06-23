@@ -82,6 +82,18 @@ export const provoz: Record<string, Translation> = {
   "provoz.vse": { cs: "Vše ({n})", sk: "Všetko ({n})" },
   "provoz.zadnePolozkyKat": { cs: "Žádné položky v této kategorii", sk: "Žiadne položky v tejto kategórii" },
   "provoz.podMinimem": { cs: " — pod minimem!", sk: " — pod minimom!" },
+  "provoz.zadano": { cs: "Zadáno", sk: "Zadané" },
+
+  // ── Slepá inventura ──
+  "provoz.slepa.title": { cs: "Slepá inventura", sk: "Slepá inventúra" },
+  "provoz.slepa.desc": { cs: "Zaměstnanec nevidí, kolik má být — musí reálně přepočítat.", sk: "Zamestnanec nevidí, koľko má byť — musí reálne prepočítať." },
+  "provoz.slepa.badge": { cs: "Slepá inventura — stav je skrytý", sk: "Slepá inventúra — stav je skrytý" },
+
+  // ── Rozdílová sestava ──
+  "provoz.sestava.titulek": { cs: "Rozdílová sestava", sk: "Rozdielová zostava" },
+  "provoz.sestava.manka": { cs: "Manka", sk: "Manká" },
+  "provoz.sestava.prebytky": { cs: "Přebytky", sk: "Prebytky" },
+  "provoz.sestava.bilance": { cs: "Bilance", sk: "Bilancia" },
 
   // ── Editace položky ──
   "provoz.upravitPolozku": { cs: "Upravit položku", sk: "Upraviť položku" },

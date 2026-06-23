@@ -476,9 +476,15 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
         <div style={{ height: 6, borderRadius: 6, background: "rgba(255,255,255,0.2)", overflow: "hidden", marginBottom: 10 }}>
           <div style={{ height: "100%", borderRadius: 6, background: "white", width: `${progress}%`, transition: "width 0.4s ease" }} />
         </div>
-        {hodnotaSkladu > 0 && (
+        {/* U slepé inventury hodnotu během počítání skryjeme (nesmí napovídat). */}
+        {hodnotaSkladu > 0 && !inventura.slepa && (
           <p style={{ fontSize: 12, color: "rgba(255,255,255,0.8)", marginBottom: 10 }}>
             💰 {t("provoz.hodnotaSkladu")}: <b>{hodnotaSkladu.toLocaleString(dateLocale)} Kč</b>
+          </p>
+        )}
+        {inventura.slepa && (
+          <p style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", marginBottom: 10, display: "flex", alignItems: "center", gap: 5 }}>
+            🙈 {t("provoz.slepa.badge")}
           </p>
         )}
         <button
@@ -537,6 +543,9 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
             const jePod = zaznam !== undefined && zaznam <= polozka.minZasoba;
             const jeUlozeno = ulozeno.has(polozka.id);
             const kat = INVENTURA_KATEGORIE.find(k => k.id === polozka.kategorie);
+            // Slepá inventura: zaměstnanec po zadání nevidí číslo ani „pod minimem",
+            // jen potvrzení „zadáno" — nesmí poznat, kolik systém čekal.
+            const slepa = !!inventura.slepa;
             return (
               <div key={polozka.id}
                 style={{ borderBottom: idx < filtrovane.length - 1 ? "1px solid var(--border)" : "none", padding: "14px 16px" }}>
@@ -545,14 +554,18 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
                       <span style={{ fontSize: 15 }}>{kat?.emoji}</span>
                       <p className="font-semibold text-sm truncate" style={{ color: "var(--text-primary)" }}>{polozka.nazev}</p>
-                      {jePod && <AlertTriangle size={13} style={{ color: "#F57C00", flexShrink: 0 }} />}
+                      {jePod && !slepa && <AlertTriangle size={13} style={{ color: "#F57C00", flexShrink: 0 }} />}
                     </div>
                     {zaznam !== undefined && (
-                      <p style={{ fontSize: 12, color: jePod ? "#F57C00" : "var(--text-secondary)", marginTop: 2 }}>
-                        {zaznam} {polozka.jednotka}
-                        {jePod ? t("provoz.podMinimem") : " ✓"}
-                        {polozka.cenaJednotka ? ` · ${(zaznam * polozka.cenaJednotka).toLocaleString(dateLocale)} Kč` : ""}
-                      </p>
+                      slepa ? (
+                        <p style={{ fontSize: 12, color: "var(--green-primary)", marginTop: 2 }}>{t("provoz.zadano")} ✓</p>
+                      ) : (
+                        <p style={{ fontSize: 12, color: jePod ? "#F57C00" : "var(--text-secondary)", marginTop: 2 }}>
+                          {zaznam} {polozka.jednotka}
+                          {jePod ? t("provoz.podMinimem") : " ✓"}
+                          {polozka.cenaJednotka ? ` · ${(zaznam * polozka.cenaJednotka).toLocaleString(dateLocale)} Kč` : ""}
+                        </p>
+                      )
                     )}
                     {(() => {
                       const s = trvanlivostStatus(polozka.minTrvanlivost, t, locale);
@@ -606,7 +619,7 @@ function HistorieInventur() {
   const t = useT();
   const locale = useLocale();
   const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
-  const { inventury, polozky, removeInventura, getHodnotaSkladu } = useProvozStore();
+  const { inventury, polozky, removeInventura, getHodnotaSkladu, getRozdilSestava } = useProvozStore();
   const [otevreneId, setOtevreneId] = useState<string | null>(null);
   const zavrene = inventury.filter(i => i.zavrena);
 
@@ -628,6 +641,7 @@ function HistorieInventur() {
         });
         const podMin = zaznamy.filter(z => z.podMin).length;
         const otevreno = otevreneId === inv.id;
+        const sestava = getRozdilSestava(inv.id);
 
         return (
           <div key={inv.id} className="card overflow-hidden">
@@ -685,6 +699,27 @@ function HistorieInventur() {
             {/* Detail položek */}
             {otevreno && (
               <div style={{ borderTop: "1px solid var(--border)" }}>
+                {/* Rozdílová sestava — manka a přebytky proti minulé inventuře */}
+                {sestava.pocetRozdilu > 0 && (
+                  <div style={{ padding: "12px 16px", background: "#FFFBF5", borderBottom: "1px solid var(--border)" }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.05em", color: "var(--text-tertiary)", marginBottom: 8 }}>
+                      {t("provoz.sestava.titulek")}
+                    </p>
+                    <div style={{ display: "flex", gap: 8 }}>
+                      <div style={{ flex: 1, background: "#FDE8E8", borderRadius: 10, padding: "8px 10px" }}>
+                        <p style={{ fontSize: 10, color: "#C0392B", fontWeight: 600 }}>{t("provoz.sestava.manka")}</p>
+                        <p style={{ fontSize: 15, fontWeight: 800, color: "#C0392B" }}>−{sestava.manka.toLocaleString(dateLocale)} Kč</p>
+                      </div>
+                      <div style={{ flex: 1, background: "#E8F5EE", borderRadius: 10, padding: "8px 10px" }}>
+                        <p style={{ fontSize: 10, color: "var(--green-dark)", fontWeight: 600 }}>{t("provoz.sestava.prebytky")}</p>
+                        <p style={{ fontSize: 15, fontWeight: 800, color: "var(--green-dark)" }}>+{sestava.prebytky.toLocaleString(dateLocale)} Kč</p>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: 12, marginTop: 8, color: "var(--text-secondary)" }}>
+                      {t("provoz.sestava.bilance")}: <b style={{ color: sestava.bilance < 0 ? "#C0392B" : "var(--green-dark)" }}>{sestava.bilance >= 0 ? "+" : "−"}{Math.abs(sestava.bilance).toLocaleString(dateLocale)} Kč</b>
+                    </p>
+                  </div>
+                )}
                 {zaznamy.length === 0 ? (
                   <p style={{ padding: "12px 16px", fontSize: 13, color: "var(--text-tertiary)" }}>{t("provoz.zadneZaznamy")}</p>
                 ) : (
@@ -719,6 +754,17 @@ function HistorieInventur() {
                         <p style={{ fontSize: 15, fontWeight: 700, color: z.podMin ? "#E65100" : "var(--text-primary)", margin: 0 }}>
                           {z.skutecnyStav} {z.polozka?.jednotka ?? ""}
                         </p>
+                        {/* Rozdíl proti očekávanému stavu (manko/přebytek) */}
+                        {z.ocekavanyStav !== undefined && z.skutecnyStav !== z.ocekavanyStav && (() => {
+                          const rozdil = z.skutecnyStav - z.ocekavanyStav;
+                          const barva = rozdil < 0 ? "#C0392B" : "var(--green-dark)";
+                          return (
+                            <p style={{ fontSize: 11, fontWeight: 700, color: barva, margin: 0 }}>
+                              {rozdil > 0 ? "+" : ""}{rozdil} {z.polozka?.jednotka ?? ""}
+                              {z.polozka?.cenaJednotka ? ` · ${rozdil > 0 ? "+" : "−"}${Math.abs(rozdil * z.polozka.cenaJednotka).toLocaleString(dateLocale)} Kč` : ""}
+                            </p>
+                          );
+                        })()}
                         {z.polozka?.cenaJednotka && (
                           <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: 0 }}>
                             {(z.skutecnyStav * z.polozka.cenaJednotka).toLocaleString(dateLocale)} Kč
@@ -1291,14 +1337,16 @@ export function ProvozView() {
   const [tab, setTab] = useState<ProvozTab>("inventura");
   const [showNazevModal, setShowNazevModal] = useState(false);
   const [novyNazev, setNovyNazev] = useState("");
+  const [slepa, setSlepa] = useState(false);
 
   const aktivniInventura = inventury.find(i => i.id === aktivniInventuraId && !i.zavrena);
   const rozpracovane = inventury.filter(i => !i.zavrena && i.id !== aktivniInventuraId);
 
   const handleVytvorit = () => {
     if (!novyNazev.trim()) return;
-    vytvorInventuru(novyNazev.trim());
+    vytvorInventuru(novyNazev.trim(), slepa);
     setNovyNazev("");
+    setSlepa(false);
     setShowNazevModal(false);
     setTab("inventura");
   };
@@ -1429,6 +1477,19 @@ export function ProvozView() {
               className="w-full px-4 py-3 rounded-2xl text-sm outline-none"
               style={{ background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
             />
+            {/* Slepá inventura — zaměstnanec nevidí očekávaný stav, musí počítat */}
+            <button
+              onClick={() => setSlepa(s => !s)}
+              style={{ display: "flex", alignItems: "flex-start", gap: 12, width: "100%", textAlign: "left", background: "white", border: `1.5px solid ${slepa ? "var(--green-primary)" : "var(--border)"}`, borderRadius: 16, padding: "12px 14px" }}
+            >
+              <div style={{ width: 22, height: 22, borderRadius: 7, flexShrink: 0, marginTop: 1, background: slepa ? "var(--green-primary)" : "white", border: `1.5px solid ${slepa ? "var(--green-primary)" : "var(--border)"}`, display: "flex", alignItems: "center", justifyContent: "center" }}>
+                {slepa && <Check size={14} color="white" strokeWidth={3} />}
+              </div>
+              <div style={{ flex: 1 }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{t("provoz.slepa.title")}</p>
+                <p style={{ fontSize: 12, color: "var(--text-secondary)", lineHeight: 1.4 }}>{t("provoz.slepa.desc")}</p>
+              </div>
+            </button>
             <button onClick={handleVytvorit} className="btn-primary" disabled={!novyNazev.trim()}>
               <ClipboardList size={16} /> {t("provoz.spustitInventuru")}
             </button>
