@@ -44,10 +44,9 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
 }
 
 export default function Home() {
-  const { activeTab, activeSheet, scannedProduct, closeSheet } = useUIStore();
+  const { activeTab, activeSheet, scannedProduct, closeSheet, settingsOpen, openSettings, closeSettings } = useUIStore();
   const { mode, setMode } = useModeStore();
   const { user, profile, loading: authLoading, init: authInit } = useAuthStore();
-  const [showSettings, setShowSettings] = useState(false);
 
   // Inicializace přihlášení — načte session ze Supabase a poslouchá změny
   useEffect(() => {
@@ -122,7 +121,7 @@ export default function Home() {
   return (
     <ErrorBoundary>
     <div className="relative flex-1 flex flex-col overflow-hidden" style={{ background: "var(--bg-primary)" }}>
-      <AppHeader onOpenSettings={() => setShowSettings(true)} />
+      <AppHeader onOpenSettings={openSettings} />
 
       <main className="flex-1 overflow-hidden flex flex-col">
         {activeTab === "spizirna" && <PantryView />}
@@ -140,7 +139,7 @@ export default function Home() {
         <ProductSheet product={scannedProduct} onClose={() => closeSheet()} fromScanner={activeTab === "skenovat"} />
       )}
 
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
+      {settingsOpen && <SettingsModal onClose={closeSettings} />}
 
     </div>
     </ErrorBoundary>

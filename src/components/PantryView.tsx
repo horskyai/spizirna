@@ -13,6 +13,7 @@ import { cn } from "@/lib/cn";
 import { AddProductManual } from "@/components/AddProductManual";
 import { TodaySummary } from "@/components/TodaySummary";
 import { ProgressBadge } from "@/components/ProgressBadge";
+import { PantryLimitBanner } from "@/components/PantryLimitBanner";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG, VseSVG } from "@/components/LocationIcons";
 import { useT } from "@/lib/i18n";
 
@@ -316,6 +317,9 @@ export function PantryView() {
   return (
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-0 pb-4">
+        {/* Freemium limit (jen domácnost) — měkké upozornění nad 45/50 položek */}
+        <PantryLimitBanner />
+
         {/* Odznak pokroku — úroveň, série, zachráněné potraviny */}
         <ProgressBadge />
 

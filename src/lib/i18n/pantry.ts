@@ -40,6 +40,19 @@ export const pantry: Record<string, Translation> = {
     sk: "Tip: Naskenujte kód zo zadnej strany obalu. Väčšina potravín sa nájde automaticky.",
   },
 
+  // Freemium limit (jen domácnost)
+  "pantry.limit.nearTitle": { cs: "Blížíš se limitu", sk: "Blížiš sa limitu" },
+  "pantry.limit.near": {
+    cs: "Máš {n} z {max} položek zdarma. Po překročení tě požádáme o předplatné za 149 Kč/měs.",
+    sk: "Máš {n} z {max} položiek zadarmo. Po prekročení ťa požiadame o predplatné za 6,90 €/mes.",
+  },
+  "pantry.limit.overTitle": { cs: "Překročil jsi limit zdarma", sk: "Prekročil si limit zadarmo" },
+  "pantry.limit.over": {
+    cs: "Máš {n} položek — bezplatně jich je {max}. Odemkni neomezenou spižírnu za 149 Kč/měs.",
+    sk: "Máš {n} položiek — zadarmo ich je {max}. Odomkni neobmedzenú špajzu za 6,90 €/mes.",
+  },
+  "pantry.limit.upgrade": { cs: "Odemknout neomezeně", sk: "Odomknúť neobmedzene" },
+
   // Hledání a seznam
   "pantry.search.placeholder": { cs: "Hledat potraviny...", sk: "Hľadať potraviny..." },
   "pantry.list.empty": { cs: "Žádné produkty v této kategorii", sk: "Žiadne produkty v tejto kategórii" },
