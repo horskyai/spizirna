@@ -8,7 +8,7 @@ const COUNT = 40;
 
 export function Confetti() {
   return (
-    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 500, overflow: "hidden" }}>
+    <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 600 }}>
       {Array.from({ length: COUNT }).map((_, i) => {
         const left = Math.random() * 100;
         const delay = Math.random() * 0.6;

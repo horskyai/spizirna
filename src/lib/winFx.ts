@@ -1,40 +1,80 @@
-// Efekty výhry — veselá fanfára přes Web Audio API (bez zvukových souborů)
-// a jemné zavibrování telefonu. Volá se po dotočení kola štěstí.
+// Efekty výhry — zvuky přes Web Audio API (bez zvukových souborů).
+// spinSound: tikání během točení kola. winFanfare: oslavná melodie na konci.
 
-// Zahraje krátkou vzestupnou fanfáru (ding-ding-ding-dííng).
-export function playWinFanfare() {
-  if (typeof window === "undefined") return;
+let audioCtx: AudioContext | null = null;
+
+function getCtx(): AudioContext | null {
+  if (typeof window === "undefined") return null;
   try {
     const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-    if (!AudioCtx) return;
-    const ctx = new AudioCtx();
-
-    // Tóny vzestupně (C–E–G–C), poslední delší — pocit "dosažení".
-    const notes = [523.25, 659.25, 783.99, 1046.5];
-    const noteLen = 0.14;
-
-    notes.forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = "triangle";
-      osc.frequency.value = freq;
-      const start = ctx.currentTime + i * noteLen;
-      const dur = i === notes.length - 1 ? 0.4 : noteLen;
-      // Krátký náběh a doznění, ať to necvaká.
-      gain.gain.setValueAtTime(0.0001, start);
-      gain.gain.exponentialRampToValueAtTime(0.25, start + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + dur);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + dur);
-    });
-
-    // Po doznění kontext zavřeme, ať nezůstává viset.
-    setTimeout(() => ctx.close().catch(() => {}), 1200);
+    if (!AudioCtx) return null;
+    if (!audioCtx) audioCtx = new AudioCtx();
+    // iOS: kontext bývá "suspended", dokud ho neprobudí uživatelská akce.
+    if (audioCtx.state === "suspended") audioCtx.resume().catch(() => {});
+    return audioCtx;
   } catch {
-    // Zvuk je nice-to-have — když selže (politiky prohlížeče), tiše ignoruj.
+    return null;
   }
+}
+
+// Krátké "tik" (jedno cvaknutí kolíčku o kolo).
+function tick(ctx: AudioContext, at: number, freq: number) {
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "square";
+  osc.frequency.value = freq;
+  gain.gain.setValueAtTime(0.0001, at);
+  gain.gain.exponentialRampToValueAtTime(0.12, at + 0.005);
+  gain.gain.exponentialRampToValueAtTime(0.0001, at + 0.06);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(at);
+  osc.stop(at + 0.07);
+}
+
+// Tikání během točení — cvaknutí se postupně zpomalují (jako dojíždějící kolo).
+// durationMs by mělo odpovídat délce animace kola.
+export function playSpinSound(durationMs: number) {
+  const ctx = getCtx();
+  if (!ctx) return;
+  const start = ctx.currentTime;
+  const total = durationMs / 1000;
+  let t = 0;
+  let gap = 0.05; // začátek: rychlé cvakání
+  // Postupně zvětšujeme mezeru → kolo zpomaluje.
+  while (t < total) {
+    tick(ctx, start + t, 880);
+    t += gap;
+    gap *= 1.12; // každé další cvaknutí o něco pomalejší
+  }
+}
+
+// Oslavná fanfára na konci — vzestupné akordy, čistý a veselý zvuk.
+export function playWinFanfare() {
+  const ctx = getCtx();
+  if (!ctx) return;
+  // Durový rozklad C–E–G–vysoké C, poslední tón delší a "zazvoní".
+  const notes = [
+    { f: 523.25, t: 0.0, d: 0.16 },
+    { f: 659.25, t: 0.13, d: 0.16 },
+    { f: 783.99, t: 0.26, d: 0.16 },
+    { f: 1046.5, t: 0.39, d: 0.5 },
+  ];
+  const base = ctx.currentTime + 0.02;
+  notes.forEach(({ f, t, d }) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = "sine"; // čistší a příjemnější než triangle
+    osc.frequency.value = f;
+    const start = base + t;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.3, start + 0.03);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + d);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start(start);
+    osc.stop(start + d + 0.05);
+  });
 }
 
 // Jemné zavibrování (haptika), pokud to zařízení umí.

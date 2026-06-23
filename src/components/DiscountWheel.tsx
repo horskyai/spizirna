@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useDiscountStore, DISCOUNT_YEARLY, REGULAR_YEARLY } from "@/store/discountStore";
-import { playWinFanfare, vibrateWin } from "@/lib/winFx";
+import { playSpinSound, playWinFanfare, vibrateWin } from "@/lib/winFx";
 import { Confetti } from "@/components/Confetti";
 import { useT } from "@/lib/i18n";
 
@@ -21,9 +21,14 @@ export function DiscountWheel({ onClose }: { onClose: () => void }) {
   const [spinning, setSpinning] = useState(false);
   const [done, setDone] = useState(false);
 
+  const SPIN_MS = 4200;
+
   const spin = () => {
     if (spinning || done) return;
     setSpinning(true);
+
+    // Tikání po dobu točení (zpomalující se cvakání kolíčku).
+    playSpinSound(SPIN_MS);
 
     // Vždy dojede na segment s 990 Kč. 5 plných otáček pro efekt.
     const target = 360 * 5 + (360 - (WIN_INDEX * SEG_ANGLE + SEG_ANGLE / 2));
@@ -36,7 +41,7 @@ export function DiscountWheel({ onClose }: { onClose: () => void }) {
       // Oslava výhry — fanfára, vibrace, konfety.
       playWinFanfare();
       vibrateWin();
-    }, 4200);
+    }, SPIN_MS);
   };
 
   return (
