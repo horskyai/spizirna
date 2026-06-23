@@ -32,21 +32,47 @@ function tick(ctx: AudioContext, at: number, freq: number) {
   osc.stop(at + 0.07);
 }
 
-// Tikání během točení — cvaknutí se postupně zpomalují (jako dojíždějící kolo).
-// durationMs by mělo odpovídat délce animace kola.
+// Napínavý zvuk během točení: tikání kolíčku (zpomaluje) + pod tím
+// pomalu stoupající "drone" tón, který buduje napětí (jako kdyby rostlo
+// očekávání), a vrcholí těsně před koncem. durationMs = délka animace.
 export function playSpinSound(durationMs: number) {
   const ctx = getCtx();
   if (!ctx) return;
   const start = ctx.currentTime;
   const total = durationMs / 1000;
+
+  // 1) Tikání kolíčku — zpomaluje se.
   let t = 0;
-  let gap = 0.05; // začátek: rychlé cvakání
-  // Postupně zvětšujeme mezeru → kolo zpomaluje.
+  let gap = 0.05;
   while (t < total) {
     tick(ctx, start + t, 880);
     t += gap;
-    gap *= 1.12; // každé další cvaknutí o něco pomalejší
+    gap *= 1.12;
   }
+
+  // 2) Napínavý stoupající tón pod tím (drone) — z hloubky nahoru, sílí.
+  const osc = ctx.createOscillator();
+  const gain = ctx.createGain();
+  osc.type = "sawtooth";
+  osc.frequency.setValueAtTime(110, start);
+  osc.frequency.exponentialRampToValueAtTime(440, start + total); // stoupá
+  gain.gain.setValueAtTime(0.0001, start);
+  gain.gain.exponentialRampToValueAtTime(0.06, start + 0.3);
+  gain.gain.exponentialRampToValueAtTime(0.16, start + total - 0.2); // sílí ke konci
+  gain.gain.exponentialRampToValueAtTime(0.0001, start + total + 0.1);
+  // Jemné chvění (tremolo) pro "stresový" pocit.
+  const lfo = ctx.createOscillator();
+  const lfoGain = ctx.createGain();
+  lfo.frequency.value = 7;
+  lfoGain.gain.value = 0.04;
+  lfo.connect(lfoGain);
+  lfoGain.connect(gain.gain);
+  osc.connect(gain);
+  gain.connect(ctx.destination);
+  osc.start(start);
+  lfo.start(start);
+  osc.stop(start + total + 0.15);
+  lfo.stop(start + total + 0.15);
 }
 
 // Jeden tón fanfáry.

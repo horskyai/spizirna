@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
 // Konfety na canvasu — JS animace frame po framu, nespoléhá na CSS keyframes.
 // Vykresluje barevné obdélníčky padající a rotující přes celou obrazovku.
@@ -16,6 +17,9 @@ interface Piece {
 
 export function Confetti() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -66,12 +70,16 @@ export function Confetti() {
     raf = requestAnimationFrame(draw);
 
     return () => cancelAnimationFrame(raf);
-  }, []);
+  }, [mounted]);
 
-  return (
+  if (!mounted) return null;
+
+  // Portál na <body> — konfety jsou nad VŠÍM, mimo stacking context kola.
+  return createPortal(
     <canvas
       ref={canvasRef}
-      style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", pointerEvents: "none", zIndex: 600 }}
-    />
+      style={{ position: "fixed", inset: 0, width: "100vw", height: "100vh", pointerEvents: "none", zIndex: 9999 }}
+    />,
+    document.body
   );
 }
