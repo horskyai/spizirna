@@ -2,11 +2,13 @@ import type { Translation } from "./dict";
 
 // Základní texty: výběr jazyka, onboarding, navigace, obecná tlačítka.
 export const core: Record<string, Translation> = {
-  // ── Výběr jazyka (úvodní obrazovka) ──
-  "lang.title": { cs: "Vyber si jazyk", sk: "Vyber si jazyk" },
-  "lang.subtitle": { cs: "Language · Jazyk", sk: "Language · Jazyk" },
-  "lang.czech": { cs: "Čeština", sk: "Čeština" },
-  "lang.slovak": { cs: "Slovenčina", sk: "Slovenčina" },
+  // ── Výběr země (úvodní obrazovka) ──
+  "lang.title": { cs: "Odkud jsi?", sk: "Odkiaľ si?" },
+  "lang.subtitle": { cs: "Podle země nastavíme jazyk aplikace", sk: "Podľa krajiny nastavíme jazyk aplikácie" },
+  "lang.czech": { cs: "Česko", sk: "Česko" },
+  "lang.slovak": { cs: "Slovensko", sk: "Slovensko" },
+  "lang.czechLang": { cs: "Čeština", sk: "Čeština" },
+  "lang.slovakLang": { cs: "Slovenčina", sk: "Slovenčina" },
   "lang.continue": { cs: "Pokračovat", sk: "Pokračovať" },
 
   // ── Onboarding (ModeSelect) ──
@@ -14,13 +16,19 @@ export const core: Record<string, Translation> = {
   "onb.choosePlan": { cs: "Vybrat plán →", sk: "Vybrať plán →" },
   "onb.skipToPlan": { cs: "Přeskočit na výběr plánu", sk: "Preskočiť na výber plánu" },
   "onb.choosePlanTitle": { cs: "Vyberte svůj plán", sk: "Vyberte si svoj plán" },
-  "onb.freeTrial": { cs: "Testovací verze · Zdarma", sk: "Testovacia verzia · Zadarmo" },
+  "onb.freeTrial": { cs: "Domácnost zdarma · provoz s 14denní zkušební verzí", sk: "Domácnosť zadarmo · prevádzka s 14-dňovou skúšobnou verziou" },
   "onb.free": { cs: "Zdarma", sk: "Zadarmo" },
   "onb.trial": { cs: "testovací", sk: "testovacia" },
+  // Cena provozovny — měsíčně i ročně. Roční = 2 měsíce zdarma.
+  "onb.provozPrice": { cs: "299 Kč", sk: "13,90 €" },
+  "onb.provozPriceMonth": { cs: "/měs", sk: "/mes" },
+  "onb.provozTrial": { cs: "14 dní zdarma", sk: "14 dní zadarmo" },
+  "onb.provozYearly": { cs: "nebo 2 990 Kč/rok (2 měsíce zdarma)", sk: "alebo 139 €/rok (2 mesiace zadarmo)" },
+  "onb.forever": { cs: "navždy", sk: "navždy" },
   "onb.select": { cs: "Vybrat", sk: "Vybrať" },
   "onb.planNote": {
-    cs: "Testovací verze je zdarma. Plán lze změnit v nastavení.",
-    sk: "Testovacia verzia je zadarmo. Plán je možné zmeniť v nastaveniach.",
+    cs: "Domácnost je zdarma napořád. Provoz má 14 dní zdarma, pak 299 Kč/měs. Plán lze změnit v nastavení.",
+    sk: "Domácnosť je zadarmo navždy. Prevádzka má 14 dní zadarmo, potom 13,90 €/mes. Plán je možné zmeniť v nastaveniach.",
   },
   "onb.forFamilies": { cs: "Pro rodiny", sk: "Pre rodiny" },
   "onb.forBusiness": { cs: "PRO FIRMY", sk: "PRE FIRMY" },

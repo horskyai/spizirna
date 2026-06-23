@@ -5,15 +5,22 @@ import { Check } from "lucide-react";
 import { useLocaleStore, Locale } from "@/store/localeStore";
 import { translate } from "@/lib/i18n";
 
-const LANGS: { code: Locale; flag: string; key: "lang.czech" | "lang.slovak" }[] = [
-  { code: "cs", flag: "🇨🇿", key: "lang.czech" },
-  { code: "sk", flag: "🇸🇰", key: "lang.slovak" },
+// Volíme zemi, ne jazyk — Česko nastaví češtinu, Slovensko slovenčinu.
+// Pod názvem země ukazujeme drobně jazyk, ať je vazba zřejmá.
+const COUNTRIES: {
+  code: Locale;
+  flag: string;
+  nameKey: "lang.czech" | "lang.slovak";
+  langKey: "lang.czechLang" | "lang.slovakLang";
+}[] = [
+  { code: "cs", flag: "🇨🇿", nameKey: "lang.czech", langKey: "lang.czechLang" },
+  { code: "sk", flag: "🇸🇰", nameKey: "lang.slovak", langKey: "lang.slovakLang" },
 ];
 
 export function LanguageSelect({ onDone }: { onDone: () => void }) {
   const setLocale = useLocaleStore((s) => s.setLocale);
-  // Předvybraná čeština, ať tlačítko dává smysl hned. Texty se vykreslují
-  // v právě zvoleném jazyce, takže uživatel rovnou vidí náhled.
+  // Předvybrané Česko, ať tlačítko dává smysl hned. Texty se vykreslují
+  // v jazyce zvolené země, takže uživatel rovnou vidí náhled.
   const [selected, setSelected] = useState<Locale>("cs");
 
   const confirm = () => {
@@ -59,9 +66,9 @@ export function LanguageSelect({ onDone }: { onDone: () => void }) {
         {translate("lang.subtitle", selected)}
       </p>
 
-      {/* Volby jazyka */}
+      {/* Volby země */}
       <div style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
-        {LANGS.map(({ code, flag, key }) => {
+        {COUNTRIES.map(({ code, flag, nameKey, langKey }) => {
           const active = selected === code;
           return (
             <button
@@ -78,8 +85,13 @@ export function LanguageSelect({ onDone }: { onDone: () => void }) {
               }}
             >
               <span style={{ fontSize: 30, lineHeight: 1 }}>{flag}</span>
-              <span style={{ flex: 1, fontSize: 17, fontWeight: 700, color: "var(--text-primary)" }}>
-                {translate(key, selected)}
+              <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
+                <span style={{ fontSize: 17, fontWeight: 700, color: "var(--text-primary)" }}>
+                  {translate(nameKey, selected)}
+                </span>
+                <span style={{ fontSize: 12, fontWeight: 500, color: "var(--text-tertiary)" }}>
+                  {translate(langKey, selected)}
+                </span>
               </span>
               <span
                 style={{
