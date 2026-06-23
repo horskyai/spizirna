@@ -16,7 +16,7 @@ export function PantryLimitBanner() {
   const count = usePantryStore((s) => s.items.length);
   const mode = useModeStore((s) => s.mode);
   const openSettings = useUIStore((s) => s.openSettings);
-  const discount = useDiscountStore((s) => s.percent);
+  const unlockedYearly = useDiscountStore((s) => s.unlockedYearly);
 
   const state = getLimitState(count, mode === "provoz");
   if (state === "ok") return null;
@@ -38,9 +38,9 @@ export function PantryLimitBanner() {
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{title}</p>
           <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)", lineHeight: 1.5 }}>{text}</p>
-          {over && discount && (
+          {over && unlockedYearly && (
             <p className="text-xs font-bold mt-2" style={{ color: "#E8862E" }}>
-              🎁 {t("pantry.limit.discount").replace("{n}", String(discount))}
+              {t("pantry.limit.discount").replace("{n}", String(unlockedYearly))}
             </p>
           )}
           {over && (

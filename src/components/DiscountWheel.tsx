@@ -1,39 +1,35 @@
 "use client";
 
 import { useState } from "react";
-import { useDiscountStore } from "@/store/discountStore";
+import { useDiscountStore, DISCOUNT_YEARLY, REGULAR_YEARLY } from "@/store/discountStore";
 import { useT } from "@/lib/i18n";
 
-// Kolo štěstí — uvítací sleva. Vždy vyhraje (10/20/30 %), 6 segmentů.
-// Segmenty střídají hodnoty, ať kolo vypadá bohatě, ale výhra je vždy sleva.
-const SEGMENTS = [10, 20, 30, 10, 20, 30];
+// Kolo štěstí — uvítací sleva na roční plán. Vždy dojede na zvýhodněnou
+// roční cenu (990 Kč). Segmenty střídají 990 a běžných 1490, ať kolo
+// vypadá "hrané", ale vyhrává se vždy ta lepší cena.
+const SEGMENTS = [DISCOUNT_YEARLY, REGULAR_YEARLY, DISCOUNT_YEARLY, REGULAR_YEARLY, DISCOUNT_YEARLY, REGULAR_YEARLY];
 const SEG_ANGLE = 360 / SEGMENTS.length; // 60°
-const COLORS = ["#4CAF82", "#2E7D5A", "#F7B267", "#4CAF82", "#2E7D5A", "#F7B267"];
+const COLORS = ["#2E7D5A", "#cBdCd2", "#2E7D5A", "#cBdCd2", "#2E7D5A", "#cBdCd2"];
+const WIN_INDEX = 0; // segment s 990 Kč, na kterém kolo vždy skončí
 
 export function DiscountWheel({ onClose }: { onClose: () => void }) {
   const t = useT();
-  const setResult = useDiscountStore((s) => s.setResult);
+  const setWon = useDiscountStore((s) => s.setWon);
   const [rotation, setRotation] = useState(0);
   const [spinning, setSpinning] = useState(false);
-  const [won, setWon] = useState<number | null>(null);
+  const [done, setDone] = useState(false);
 
   const spin = () => {
-    if (spinning || won !== null) return;
+    if (spinning || done) return;
     setSpinning(true);
 
-    // Vyber cílový segment náhodně (každý je výhra).
-    const idx = Math.floor(Math.random() * SEGMENTS.length);
-    const prize = SEGMENTS[idx];
-
-    // Úhel tak, aby střed segmentu skončil nahoře pod ukazatelem (12 hodin).
-    // Přidáme 5 plných otáček pro efekt.
-    const target = 360 * 5 + (360 - (idx * SEG_ANGLE + SEG_ANGLE / 2));
+    // Vždy dojede na segment s 990 Kč. 5 plných otáček pro efekt.
+    const target = 360 * 5 + (360 - (WIN_INDEX * SEG_ANGLE + SEG_ANGLE / 2));
     setRotation(target);
 
-    // Po dotočení (musí sednout na CSS transition 4s) ulož výsledek.
     setTimeout(() => {
-      setWon(prize);
-      setResult(prize);
+      setDone(true);
+      setWon(DISCOUNT_YEARLY);
       setSpinning(false);
     }, 4200);
   };
@@ -61,15 +57,15 @@ export function DiscountWheel({ onClose }: { onClose: () => void }) {
               const y1 = 50 + 50 * Math.sin(start);
               const x2 = 50 + 50 * Math.cos(end);
               const y2 = 50 + 50 * Math.sin(end);
-              // Pozice textu — uprostřed segmentu, blíž k okraji.
               const mid = ((i + 0.5) * SEG_ANGLE - 90) * (Math.PI / 180);
               const tx = 50 + 32 * Math.cos(mid);
               const ty = 50 + 32 * Math.sin(mid);
+              const isWin = i === WIN_INDEX;
               return (
                 <g key={i}>
                   <path d={`M50 50 L${x1} ${y1} A50 50 0 0 1 ${x2} ${y2} Z`} fill={COLORS[i]} />
-                  <text x={tx} y={ty} fill="white" fontSize="9" fontWeight="800" textAnchor="middle" dominantBaseline="middle" transform={`rotate(${i * SEG_ANGLE + SEG_ANGLE / 2}, ${tx}, ${ty})`}>
-                    {val}%
+                  <text x={tx} y={ty} fill={isWin ? "white" : "#5a6b60"} fontSize="8" fontWeight="800" textAnchor="middle" dominantBaseline="middle" transform={`rotate(${i * SEG_ANGLE + SEG_ANGLE / 2}, ${tx}, ${ty})`}>
+                    {val} Kč
                   </text>
                 </g>
               );
@@ -78,14 +74,14 @@ export function DiscountWheel({ onClose }: { onClose: () => void }) {
           </svg>
         </div>
 
-        {won === null ? (
+        {!done ? (
           <button onClick={spin} disabled={spinning} className="btn-primary" style={{ opacity: spinning ? 0.7 : 1 }}>
             {spinning ? t("wheel.spinning") : t("wheel.spin")}
           </button>
         ) : (
           <>
             <p className="text-lg font-bold mb-1" style={{ color: "var(--green-dark)" }}>
-              🎉 {t("wheel.won").replace("{n}", String(won))}
+              🎉 {t("wheel.won")}
             </p>
             <p className="text-xs mb-4" style={{ color: "var(--text-secondary)" }}>{t("wheel.wonHint")}</p>
             <button onClick={onClose} className="btn-primary">{t("wheel.claim")}</button>

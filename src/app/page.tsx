@@ -19,7 +19,7 @@ import { LanguageSelect } from "@/components/LanguageSelect";
 import { AuthScreen } from "@/components/AuthScreen";
 import { SettingsModal } from "@/components/SettingsModal";
 import { DiscountWheel } from "@/components/DiscountWheel";
-import { useDiscountStore } from "@/store/discountStore";
+import { useDiscountStore, WHEEL_AFTER_DAYS } from "@/store/discountStore";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   constructor(props: { children: ReactNode }) {
@@ -49,8 +49,10 @@ export default function Home() {
   const { activeTab, activeSheet, scannedProduct, closeSheet, settingsOpen, openSettings, closeSettings } = useUIStore();
   const { mode, setMode } = useModeStore();
   const { user, profile, loading: authLoading, init: authInit } = useAuthStore();
-  // Uvítací kolo štěstí — jen domácnost, jen jednou (po registraci/prvním vstupu).
+  // Uvítací kolo štěstí — jen domácnost, 7 dní po prvním vstupu, jen jednou.
   const wheelSpun = useDiscountStore((s) => s.spun);
+  const firstSeenAt = useDiscountStore((s) => s.firstSeenAt);
+  const markFirstSeen = useDiscountStore((s) => s.markFirstSeen);
   const [wheelClosed, setWheelClosed] = useState(false);
 
   // Inicializace přihlášení — načte session ze Supabase a poslouchá změny
@@ -65,6 +67,11 @@ export default function Home() {
       setMode(profile.mode);
     }
   }, [profile?.mode, mode, setMode]);
+
+  // Zaznamenej první vstup přihlášeného uživatele — od něj běží 7 dní do kola.
+  useEffect(() => {
+    if (user) markFirstSeen(Date.now());
+  }, [user, markFirstSeen]);
 
   // Úplný reset aplikace: otevřením /?reset se smažou všechna lokální data
   // a appka začne od splash screenu a onboardingu jako při první instalaci
@@ -146,8 +153,9 @@ export default function Home() {
 
       {settingsOpen && <SettingsModal onClose={closeSettings} />}
 
-      {/* Uvítací kolo štěstí — jen domácnost, dokud nebylo roztočeno */}
-      {mode !== "provoz" && !wheelSpun && !wheelClosed && (
+      {/* Uvítací kolo štěstí — jen domácnost, 7 dní po prvním vstupu, jednou */}
+      {mode !== "provoz" && !wheelSpun && !wheelClosed && firstSeenAt !== null &&
+        Date.now() - firstSeenAt >= WHEEL_AFTER_DAYS * 86_400_000 && (
         <DiscountWheel onClose={() => setWheelClosed(true)} />
       )}
 

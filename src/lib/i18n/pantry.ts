@@ -52,7 +52,7 @@ export const pantry: Record<string, Translation> = {
     sk: "Máš {n} položiek — zadarmo ich je {max}. Odomkni neobmedzenú špajzu za 6,90 €/mes.",
   },
   "pantry.limit.upgrade": { cs: "Odemknout neomezeně", sk: "Odomknúť neobmedzene" },
-  "pantry.limit.discount": { cs: "Máš slevu {n} % — uplatní se při upgradu", sk: "Máš zľavu {n} % — uplatní sa pri upgrade" },
+  "pantry.limit.discount": { cs: "🎁 Máš odemčený roční plán za {n} Kč (běžně 1 490 Kč)", sk: "🎁 Máš odomknutý ročný plán za {n} € (bežne 59,90 €)" },
 
   // Hledání a seznam
   "pantry.search.placeholder": { cs: "Hledat potraviny...", sk: "Hľadať potraviny..." },
