@@ -4,6 +4,7 @@ import { Sparkles, ArrowUpRight } from "lucide-react";
 import { usePantryStore } from "@/store/pantryStore";
 import { useModeStore } from "@/store/modeStore";
 import { useUIStore } from "@/store/uiStore";
+import { useDiscountStore } from "@/store/discountStore";
 import { getLimitState, FREE_LIMIT } from "@/lib/pantryLimit";
 import { useT } from "@/lib/i18n";
 
@@ -15,6 +16,7 @@ export function PantryLimitBanner() {
   const count = usePantryStore((s) => s.items.length);
   const mode = useModeStore((s) => s.mode);
   const openSettings = useUIStore((s) => s.openSettings);
+  const discount = useDiscountStore((s) => s.percent);
 
   const state = getLimitState(count, mode === "provoz");
   if (state === "ok") return null;
@@ -36,6 +38,11 @@ export function PantryLimitBanner() {
         <div className="flex-1 min-w-0">
           <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{title}</p>
           <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)", lineHeight: 1.5 }}>{text}</p>
+          {over && discount && (
+            <p className="text-xs font-bold mt-2" style={{ color: "#E8862E" }}>
+              🎁 {t("pantry.limit.discount").replace("{n}", String(discount))}
+            </p>
+          )}
           {over && (
             <button
               onClick={openSettings}

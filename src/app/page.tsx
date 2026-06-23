@@ -18,6 +18,8 @@ import { ModeSelect } from "@/components/ModeSelect";
 import { LanguageSelect } from "@/components/LanguageSelect";
 import { AuthScreen } from "@/components/AuthScreen";
 import { SettingsModal } from "@/components/SettingsModal";
+import { DiscountWheel } from "@/components/DiscountWheel";
+import { useDiscountStore } from "@/store/discountStore";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   constructor(props: { children: ReactNode }) {
@@ -47,6 +49,9 @@ export default function Home() {
   const { activeTab, activeSheet, scannedProduct, closeSheet, settingsOpen, openSettings, closeSettings } = useUIStore();
   const { mode, setMode } = useModeStore();
   const { user, profile, loading: authLoading, init: authInit } = useAuthStore();
+  // Uvítací kolo štěstí — jen domácnost, jen jednou (po registraci/prvním vstupu).
+  const wheelSpun = useDiscountStore((s) => s.spun);
+  const [wheelClosed, setWheelClosed] = useState(false);
 
   // Inicializace přihlášení — načte session ze Supabase a poslouchá změny
   useEffect(() => {
@@ -140,6 +145,11 @@ export default function Home() {
       )}
 
       {settingsOpen && <SettingsModal onClose={closeSettings} />}
+
+      {/* Uvítací kolo štěstí — jen domácnost, dokud nebylo roztočeno */}
+      {mode !== "provoz" && !wheelSpun && !wheelClosed && (
+        <DiscountWheel onClose={() => setWheelClosed(true)} />
+      )}
 
     </div>
     </ErrorBoundary>

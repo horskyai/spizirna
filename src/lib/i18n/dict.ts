@@ -22,6 +22,7 @@ import { settings } from "./settings";
 import { guide } from "./guide";
 import { provozsklad } from "./provozsklad";
 import { game } from "./game";
+import { wheel } from "./wheel";
 
 export interface Translation {
   cs: string;
@@ -48,4 +49,5 @@ export const DICT: Record<string, Translation> = {
   ...guide,
   ...provozsklad,
   ...game,
+  ...wheel,
 };
