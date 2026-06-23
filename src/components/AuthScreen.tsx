@@ -199,7 +199,7 @@ export function AuthScreen() {
       </div>
 
       {/* Form */}
-      <div className="space-y-3.5">
+      <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
         {mode === "signup" && (
           <div style={{ position: "relative" }}>
             <User size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
@@ -244,7 +244,7 @@ export function AuthScreen() {
         {mode === "login" && (
           <button
             onClick={() => { setView("reset"); setError(null); }}
-            className="text-xs w-full text-right px-1 -mt-0.5"
+            className="text-xs w-full text-right px-1"
             style={{ color: "var(--green-primary)", fontWeight: 600 }}
           >
             {t("auth.forgotPassword")}
@@ -255,7 +255,7 @@ export function AuthScreen() {
           onClick={submit}
           disabled={loading}
           className="btn-primary"
-          style={{ opacity: loading ? 0.7 : 1, marginTop: 6 }}
+          style={{ opacity: loading ? 0.7 : 1 }}
         >
           {loading ? t("auth.loading") : mode === "login" ? t("auth.login") : t("auth.createAccount")}
         </button>
