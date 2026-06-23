@@ -5,6 +5,10 @@ export const auth: Record<string, Translation> = {
   // ── Logo / hlavička ──
   "auth.appName": { cs: "Spižírna", sk: "Špajza" },
   "auth.tagline": { cs: "Chytrá správa potravin", sk: "Inteligentná správa potravín" },
+  // Tři výhody v hlavičce přihlašovací obrazovky
+  "auth.benefitScan": { cs: "Sken kódu", sk: "Sken kódu" },
+  "auth.benefitRecipes": { cs: "Recepty", sk: "Recepty" },
+  "auth.benefitExpiry": { cs: "Hlídá data", sk: "Stráži dátumy" },
 
   // ── Přepínač login / registrace ──
   "auth.login": { cs: "Přihlásit se", sk: "Prihlásiť sa" },

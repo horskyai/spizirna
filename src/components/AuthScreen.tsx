@@ -84,7 +84,7 @@ export function AuthScreen() {
               onChange={e => setEmail(e.target.value)}
               placeholder={t("auth.emailPlaceholder")}
               onKeyDown={e => e.key === "Enter" && submitReset()}
-              style={{ width: "100%", paddingLeft: 42, paddingRight: 16, paddingTop: 15, paddingBottom: 15, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+              style={{ width: "100%", paddingLeft: 42, paddingRight: 16, paddingTop: 15, paddingBottom: 15, borderRadius: 16, fontSize: 15, outline: "none", background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
             />
           </div>
           {error && <p className="text-sm px-1" style={{ color: "#C0392B" }}>{error}</p>}
@@ -136,24 +136,53 @@ export function AuthScreen() {
   }
 
   return (
-    <div className="flex flex-col min-h-dvh px-5 justify-center" style={{ background: "var(--bg-primary)", paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}>
-      {/* Logo */}
-      <div className="flex flex-col items-center mb-6">
+    <div className="flex flex-col min-h-dvh" style={{ background: "var(--bg-primary)" }}>
+      {/* ── Horní uvítací část — gradientní hero s logem ── */}
+      <div
+        className="flex flex-col items-center justify-center text-center px-6"
+        style={{
+          paddingTop: "calc(56px + env(safe-area-inset-top, 0px))",
+          paddingBottom: 48,
+          background: "linear-gradient(135deg, var(--green-primary) 0%, var(--green-dark) 100%)",
+          borderRadius: "0 0 32px 32px",
+          boxShadow: "0 8px 32px rgba(46,125,90,0.35)",
+        }}
+      >
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src="/icon-192.png"
           alt={t("auth.appName")}
-          width={72}
-          height={72}
-          className="rounded-2xl mb-3"
-          style={{ boxShadow: "0 6px 20px rgba(232,134,46,0.35)" }}
+          width={80}
+          height={80}
+          className="rounded-2xl mb-4"
+          style={{ boxShadow: "0 8px 24px rgba(0,0,0,0.25)" }}
         />
-        <h1 className="text-2xl font-bold" style={{ color: "var(--text-primary)", letterSpacing: "0.02em" }}>{t("auth.appName")}</h1>
-        <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>{t("auth.tagline")}</p>
+        <h1 className="text-2xl font-bold" style={{ color: "white", letterSpacing: "0.02em" }}>{t("auth.appName")}</h1>
+        <p className="text-sm mt-1" style={{ color: "rgba(255,255,255,0.85)" }}>{t("auth.tagline")}</p>
+
+        {/* Tři rychlé výhody — ať hero není prázdné */}
+        <div className="flex items-center justify-center gap-5 mt-6">
+          {[
+            { emoji: "📷", key: "auth.benefitScan" },
+            { emoji: "🍳", key: "auth.benefitRecipes" },
+            { emoji: "🔔", key: "auth.benefitExpiry" },
+          ].map((b) => (
+            <div key={b.key} className="flex flex-col items-center gap-1.5" style={{ width: 72 }}>
+              <div className="flex items-center justify-center" style={{ width: 40, height: 40, borderRadius: 14, background: "rgba(255,255,255,0.18)", fontSize: 20 }}>
+                {b.emoji}
+              </div>
+              <span className="text-xs font-medium leading-tight" style={{ color: "rgba(255,255,255,0.9)" }}>{t(b.key)}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
+      {/* ── Formulářová karta — pluje přes okraj hera ── */}
+      <div className="flex-1 px-5" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
+        <div className="card animate-slide-up" style={{ padding: 20, marginTop: -24 }}>
+
       {/* Toggle */}
-      <div className="flex rounded-2xl p-1 mb-5" style={{ background: "white", border: "1.5px solid var(--border)" }}>
+      <div className="flex rounded-2xl p-1 mb-5" style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)" }}>
         {(["login", "signup"] as const).map((m) => (
           <button
             key={m}
@@ -178,7 +207,7 @@ export function AuthScreen() {
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder={t("auth.namePlaceholder")}
-              style={{ width: "100%", paddingLeft: 42, paddingRight: 16, paddingTop: 15, paddingBottom: 15, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+              style={{ width: "100%", paddingLeft: 42, paddingRight: 16, paddingTop: 15, paddingBottom: 15, borderRadius: 16, fontSize: 15, outline: "none", background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
             />
           </div>
         )}
@@ -189,7 +218,7 @@ export function AuthScreen() {
             value={email}
             onChange={e => setEmail(e.target.value)}
             placeholder={t("auth.emailPlaceholder")}
-            style={{ width: "100%", paddingLeft: 42, paddingRight: 16, paddingTop: 15, paddingBottom: 15, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+            style={{ width: "100%", paddingLeft: 42, paddingRight: 16, paddingTop: 15, paddingBottom: 15, borderRadius: 16, fontSize: 15, outline: "none", background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
           />
         </div>
         <div style={{ position: "relative" }}>
@@ -200,7 +229,7 @@ export function AuthScreen() {
             onChange={e => setPassword(e.target.value)}
             placeholder={t("auth.passwordPlaceholder")}
             onKeyDown={e => e.key === "Enter" && submit()}
-            style={{ width: "100%", paddingLeft: 42, paddingRight: 16, paddingTop: 15, paddingBottom: 15, borderRadius: 16, fontSize: 15, outline: "none", background: "white", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
+            style={{ width: "100%", paddingLeft: 42, paddingRight: 16, paddingTop: 15, paddingBottom: 15, borderRadius: 16, fontSize: 15, outline: "none", background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
           />
         </div>
 
@@ -237,6 +266,8 @@ export function AuthScreen() {
             {t("auth.planNote")}
           </p>
         )}
+        </div>
+        </div>
       </div>
     </div>
   );
