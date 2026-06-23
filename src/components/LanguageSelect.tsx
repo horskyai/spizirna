@@ -6,15 +6,13 @@ import { useLocaleStore, Locale } from "@/store/localeStore";
 import { translate } from "@/lib/i18n";
 
 // Volíme zemi, ne jazyk — Česko nastaví češtinu, Slovensko slovenčinu.
-// Pod názvem země ukazujeme drobně jazyk, ať je vazba zřejmá.
 const COUNTRIES: {
   code: Locale;
   flag: string;
   nameKey: "lang.czech" | "lang.slovak";
-  langKey: "lang.czechLang" | "lang.slovakLang";
 }[] = [
-  { code: "cs", flag: "🇨🇿", nameKey: "lang.czech", langKey: "lang.czechLang" },
-  { code: "sk", flag: "🇸🇰", nameKey: "lang.slovak", langKey: "lang.slovakLang" },
+  { code: "cs", flag: "🇨🇿", nameKey: "lang.czech" },
+  { code: "sk", flag: "🇸🇰", nameKey: "lang.slovak" },
 ];
 
 export function LanguageSelect({ onDone }: { onDone: () => void }) {
@@ -68,7 +66,7 @@ export function LanguageSelect({ onDone }: { onDone: () => void }) {
 
       {/* Volby země */}
       <div style={{ width: "100%", maxWidth: 340, display: "flex", flexDirection: "column", gap: 12, marginBottom: 32 }}>
-        {COUNTRIES.map(({ code, flag, nameKey, langKey }) => {
+        {COUNTRIES.map(({ code, flag, nameKey }) => {
           const active = selected === code;
           return (
             <button
@@ -85,13 +83,8 @@ export function LanguageSelect({ onDone }: { onDone: () => void }) {
               }}
             >
               <span style={{ fontSize: 30, lineHeight: 1 }}>{flag}</span>
-              <span style={{ flex: 1, display: "flex", flexDirection: "column", gap: 2 }}>
-                <span style={{ fontSize: 17, fontWeight: 700, color: "var(--text-primary)" }}>
-                  {translate(nameKey, selected)}
-                </span>
-                <span style={{ fontSize: 12, fontWeight: 500, color: "var(--text-tertiary)" }}>
-                  {translate(langKey, selected)}
-                </span>
+              <span style={{ flex: 1, fontSize: 17, fontWeight: 700, color: "var(--text-primary)" }}>
+                {translate(nameKey, selected)}
               </span>
               <span
                 style={{
