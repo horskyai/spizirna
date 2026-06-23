@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useUIStore } from "@/store/uiStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useModeStore } from "@/store/modeStore";
+import { useAuthStore } from "@/store/authStore";
 import { Plus, Bell, AlertTriangle, ScanLine, PenLine, Home, Briefcase, Settings, HelpCircle } from "lucide-react";
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
@@ -33,10 +34,21 @@ const TITLES: Record<string, string> = {
   provoz: "header.title.provoz",
 };
 
+// Vybere pozdrav podle denní doby: ráno (5–11), odpoledne (12–17), večer (jinak).
+function greetingKey(): string {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 12) return "header.greetingMorning";
+  if (h >= 12 && h < 18) return "header.greetingAfternoon";
+  return "header.greetingEvening";
+}
+
 export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const t = useT();
   const { activeTab, setTab } = useUIStore();
   const { mode } = useModeStore();
+  // Křestní jméno pro osobní oslovení (první slovo z display_name).
+  const profile = useAuthStore((s) => s.profile);
+  const firstName = profile?.display_name?.trim().split(/\s+/)[0] || "";
   const pantryItems = usePantryStore((s) => s.items);
   const expiringItems = useMemo(() => {
     const cutoff = new Date();
@@ -89,7 +101,7 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
           {/* Top row: greeting + actions */}
           <div className="flex items-center justify-between mb-4">
             <div>
-              <p className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>{t("header.greeting")} 👋</p>
+              <p className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>{t(greetingKey())}{firstName ? `, ${firstName}` : ""} 👋</p>
               <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)", lineHeight: 1.2 }}>{t("header.myPantry")}</h1>
                 <span
@@ -236,10 +248,15 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
               <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
             </div>
             <div className="px-5 pt-2 pb-4">
-              <div className="flex items-center gap-2 mb-4">
+              <div className="flex items-center gap-2 mb-1">
                 <AlertTriangle size={18} style={{ color: "#B85C00" }} />
                 <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("header.expiringSoon")}</h3>
               </div>
+              <p className="text-sm mb-4" style={{ color: "var(--text-secondary)" }}>
+                {firstName
+                  ? t("header.expiryGreetingName").replace("{name}", firstName)
+                  : t("header.expiryGreeting")}
+              </p>
               <div className="space-y-2">
                 {expiringItems.map((item) => {
                   const days = daysUntil(item.expires_at!);

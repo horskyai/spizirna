@@ -13,8 +13,14 @@ export const header: Record<string, Translation> = {
   "header.title.provoz": { cs: "Provoz & inventura", sk: "Prevádzka & inventúra" },
 
   // ── Hero hlavička ──
-  "header.greeting": { cs: "Dobrý den", sk: "Dobrý deň" },
+  // Pozdrav podle denní doby (vybírá se v AppHeaderu podle hodiny).
+  "header.greetingMorning": { cs: "Dobré ráno", sk: "Dobré ráno" },
+  "header.greetingAfternoon": { cs: "Dobré odpoledne", sk: "Dobré popoludnie" },
+  "header.greetingEvening": { cs: "Dobrý večer", sk: "Dobrý večer" },
   "header.myPantry": { cs: "Moje spižírna", sk: "Moja špajza" },
+  // Osobní oslovení v panelu expirace ({name} = křestní jméno).
+  "header.expiryGreetingName": { cs: "{name}, tohle ti brzy končí — ať nic nevyhodíš:", sk: "{name}, toto ti čoskoro končí — nech nič nevyhodíš:" },
+  "header.expiryGreeting": { cs: "Tohle ti brzy končí — ať nic nevyhodíš:", sk: "Toto ti čoskoro končí — nech nič nevyhodíš:" },
 
   // ── Add menu ──
   "header.scanEan": { cs: "Naskenovat EAN kód", sk: "Naskenovať EAN kód" },
