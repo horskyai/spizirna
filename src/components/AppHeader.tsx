@@ -6,7 +6,8 @@ import { usePantryStore } from "@/store/pantryStore";
 import { useModeStore } from "@/store/modeStore";
 import { useAuthStore } from "@/store/authStore";
 import { useBusinessStore } from "@/store/businessStore";
-import { Plus, Bell, AlertTriangle, ScanLine, PenLine, Home, Briefcase, Settings, HelpCircle } from "lucide-react";
+import { useRecurringStore } from "@/store/recurringStore";
+import { Plus, Bell, AlertTriangle, ScanLine, PenLine, Home, Briefcase, Settings, HelpCircle, ChefHat, RefreshCw, Check } from "lucide-react";
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { ScreenGuide, useScreenGuide } from "@/components/ScreenGuide";
@@ -67,7 +68,28 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const [showManual, setShowManual] = useState(false);
   const [showAddRecipe, setShowAddRecipe] = useState(false);
   const [showExpiry, setShowExpiry] = useState(false);
+  const [remindedIds, setRemindedIds] = useState<string[]>([]);
+  const addRecurring = useRecurringStore((s) => s.addItem);
   const title = t(TITLES[activeTab] ?? "header.title.spizirna");
+
+  // „Co uvařit" z expirujících potravin → přepnout na Recepty.
+  const handleCookFromExpiring = () => {
+    setShowExpiry(false);
+    setTab("recepty");
+  };
+
+  // Přidá expirující potravinu do připomínek (výchozí interval 7 dní)
+  // a přepne na záložku Opakování, kde si uživatel interval upraví.
+  const handleRemind = (name: string, quantity: number, unit: string) => {
+    addRecurring({
+      name,
+      quantity: quantity || 1,
+      unit: unit || "ks",
+      interval_days: 7,
+      last_purchased: new Date().toISOString(),
+    });
+    setRemindedIds((prev) => [...prev, name]);
+  };
 
   // Příručka aktuálního okna — poprvé se ukáže sama, pak přes "?".
   // V provozu má tab Spižírna příručku o skladu (ne o domácí spižírně).
@@ -266,32 +288,72 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
                 {expiringItems.map((item) => {
                   const days = daysUntil(item.expires_at!);
                   const urgent = days <= 1;
+                  const reminded = remindedIds.includes(item.product.product_name);
                   return (
                     <div
                       key={item.id}
-                      className="flex items-center justify-between rounded-2xl px-4 py-3"
+                      className="rounded-2xl px-4 py-3"
                       style={{ background: urgent ? "#FEF3E2" : "white" }}
                     >
-                      <div>
-                        <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>
-                          {item.product.product_name}
-                        </p>
-                        <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
-                          {item.quantity}× · {t(`pantry.location.${item.location}`)}
-                        </p>
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="font-semibold text-sm" style={{ color: "var(--text-primary)" }}>
+                            {item.product.product_name}
+                          </p>
+                          <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                            {item.quantity}× · {t(`pantry.location.${item.location}`)}
+                          </p>
+                        </div>
+                        <span
+                          className="text-xs font-bold px-2 py-1 rounded-full"
+                          style={{
+                            background: urgent ? "#D95757" : "#E8B84B",
+                            color: "white",
+                          }}
+                        >
+                          {days < 0 ? t("header.expired") : days === 0 ? t("header.today") : days === 1 ? t("header.tomorrow") : t("header.inDays").replace("{n}", String(days))}
+                        </span>
                       </div>
-                      <span
-                        className="text-xs font-bold px-2 py-1 rounded-full"
-                        style={{
-                          background: urgent ? "#D95757" : "#E8B84B",
-                          color: "white",
-                        }}
-                      >
-                        {days < 0 ? t("header.expired") : days === 0 ? t("header.today") : days === 1 ? t("header.tomorrow") : t("header.inDays").replace("{n}", String(days))}
-                      </span>
+                      {/* Akce pro tuto potravinu */}
+                      <div className="flex gap-2 mt-2.5">
+                        <button
+                          onClick={() => handleRemind(item.product.product_name, item.quantity, item.unit)}
+                          disabled={reminded}
+                          className="flex items-center justify-center gap-1.5 flex-1 py-2 rounded-xl text-xs font-bold transition-all"
+                          style={{
+                            background: reminded ? "var(--green-light)" : "white",
+                            color: reminded ? "var(--green-dark)" : "var(--text-secondary)",
+                            border: `1.5px solid ${reminded ? "var(--green-primary)" : "var(--border)"}`,
+                          }}
+                        >
+                          {reminded
+                            ? <><Check size={13} /> {t("header.expiry.reminded")}</>
+                            : <><RefreshCw size={13} /> {t("header.expiry.remind")}</>}
+                        </button>
+                      </div>
                     </div>
                   );
                 })}
+              </div>
+
+              {/* Hromadné akce pod seznamem */}
+              <div className="flex flex-col gap-2 mt-4">
+                <button
+                  onClick={handleCookFromExpiring}
+                  className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl font-bold text-sm"
+                  style={{ background: "var(--green-primary)", color: "white" }}
+                >
+                  <ChefHat size={17} /> {t("header.expiry.cook")}
+                </button>
+                {remindedIds.length > 0 && (
+                  <button
+                    onClick={() => { setShowExpiry(false); setTab("opakujici"); }}
+                    className="flex items-center justify-center gap-2 w-full py-3 rounded-2xl font-bold text-sm"
+                    style={{ background: "white", color: "var(--green-dark)", border: "1.5px solid var(--green-primary)" }}
+                  >
+                    <RefreshCw size={16} /> {t("header.expiry.goToReminders")}
+                  </button>
+                )}
               </div>
             </div>
           </div>

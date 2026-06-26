@@ -34,7 +34,7 @@ function plural(t: (k: string) => string, n: number, oneKey: string, manyKey: st
 export function TodaySummary() {
   const t = useT();
   const mode = useModeStore((s) => s.mode);
-  const { setTab } = useUIStore();
+  const { setTab, openPantryWithFilter } = useUIStore();
 
   // Stavy z obou režimů čteme vždy (hooks nesmí být podmíněné);
   // použijeme jen ty, které odpovídají aktuálnímu režimu.
@@ -104,7 +104,7 @@ export function TodaySummary() {
         bg: "#FFF3E0",
         label: t("pantry.summary.expiring"),
         detail: plural(t, expiringCount, "pantry.summary.expiringOne", "pantry.summary.expiringItems"),
-        onClick: () => setTab("spizirna"),
+        onClick: () => openPantryWithFilter("expiring"),
       });
     }
     if (lowStockCount > 0) {
@@ -115,7 +115,7 @@ export function TodaySummary() {
         bg: "#FDE8E8",
         label: t("pantry.summary.lowStock"),
         detail: plural(t, lowStockCount, "pantry.summary.lowStockOne", "pantry.summary.lowStockItems"),
-        onClick: () => setTab("spizirna"),
+        onClick: () => openPantryWithFilter("lowStock"),
       });
     }
     if (shoppingCount > 0) {

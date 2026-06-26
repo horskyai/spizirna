@@ -24,6 +24,10 @@ const LOCATION_LABELS: Record<StorageLocation, { labelKey: string; Icon: React.F
   linka: { labelKey: "pantry.location.linka", Icon: SkrinskaSVG },
 };
 
+// Prahy pro rychlý filtr z „Dnešní přehled" — musí sedět s TodaySummary.
+const PANTRY_EXPIRY_DAYS = 3;
+const PANTRY_LOW_STOCK = 1;
+
 function ExpiryBadge({ expiresAt }: { expiresAt?: string }) {
   const t = useT();
   if (!expiresAt) return null;
@@ -259,7 +263,7 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
 export function PantryView() {
   const t = useT();
   const { items, removeItem } = usePantryStore();
-  const { setTab } = useUIStore();
+  const { setTab, pantryFilter, setPantryFilter } = useUIStore();
   const mode = useModeStore((s) => s.mode);
   const [filter, setFilter] = useState<StorageLocation | "vse">("vse");
   const [search, setSearch] = useState("");
@@ -271,9 +275,15 @@ export function PantryView() {
   }
 
   const byLocation = filter === "vse" ? items : items.filter(i => i.location === filter);
-  const filtered = search.trim()
-    ? byLocation.filter(i => i.product.product_name.toLowerCase().includes(search.trim().toLowerCase()))
+  // Rychlý filtr z přehledu (Brzy expiruje / Dochází) — stejné prahy jako v TodaySummary.
+  const byQuick = pantryFilter === "expiring"
+    ? byLocation.filter(i => i.expires_at && daysUntil(i.expires_at) <= PANTRY_EXPIRY_DAYS)
+    : pantryFilter === "lowStock"
+    ? byLocation.filter(i => i.quantity <= PANTRY_LOW_STOCK)
     : byLocation;
+  const filtered = search.trim()
+    ? byQuick.filter(i => i.product.product_name.toLowerCase().includes(search.trim().toLowerCase()))
+    : byQuick;
 
   const filters: { id: StorageLocation | "vse"; label: string; Icon: React.FC<{ size?: number }> }[] = [
     { id: "vse", label: t("pantry.filter.vse"), Icon: VseSVG },
@@ -378,6 +388,28 @@ export function PantryView() {
             );
           })}
         </div>
+
+        {/* Aktivní rychlý filtr z přehledu — jasně viditelný + zrušitelný */}
+        {pantryFilter && (
+          <div
+            className="flex items-center gap-2 mb-3 px-3.5 py-2.5 rounded-xl"
+            style={{
+              background: pantryFilter === "expiring" ? "#FFF3E0" : "#FDE8E8",
+              border: `1.5px solid ${pantryFilter === "expiring" ? "#F0B27A" : "#F1948A"}`,
+            }}
+          >
+            <span className="text-sm font-semibold flex-1" style={{ color: pantryFilter === "expiring" ? "#B85C00" : "#C0392B" }}>
+              {pantryFilter === "expiring" ? t("pantry.quickFilter.expiring") : t("pantry.quickFilter.lowStock")}
+            </span>
+            <button
+              onClick={() => setPantryFilter(null)}
+              className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg"
+              style={{ background: "white", color: "var(--text-secondary)" }}
+            >
+              {t("pantry.quickFilter.clear")} <X size={13} />
+            </button>
+          </div>
+        )}
 
         {/* Items */}
         {filtered.length === 0 ? (

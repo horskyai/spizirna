@@ -29,6 +29,9 @@ function AddRecurringModal({ onClose }: { onClose: () => void }) {
   const [quantity, setQuantity] = useState("1");
   const [unit, setUnit] = useState("ks");
   const [intervalDays, setIntervalDays] = useState(7);
+  // Text vlastního pole držíme zvlášť, aby šlo pole při psaní vyprázdnit,
+  // aniž by hodnota hned přeskočila zpět na 7.
+  const [customDays, setCustomDays] = useState("7");
   const [store, setStore] = useState("");
 
   const handleAdd = () => {
@@ -105,7 +108,7 @@ function AddRecurringModal({ onClose }: { onClose: () => void }) {
                 {INTERVALS.map((iv) => (
                   <button
                     key={iv.days}
-                    onClick={() => setIntervalDays(iv.days)}
+                    onClick={() => { setIntervalDays(iv.days); setCustomDays(String(iv.days)); }}
                     className="flex items-center justify-between px-3 py-2.5 rounded-xl text-sm font-medium transition-all"
                     style={{
                       background: intervalDays === iv.days ? "var(--green-light)" : "white",
@@ -117,17 +120,41 @@ function AddRecurringModal({ onClose }: { onClose: () => void }) {
                     {intervalDays === iv.days && <Check size={14} style={{ color: "var(--green-primary)" }} />}
                   </button>
                 ))}
-                <div className="flex items-center gap-2">
-                  <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>{t("recurring.orCustomDays")}</p>
-                  <input
-                    type="number"
-                    value={intervalDays}
-                    onChange={(e) => setIntervalDays(parseInt(e.target.value) || 7)}
-                    className="w-16 px-2 py-1.5 rounded-lg text-sm outline-none text-center font-semibold"
-                    style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
-                  />
-                  <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>{t("recurring.days")}</p>
-                </div>
+                {(() => {
+                  // "Vlastní" = hodnota, která není mezi přednastavenými intervaly.
+                  const isCustom = !INTERVALS.some((iv) => iv.days === intervalDays);
+                  return (
+                    <div
+                      className="flex items-center gap-2 px-3 py-2.5 rounded-xl transition-all"
+                      style={{
+                        background: isCustom ? "var(--green-light)" : "white",
+                        border: `1.5px solid ${isCustom ? "var(--green-primary)" : "var(--border)"}`,
+                      }}
+                    >
+                      <p className="text-xs flex-1" style={{ color: isCustom ? "var(--green-dark)" : "var(--text-tertiary)", fontWeight: isCustom ? 600 : 400 }}>
+                        {t("recurring.orCustomDays")}
+                      </p>
+                      <input
+                        type="number"
+                        min={1}
+                        inputMode="numeric"
+                        value={customDays}
+                        onChange={(e) => {
+                          // Necháme pole klidně i prázdné při psaní; hodnotu
+                          // přepíšeme jen když je to platné kladné číslo.
+                          const raw = e.target.value;
+                          setCustomDays(raw);
+                          const n = parseInt(raw, 10);
+                          if (!isNaN(n) && n > 0) setIntervalDays(n);
+                        }}
+                        onFocus={(e) => e.target.select()}
+                        className="w-16 px-2 py-1.5 rounded-lg text-sm outline-none text-center font-semibold"
+                        style={{ background: "white", border: `1.5px solid ${isCustom ? "var(--green-primary)" : "var(--border)"}`, color: "var(--text-primary)" }}
+                      />
+                      <p className="text-xs" style={{ color: "var(--text-tertiary)" }}>{t("recurring.days")}</p>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 

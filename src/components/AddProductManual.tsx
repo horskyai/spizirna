@@ -6,6 +6,7 @@ import { ProductInfo, StorageLocation } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
 import { rememberProduct } from "@/lib/productLookup";
 import { daysUntil } from "@/lib/dateUtils";
+import { toBaseUnit } from "@/lib/units";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG } from "@/components/LocationIcons";
 import { VoiceInput, ParsedItem } from "@/components/VoiceInput";
 import { VoiceReviewModal, ReviewItem } from "@/components/VoiceReviewModal";
@@ -39,6 +40,8 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
 
   const [step, setStep] = useState<"basic" | "nutrition" | "pantry">("basic");
   const [added, setAdded] = useState(false);
+  // Pojistka proti dvojímu uložení (dotykový dvojklik než se sheet zavře).
+  const savingRef = useRef(false);
 
   // Basic info
   const [name, setName] = useState("");
@@ -113,7 +116,13 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
   };
 
   const handleVoiceConfirm = (items: ReviewItem[]) => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     items.forEach((item) => {
+      // Převeď jednotku na základní (kg→g, l→ml, dkg→g), ať se hodnota
+      // nezahodí a stejné potraviny v různých jednotkách jdou sečíst
+      // (1 kg + 300 g = 1300 g = 1,3 kg). Produkt zná jen g/ml/ks.
+      const { quantity, unit } = toBaseUnit(item.quantity, item.unit);
       const product: ProductInfo = {
         ean_code: `manual-${Date.now()}-${Math.random()}`,
         product_name: item.name,
@@ -121,12 +130,12 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
         category: item.category,
         subcategory: "",
         image_url: item.photoUrl ?? "",
-        unit: (["g", "ml", "ks"].includes(item.unit) ? item.unit : "ks") as "g" | "ml" | "ks",
+        unit,
         allergens: [],
         source: "user_added",
         verified: false,
       };
-      addItem(product, item.quantity, location, undefined, undefined, undefined, item.photoUrl ?? undefined);
+      addItem(product, quantity, location, undefined, undefined, undefined, item.photoUrl ?? undefined);
     });
     setVoiceReviewItems(null);
     setAdded(true);
@@ -134,6 +143,8 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
   };
 
   const handleAdd = () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     const product: ProductInfo = {
       ean_code: prefillEAN ?? `manual-${Date.now()}`,
       product_name: name.trim(),

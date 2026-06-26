@@ -33,6 +33,35 @@ export const productsheet: Record<string, Translation> = {
 
   // ── Alergeny ──
   "product.allergens": { cs: "Alergeny", sk: "Alergény" },
+  // Překlad názvů alergenů z Open Food Facts (tagy chodí anglicky, např. "mustard").
+  // Klíč = OFF tag bez prefixu en:/cs:, malými písmeny. Když tag chybí v mapě,
+  // translate() vrátí původní text, takže se appka nikdy nerozbije.
+  "product.allergen.gluten": { cs: "Lepek", sk: "Lepok" },
+  "product.allergen.milk": { cs: "Mléko", sk: "Mlieko" },
+  "product.allergen.eggs": { cs: "Vejce", sk: "Vajcia" },
+  "product.allergen.nuts": { cs: "Ořechy", sk: "Orechy" },
+  "product.allergen.peanuts": { cs: "Arašídy", sk: "Arašidy" },
+  "product.allergen.soybeans": { cs: "Sója", sk: "Sója" },
+  "product.allergen.soy": { cs: "Sója", sk: "Sója" },
+  "product.allergen.fish": { cs: "Ryby", sk: "Ryby" },
+  "product.allergen.crustaceans": { cs: "Korýši", sk: "Kôrovce" },
+  "product.allergen.molluscs": { cs: "Měkkýši", sk: "Mäkkýše" },
+  "product.allergen.celery": { cs: "Celer", sk: "Zeler" },
+  "product.allergen.mustard": { cs: "Hořčice", sk: "Horčica" },
+  "product.allergen.sesame-seeds": { cs: "Sezam", sk: "Sezam" },
+  "product.allergen.sesame": { cs: "Sezam", sk: "Sezam" },
+  "product.allergen.sulphur-dioxide-and-sulphites": { cs: "Oxid siřičitý a siřičitany", sk: "Oxid siričitý a siričitany" },
+  "product.allergen.sulphites": { cs: "Siřičitany", sk: "Siričitany" },
+  "product.allergen.lupin": { cs: "Vlčí bob (lupina)", sk: "Vlčí bôb (lupina)" },
+  // Stromové ořechy (OFF je často rozepisuje samostatně)
+  "product.allergen.almonds": { cs: "Mandle", sk: "Mandle" },
+  "product.allergen.hazelnuts": { cs: "Lískové ořechy", sk: "Lieskové orechy" },
+  "product.allergen.walnuts": { cs: "Vlašské ořechy", sk: "Vlašské orechy" },
+  "product.allergen.cashew-nuts": { cs: "Kešu ořechy", sk: "Kešu orechy" },
+  "product.allergen.pecan-nuts": { cs: "Pekanové ořechy", sk: "Pekanové orechy" },
+  "product.allergen.pistachios": { cs: "Pistácie", sk: "Pistácie" },
+  "product.allergen.macadamia-nuts": { cs: "Makadamové ořechy", sk: "Makadamové orechy" },
+  "product.allergen.brazil-nuts": { cs: "Para ořechy", sk: "Para orechy" },
 
   // ── Historie cen ──
   "product.priceHistory": { cs: "HISTORIE CEN", sk: "HISTÓRIA CIEN" },

@@ -40,4 +40,9 @@ export const header: Record<string, Translation> = {
   "header.today": { cs: "Dnes", sk: "Dnes" },
   "header.tomorrow": { cs: "Zítra", sk: "Zajtra" },
   "header.inDays": { cs: "Za {n} dní", sk: "O {n} dní" },
+  // Akce v panelu expirace
+  "header.expiry.remind": { cs: "Připomenout", sk: "Pripomenúť" },
+  "header.expiry.reminded": { cs: "V připomínkách", sk: "V pripomienkach" },
+  "header.expiry.cook": { cs: "Co z toho uvařit", sk: "Čo z toho uvariť" },
+  "header.expiry.goToReminders": { cs: "Upravit připomínky", sk: "Upraviť pripomienky" },
 };

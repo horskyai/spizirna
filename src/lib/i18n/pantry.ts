@@ -58,6 +58,11 @@ export const pantry: Record<string, Translation> = {
   "pantry.search.placeholder": { cs: "Hledat potraviny...", sk: "Hľadať potraviny..." },
   "pantry.list.empty": { cs: "Žádné produkty v této kategorii", sk: "Žiadne produkty v tejto kategórii" },
 
+  // Rychlý filtr z karet „Dnešní přehled"
+  "pantry.quickFilter.expiring": { cs: "Zobrazuji jen potraviny, které brzy expirují", sk: "Zobrazujem len potraviny, ktoré čoskoro expirujú" },
+  "pantry.quickFilter.lowStock": { cs: "Zobrazuji jen potraviny, které docházejí", sk: "Zobrazujem len potraviny, ktoré dochádzajú" },
+  "pantry.quickFilter.clear": { cs: "Zrušit", sk: "Zrušiť" },
+
   // Dnešní přehled (karta navrch spížírny)
   "pantry.summary.title": { cs: "Dnešní přehled", sk: "Dnešný prehľad" },
   "pantry.summary.allClear": {

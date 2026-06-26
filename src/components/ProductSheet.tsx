@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef } from "react";
 import { X, Plus, AlertCircle, Pencil, ChevronLeft } from "lucide-react";
 import { ProductInfo, StorageLocation } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
@@ -67,8 +67,15 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
     ? `${product.pieces_count} ks`
     : "";
 
+  // Pojistka proti dvojímu uložení: na dotyku se klik snadno spustí 2×
+  // (touch + emulovaný click) a sheet se zavírá až po 1,2 s. Ref drží blok
+  // synchronně — stav by se mezi dvěma rychlými tapy nestihl aktualizovat.
+  const savingRef = useRef(false);
+
   // Přidá qty k množství první existující položky
   const handleAddToExisting = () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     const first = existingItems[0];
     updateItem(first.id, { quantity: first.quantity + qty });
     setAddedToExisting(true);
@@ -76,6 +83,8 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
   };
 
   const handleAdd = () => {
+    if (savingRef.current) return;
+    savingRef.current = true;
     if (isProvoz) {
       // Provozovna: přidej do skladu (inventury), ne do spížírny.
       addPolozka({
@@ -328,11 +337,20 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
                     <p className="text-xs font-semibold" style={{ color: "#B85C00" }}>{t("product.allergens")}</p>
                   </div>
                   <div className="flex flex-wrap gap-1.5">
-                    {product.allergens.map((a) => (
-                      <span key={a} className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "#FCDCB0", color: "#B85C00" }}>
-                        {a}
-                      </span>
-                    ))}
+                    {product.allergens.map((a) => {
+                      // OFF tagy chodí anglicky (např. "mustard"). Přeložíme přes
+                      // slovník; chybějící tag → původní text s velkým písmenem.
+                      const key = `product.allergen.${a.toLowerCase().trim()}`;
+                      const translated = t(key);
+                      const label = translated === key
+                        ? a.charAt(0).toUpperCase() + a.slice(1)
+                        : translated;
+                      return (
+                        <span key={a} className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: "#FCDCB0", color: "#B85C00" }}>
+                          {label}
+                        </span>
+                      );
+                    })}
                   </div>
                 </div>
               )}
