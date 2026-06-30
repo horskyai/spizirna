@@ -4,6 +4,7 @@ import { useState, useMemo, useRef } from "react";
 import { Plus, Check, ShoppingCart, X, Share2, Lightbulb, ChevronDown, ChevronUp, Mic, MicOff, Loader, Search } from "lucide-react";
 import { useShoppingStore, ShoppingMode } from "@/store/shoppingStore";
 import { usePantryStore } from "@/store/pantryStore";
+import { useProvozStore } from "@/store/provozStore";
 import { useRecurringStore } from "@/store/recurringStore";
 import { useRecipeStore } from "@/store/recipeStore";
 import { useModeStore } from "@/store/modeStore";
@@ -524,6 +525,7 @@ export function ShoppingView() {
   const [editItem, setEditItem] = useState<ShoppingItem | null>(null);
 
   const addToPantry = usePantryStore((s) => s.addItem);
+  const prijemNaSklad = useProvozStore((s) => s.prijemNaSklad);
   const [showAdd, setShowAdd] = useState(false);
   const [view, setView] = useState<"vse" | "kategorie">("vse");
   const [search, setSearch] = useState("");
@@ -536,8 +538,14 @@ export function ShoppingView() {
     if (!wasChecked) {
       setJustChecked((prev) => new Set(prev).add(item.id));
       setTimeout(() => setJustChecked((prev) => { const s = new Set(prev); s.delete(item.id); return s; }), 400);
-      addToPantry(shoppingItemToProduct(item), item.quantity, "spiz");
-      setToast(t("shopping.toast.toPantry").replace("{name}", item.name));
+      if (mode === "provoz") {
+        // V provozu odškrtnutí = příjem zboží na sklad (ne do domácí spižírny).
+        prijemNaSklad(item.name, item.quantity, item.unit);
+        setToast(t("shopping.toast.toSklad").replace("{name}", item.name));
+      } else {
+        addToPantry(shoppingItemToProduct(item), item.quantity, "spiz");
+        setToast(t("shopping.toast.toPantry").replace("{name}", item.name));
+      }
       setTimeout(() => setToast(null), 3000);
     }
   };

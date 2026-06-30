@@ -14,6 +14,36 @@ import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { useT, useLocale } from "@/lib/i18n";
 import { localizeRecipe } from "@/lib/localizeRecipe";
 
+// Unifikovaná zásoba napříč režimy (spižírna i provozní sklad).
+interface StockItem { id: string; name: string; quantity: number; ean?: string }
+
+// Najde ve skladu položku odpovídající ingredienci (přesně přes EAN/název,
+// jinak fuzzy přes klíčová slova). Sdíleno domácností i provozem.
+function findStock(stock: StockItem[], ing: { name: string; linked_ean?: string; linked_product_name?: string }): StockItem | null {
+  if (ing.linked_ean) {
+    const m = stock.find((p) => p.ean && p.ean === ing.linked_ean);
+    if (m) return m;
+  }
+  if (ing.linked_product_name) {
+    const m = stock.find((p) => p.name === ing.linked_product_name);
+    if (m) return m;
+  }
+  const STOP = new Set(["konzervovaná", "konzervovaný", "konzervované", "čerstvý", "čerstvá", "čerstvé",
+    "sušený", "sušená", "sušené", "mražený", "mražená", "mražené", "celý", "celá", "celé",
+    "strouhaný", "strouhaná", "nakrájený", "nakrájená", "mletý", "mletá", "mleté",
+    "uvařená", "uvařený", "velký", "velká", "malý", "malá", "baby", "sterilované", "sterilovaný"]);
+  const keywords = (str: string) =>
+    str.toLowerCase()
+      .split(/[\s,()\/]+/)
+      .map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, ""))
+      .filter(w => w.length > 2 && !STOP.has(w));
+  const ingWords = keywords(ing.name);
+  return stock.find((p) => {
+    const prodWords = keywords(p.name);
+    return ingWords.some(iw => prodWords.some(pw => pw.includes(iw) || iw.includes(pw)));
+  }) ?? null;
+}
+
 function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void }) {
   const t = useT();
   const [expanded, setExpanded] = useState(false);
@@ -21,6 +51,7 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
   const [showCookModal, setShowCookModal] = useState(false);
   const [cookPortions, setCookPortions] = useState(recipe.servings);
   const pantryItems = usePantryStore((s) => s.items);
+  const provozPolozky = useProvozStore((s) => s.polozky);
   const addItems = useShoppingStore((s) => s.addItems);
   const setTab = useUIStore((s) => s.setTab);
   const appMode = useModeStore((s) => s.mode);
@@ -28,42 +59,16 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
   const [addedToCart, setAddedToCart] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const findPantryMatch = (ing: typeof recipe.ingredients[0]) => {
-    // 1. Přesné propojení přes linked_ean nebo linked_product_name
-    if (ing.linked_ean) {
-      const m = pantryItems.find((p) => p.product.ean_code === ing.linked_ean);
-      if (m) return m;
-    }
-    if (ing.linked_product_name) {
-      const m = pantryItems.find((p) => p.product.product_name === ing.linked_product_name);
-      if (m) return m;
-    }
-    // 2. Fuzzy matching — klíčová slova z názvu ingredience vs produktu
-    // Stopslova která ignorujeme při porovnání
-    const STOP = new Set(["konzervovaná", "konzervovaný", "konzervované", "čerstvý", "čerstvá", "čerstvé",
-      "sušený", "sušená", "sušené", "mražený", "mražená", "mražené", "celý", "celá", "celé",
-      "strouhaný", "strouhaná", "strouhaný", "nakrájený", "nakrájená", "mletý", "mletá", "mleté",
-      "uvařená", "uvařený", "velký", "velká", "malý", "malá", "baby", "sterilované", "sterilovaný"]);
+  // Unifikovaný seznam zásob napříč režimy: v domácnosti spižírna,
+  // v provozu živý sklad. Matching i odečet pracují nad touto abstrakcí.
+  const stock: StockItem[] = appMode === "provoz"
+    ? provozPolozky.map((p) => ({ id: p.id, name: p.nazev, quantity: p.aktualniStav }))
+    : pantryItems.map((p) => ({ id: p.id, name: p.product.product_name, quantity: p.quantity, ean: p.product.ean_code }));
 
-    const keywords = (str: string) =>
-      str.toLowerCase()
-        .split(/[\s,()\/]+/)
-        .map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, ""))
-        .filter(w => w.length > 2 && !STOP.has(w));
-
-    const ingWords = keywords(ing.name);
-
-    return pantryItems.find((p) => {
-      const prodWords = keywords(p.product.product_name);
-      // Stačí aby se alespoň jedno klíčové slovo shodovalo
-      return ingWords.some(iw =>
-        prodWords.some(pw => pw.includes(iw) || iw.includes(pw))
-      );
-    }) ?? null;
-  };
+  const findStockMatch = (ing: typeof recipe.ingredients[0]) => findStock(stock, ing);
 
   const ingredientsWithStatus = recipe.ingredients.map((ing) => {
-    const pantryMatch = findPantryMatch(ing);
+    const pantryMatch = findStockMatch(ing);
     const pantryQty = pantryMatch?.quantity ?? 0;
     // available = je v spižírně A množství stačí (pokud ing.quantity=0, potřebujeme aspoň existenci v spižírně)
     const available = pantryMatch !== null && (ing.quantity === 0 || pantryQty >= ing.quantity);
@@ -80,7 +85,7 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
 
   const maxRatio = recipe.ingredients.length === 0 ? 1 : Math.min(
     ...recipe.ingredients.map((ing) => {
-      const m = findPantryMatch(ing);
+      const m = findStockMatch(ing);
       return m ? m.quantity / ing.quantity : 0;
     })
   );
@@ -357,9 +362,12 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
   const t = useT();
   const consumeItem = usePantryStore((s) => s.consumeItem);
   const pantryItems = usePantryStore((s) => s.items);
+  const provozPolozky = useProvozStore((s) => s.polozky);
+  const odeberZeSkladu = useProvozStore((s) => s.odeberZeSkladu);
   const addItems = useShoppingStore((s) => s.addItems);
   const appMode = useModeStore((s) => s.mode);
   const shoppingMode = appMode === "provoz" ? "provoz" : "domacnost";
+  const recordCooked = useGamificationStore((s) => s.recordCooked);
   const [done, setDone] = useState(false);
   const [addedMissing, setAddedMissing] = useState(false);
   const ratio = portions / recipe.servings;
@@ -368,23 +376,17 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
   const missingIngs = ingredientsWithStatus.filter((i) => !i.available && i.pantryQty === 0);
 
   const handleCook = () => {
-    const STOP = new Set(["konzervovaná", "konzervovaný", "konzervované", "čerstvý", "čerstvá", "čerstvé",
-      "sušený", "sušená", "sušené", "mražený", "mražená", "mražené", "celý", "celá", "celé",
-      "strouhaný", "strouhaná", "nakrájený", "nakrájená", "mletý", "mletá", "mleté",
-      "uvařená", "uvařený", "velký", "velká", "malý", "malá", "baby", "sterilované"]);
-    const keywords = (str: string) =>
-      str.toLowerCase().split(/[\s,()\/]+/)
-        .map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, ""))
-        .filter(w => w.length > 2 && !STOP.has(w));
-
+    // Odečti suroviny z příslušného skladu podle režimu (provoz vs. spižírna).
+    const stock: StockItem[] = appMode === "provoz"
+      ? provozPolozky.map((p) => ({ id: p.id, name: p.nazev, quantity: p.aktualniStav }))
+      : pantryItems.map((p) => ({ id: p.id, name: p.product.product_name, quantity: p.quantity, ean: p.product.ean_code }));
     recipe.ingredients.forEach((ing) => {
-      const ingWords = keywords(ing.name);
-      const m = pantryItems.find((p) => {
-        const prodWords = keywords(p.product.product_name);
-        return ingWords.some(iw => prodWords.some(pw => pw.includes(iw) || iw.includes(pw)));
-      });
-      if (m) consumeItem(m.id, ing.quantity * ratio);
+      const m = findStock(stock, ing);
+      if (!m) return;
+      if (appMode === "provoz") odeberZeSkladu(m.id, ing.quantity * ratio);
+      else consumeItem(m.id, ing.quantity * ratio);
     });
+    recordCooked();
     setDone(true);
     setTimeout(onClose, 1200);
   };
@@ -579,6 +581,7 @@ function TodaySuggestionWidget() {
   const { recipe: rawRecipe, matched, total } = suggestion;
   const recipe = localizeRecipe(rawRecipe, locale);
   const percent = Math.round((matched / total) * 100);
+  // Chybějící suroviny počítáme proti aktuálním zásobám podle režimu (stockNames).
   const missing = recipe.ingredients.filter((ing) => {
     const STOP = new Set(["konzervovaná","konzervovaný","konzervované","čerstvý","čerstvá","čerstvé",
       "sušený","sušená","sušené","mražený","mražená","mražené"]);
@@ -587,8 +590,8 @@ function TodaySuggestionWidget() {
         .map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, ""))
         .filter(w => w.length > 2 && !STOP.has(w));
     const ingWords = keywords(ing.name);
-    return !pantryItems.some((p) => {
-      const prodWords = keywords(p.product.product_name);
+    return !stockNames.some((n) => {
+      const prodWords = keywords(n);
       return ingWords.some(iw => prodWords.some(pw => pw.includes(iw) || iw.includes(pw)));
     });
   });

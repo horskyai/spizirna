@@ -27,9 +27,11 @@ export interface InventuraPolozka {
   nazev: string;
   kategorie: InventuraKategorie;
   jednotka: string;
+  aktualniStav: number; // ŽIVÉ množství na skladě — nákup zvyšuje, odpis/vaření snižuje, inventura koriguje
   minZasoba: number; // minimální zásoba — pod tím upozornit
   cenaJednotka?: number; // cena za jednotku pro výpočet hodnoty skladu
-  dodavatel?: string;
+  dodavatelId?: string; // reference na Dodavatel.id (číselník)
+  dodavatel?: string; // ZASTARALÉ: volný text dodavatele (migrace → dodavatelId)
   minTrvanlivost?: string; // YYYY-MM-DD
   fotoUrl?: string; // fotka položky (data URL z galerie/foťáku)
 }
@@ -90,10 +92,16 @@ interface ProvozStore {
   odpisy: Odpis[];
   aktivniInventuraId: string | null;
 
-  // Položky skladu
-  addPolozka: (p: Omit<InventuraPolozka, "id">) => void;
+  // Položky skladu (aktualniStav volitelný — default 0)
+  addPolozka: (p: Omit<InventuraPolozka, "id" | "aktualniStav"> & { aktualniStav?: number }) => void;
   updatePolozka: (id: string, changes: Partial<InventuraPolozka>) => void;
   removePolozka: (id: string) => void;
+
+  // Pohyby skladu (živý stav). prijemNaSklad přijme zboží (nákup) — pokud
+  // položka s daným názvem neexistuje, založí ji. odeberZeSkladu odečte
+  // (vaření/spotřeba) a stav neklesne pod 0.
+  prijemNaSklad: (nazev: string, mnozstvi: number, jednotka: string, cenaJednotka?: number) => void;
+  odeberZeSkladu: (polozkaId: string, mnozstvi: number) => void;
 
   // Inventury
   vytvorInventuru: (nazev: string, slepa?: boolean) => string;
@@ -112,7 +120,8 @@ interface ProvozStore {
 
   // Výpočty
   getPolozkyCritical: () => InventuraPolozka[];
-  getHodnotaSkladu: (inventuraId: string) => number;
+  getHodnotaSkladu: (inventuraId: string) => number; // historická hodnota dle inventury
+  getHodnotaSkladuAktualni: () => number; // živá hodnota skladu (z aktualniStav)
   getDifference: (inventuraId: string, polozkaId: string) => number | null;
   getLastKnownStav: (polozkaId: string, beforeInventuraId?: string) => number | undefined;
   getRozdilSestava: (inventuraId: string) => RozdilSestava;
@@ -128,13 +137,46 @@ export const useProvozStore = create<ProvozStore>()(
       aktivniInventuraId: null,
 
       addPolozka: (p) =>
-        set((s) => ({ polozky: [...s.polozky, { ...p, id: crypto.randomUUID() }] })),
+        set((s) => ({ polozky: [...s.polozky, { ...p, aktualniStav: p.aktualniStav ?? 0, id: crypto.randomUUID() }] })),
 
       updatePolozka: (id, changes) =>
         set((s) => ({ polozky: s.polozky.map((p) => p.id === id ? { ...p, ...changes } : p) })),
 
       removePolozka: (id) =>
         set((s) => ({ polozky: s.polozky.filter((p) => p.id !== id) })),
+
+      prijemNaSklad: (nazev, mnozstvi, jednotka, cenaJednotka) =>
+        set((s) => {
+          // Spáruj podle názvu (case-insensitive). Existuje → přičti, jinak založ.
+          const idx = s.polozky.findIndex((p) => p.nazev.toLowerCase().trim() === nazev.toLowerCase().trim());
+          if (idx >= 0) {
+            return {
+              polozky: s.polozky.map((p, i) =>
+                i === idx
+                  ? { ...p, aktualniStav: p.aktualniStav + mnozstvi, ...(cenaJednotka != null && p.cenaJednotka == null ? { cenaJednotka } : {}) }
+                  : p,
+              ),
+            };
+          }
+          return {
+            polozky: [...s.polozky, {
+              id: crypto.randomUUID(),
+              nazev: nazev.trim(),
+              kategorie: "ostatni" as InventuraKategorie,
+              jednotka,
+              aktualniStav: mnozstvi,
+              minZasoba: 0,
+              ...(cenaJednotka != null ? { cenaJednotka } : {}),
+            }],
+          };
+        }),
+
+      odeberZeSkladu: (polozkaId, mnozstvi) =>
+        set((s) => ({
+          polozky: s.polozky.map((p) =>
+            p.id === polozkaId ? { ...p, aktualniStav: Math.max(0, p.aktualniStav - mnozstvi) } : p,
+          ),
+        })),
 
       vytvorInventuru: (nazev, slepa = false) => {
         const id = crypto.randomUUID();
@@ -179,6 +221,10 @@ export const useProvozStore = create<ProvozStore>()(
               : [...inv.zaznamy, zaznam];
             return { ...inv, zaznamy };
           }),
+          // Inventura koriguje živý stav skladu na napočítanou realitu.
+          polozky: s.polozky.map((p) =>
+            p.id === polozkaId ? { ...p, aktualniStav: skutecnyStav } : p,
+          ),
         }));
       },
 
@@ -200,26 +246,19 @@ export const useProvozStore = create<ProvozStore>()(
             { ...o, id: crypto.randomUUID(), datum: new Date().toISOString().slice(0, 10) },
             ...s.odpisy,
           ],
+          // Odpis snižuje živý stav skladu (vyhozené zboží už na skladě není).
+          polozky: s.polozky.map((p) =>
+            p.id === o.polozkaId ? { ...p, aktualniStav: Math.max(0, p.aktualniStav - o.mnozstvi) } : p,
+          ),
         })),
 
       removeOdpis: (id) =>
         set((s) => ({ odpisy: s.odpisy.filter((o) => o.id !== id) })),
 
       getPolozkyCritical: () => {
-        const { polozky, inventury } = get();
-        // Najít poslední zaznamenaný stav každé položky
-        const latestByPolozka: Record<string, number> = {};
-        inventury.forEach((inv) => {
-          inv.zaznamy.forEach((z) => {
-            if (latestByPolozka[z.polozkaId] === undefined || z.datum > (inv.datum)) {
-              latestByPolozka[z.polozkaId] = z.skutecnyStav;
-            }
-          });
-        });
-        return polozky.filter((p) => {
-          const stav = latestByPolozka[p.id];
-          return stav !== undefined && stav <= p.minZasoba;
-        });
+        // Kritické = živý stav na/pod minimální zásobou (minZasoba > 0).
+        const { polozky } = get();
+        return polozky.filter((p) => p.minZasoba > 0 && p.aktualniStav <= p.minZasoba);
       },
 
       getHodnotaSkladu: (inventuraId) => {
@@ -231,6 +270,13 @@ export const useProvozStore = create<ProvozStore>()(
           if (!polozka?.cenaJednotka) return sum;
           return sum + z.skutecnyStav * polozka.cenaJednotka;
         }, 0);
+      },
+
+      getHodnotaSkladuAktualni: () => {
+        return get().polozky.reduce(
+          (sum, p) => sum + (p.cenaJednotka ? p.aktualniStav * p.cenaJednotka : 0),
+          0,
+        );
       },
 
       getDifference: (inventuraId, polozkaId) => {
@@ -275,6 +321,29 @@ export const useProvozStore = create<ProvozStore>()(
         return { manka, prebytky, bilance: prebytky - manka, pocetRozdilu: pocet };
       },
     }),
-    { name: "provoz-store" }
+    {
+      name: "provoz-store",
+      version: 1,
+      // Migrace v0→v1: starým položkám bez `aktualniStav` ho dopočítáme
+      // z posledního zaznamenaného stavu v inventurách (jinak 0), a volný
+      // text `dodavatel` necháme — spárování na dodavatelId řeší UI volitelně.
+      migrate: (persisted: unknown, version: number) => {
+        const state = persisted as ProvozStore;
+        if (version < 1 && state?.polozky) {
+          const lastStav: Record<string, { stav: number; datum: string }> = {};
+          (state.inventury ?? []).forEach((inv) => {
+            inv.zaznamy.forEach((z) => {
+              const cur = lastStav[z.polozkaId];
+              if (!cur || z.datum >= cur.datum) lastStav[z.polozkaId] = { stav: z.skutecnyStav, datum: z.datum };
+            });
+          });
+          state.polozky = state.polozky.map((p) => ({
+            ...p,
+            aktualniStav: p.aktualniStav ?? lastStav[p.id]?.stav ?? 0,
+          }));
+        }
+        return state;
+      },
+    }
   )
 );

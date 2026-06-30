@@ -5,6 +5,7 @@ import { Search, X, AlertTriangle, Package } from "lucide-react";
 import { useProvozStore, INVENTURA_KATEGORIE } from "@/store/provozStore";
 import { useUIStore } from "@/store/uiStore";
 import { TodaySummary } from "@/components/TodaySummary";
+import { ProgressBadge } from "@/components/ProgressBadge";
 import { useT } from "@/lib/i18n";
 
 // Přehled skladu provozovny v tabu "Spižírna" — rychlý seznam položek skladu
@@ -50,6 +51,9 @@ export function ProvozSkladView() {
       <div className="px-5 pt-0 pb-4">
         {/* Dnešní přehled — pod minimem, k nákupu */}
         <TodaySummary />
+
+        {/* Úroveň / odznaky (gamifikace běží i v provozu) */}
+        <ProgressBadge />
 
         {/* Hledání */}
         <div className="flex items-center gap-2.5 mb-4" style={{ background: "white", borderRadius: 16, padding: "12px 14px", boxShadow: "var(--shadow)" }}>

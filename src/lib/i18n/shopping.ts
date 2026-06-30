@@ -45,6 +45,7 @@ export const shopping: Record<string, Translation> = {
 
   // Toasty
   "shopping.toast.toPantry": { cs: "{name} přidáno do spižírny", sk: "{name} pridané do špajze" },
+  "shopping.toast.toSklad": { cs: "{name} naskladněno", sk: "{name} naskladnené" },
   "shopping.toast.oneToList": { cs: "{name} přidáno na seznam", sk: "{name} pridané na zoznam" },
   "shopping.toast.manyToList": { cs: "{n} položky přidány na seznam", sk: "{n} položky pridané na zoznam" },
 

@@ -65,6 +65,9 @@ export const provoz: Record<string, Translation> = {
   "provoz.kategorie": { cs: "Kategorie", sk: "Kategória" },
   "provoz.jednotka": { cs: "Jednotka", sk: "Jednotka" },
   "provoz.minZasoba": { cs: "Min. zásoba", sk: "Min. zásoba" },
+  "provoz.aktualniStav": { cs: "Stav skladu", sk: "Stav skladu" },
+  "provoz.skladem": { cs: "Skladem", sk: "Skladom" },
+  "provoz.dodavatelZadny": { cs: "— žádný —", sk: "— žiadny —" },
   "provoz.cenaJedn": { cs: "Cena/jedn. (Kč)", sk: "Cena/jedn. (Kč)" },
   "provoz.dodavatel": { cs: "Dodavatel", sk: "Dodávateľ" },
   "provoz.volitelne": { cs: "volitelné", sk: "voliteľné" },
@@ -153,6 +156,10 @@ export const provoz: Record<string, Translation> = {
   // ── Co dokoupit ──
   "provoz.coDokoupit": { cs: "🛒 Co dokoupit ({n})", sk: "🛒 Čo dokúpiť ({n})" },
   "provoz.minZasobaLabel": { cs: "Min. zásoba: {n} {j}", sk: "Min. zásoba: {n} {j}" },
+  "provoz.skladStavLabel": { cs: "Skladem {stav} z min. {min} {j}", sk: "Skladom {stav} z min. {min} {j}" },
+  "provoz.coDokoupitAdd": { cs: "Do nákupu", sk: "Do nákupu" },
+  "provoz.coDokoupitAdded": { cs: "Přidáno", sk: "Pridané" },
+  "provoz.coDokoupitAddAll": { cs: "Vše do nákupu", sk: "Všetko do nákupu" },
 
   // ── Historie ──
   "provoz.zadnaUzavrena": { cs: "Zatím žádná uzavřená inventura", sk: "Zatiaľ žiadna uzavretá inventúra" },

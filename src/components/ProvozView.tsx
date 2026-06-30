@@ -19,6 +19,8 @@ import {
 } from "@/store/provozStore";
 import { lookupProductByEAN } from "@/lib/productLookup";
 import { Scanner } from "@/components/Scanner";
+import { useShoppingStore } from "@/store/shoppingStore";
+import { useGamificationStore } from "@/store/gamificationStore";
 import { useT, useLocale } from "@/lib/i18n";
 import type { Locale } from "@/store/localeStore";
 
@@ -265,13 +267,14 @@ function trvanlivostStatus(datum: string | undefined, t: TFn, locale: Locale): {
 // ── Formulář nové položky skladu ──────────────────────────────────────────────
 function AddPolozkaModal({ onClose }: { onClose: () => void }) {
   const t = useT();
-  const { addPolozka } = useProvozStore();
+  const { addPolozka, dodavatele } = useProvozStore();
   const [nazev, setNazev] = useState("");
   const [kategorie, setKategorie] = useState<InventuraKategorie>("potraviny");
   const [jednotka, setJednotka] = useState("ks");
   const [minZasoba, setMinZasoba] = useState("1");
+  const [pocStav, setPocStav] = useState("0");
   const [cena, setCena] = useState("");
-  const [dodavatel, setDodavatel] = useState("");
+  const [dodavatelId, setDodavatelId] = useState("");
   const [minTrvanlivost, setMinTrvanlivost] = useState("");
   const [showScanner, setShowScanner] = useState(false);
   const [scanLoading, setScanLoading] = useState(false);
@@ -327,9 +330,10 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
       nazev: nazev.trim(),
       kategorie,
       jednotka,
+      aktualniStav: parseFloat(pocStav) || 0,
       minZasoba: parseFloat(minZasoba) || 1,
       cenaJednotka: cena ? parseFloat(cena) : undefined,
-      dodavatel: dodavatel.trim() || undefined,
+      dodavatelId: dodavatelId || undefined,
       minTrvanlivost: minTrvanlivost || undefined,
     });
     onClose();
@@ -463,15 +467,22 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
               </div>
             </div>
 
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.jednotka")}</label>
+              <select value={jednotka} onChange={e => setJednotka(e.target.value)}
+                style={{ width: "100%", background: "white", border: "1.5px solid var(--border)", borderRadius: 12, padding: "10px 12px", fontSize: 14, outline: "none", color: "var(--text-primary)" }}>
+                {JEDNOTKY.map(j => <option key={j} value={j}>{j}</option>)}
+              </select>
+            </div>
+
             <div className="flex gap-3">
-              <div style={{ flex: 1 }}>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.jednotka")}</label>
-                <select value={jednotka} onChange={e => setJednotka(e.target.value)}
-                  style={{ width: "100%", background: "white", border: "1.5px solid var(--border)", borderRadius: 12, padding: "10px 12px", fontSize: 14, outline: "none", color: "var(--text-primary)" }}>
-                  {JEDNOTKY.map(j => <option key={j} value={j}>{j}</option>)}
-                </select>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.aktualniStav")}</label>
+                <input type="number" value={pocStav} onChange={e => setPocStav(e.target.value)}
+                  className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none text-center"
+                  style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
               </div>
-              <div style={{ flex: 1 }}>
+              <div style={{ flex: 1, minWidth: 0 }}>
                 <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.minZasoba")}</label>
                 <input type="number" value={minZasoba} onChange={e => setMinZasoba(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none text-center"
@@ -488,9 +499,12 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
               </div>
               <div style={{ flex: 1 }}>
                 <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.dodavatel")}</label>
-                <input value={dodavatel} onChange={e => setDodavatel(e.target.value)} placeholder={t("provoz.volitelne")}
+                <select value={dodavatelId} onChange={e => setDodavatelId(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
-                  style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+                  style={{ border: "1.5px solid var(--border)", background: "white", color: dodavatelId ? "var(--text-primary)" : "var(--text-tertiary)" }}>
+                  <option value="">{t("provoz.dodavatelZadny")}</option>
+                  {dodavatele.map(d => <option key={d.id} value={d.id}>{d.nazev}</option>)}
+                </select>
               </div>
             </div>
 
@@ -713,7 +727,14 @@ function OdpisyView() {
   const locale = useLocale();
   const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
   const { odpisy, polozky, addOdpis, removeOdpis } = useProvozStore();
+  const recordWasted = useGamificationStore((s) => s.recordWasted);
   const [showModal, setShowModal] = useState(false);
+
+  // Odpis = vyhozená potravina → započítej do gamifikace (plýtvání).
+  const addOdpisTracked = (o: Omit<Odpis, "id" | "datum">) => {
+    addOdpis(o);
+    recordWasted();
+  };
 
   const celkem = odpisy.reduce((sum, o) => sum + (o.cenaJednotka ? o.mnozstvi * o.cenaJednotka : 0), 0);
 
@@ -770,7 +791,7 @@ function OdpisyView() {
         </div>
       )}
 
-      {showModal && <AddOdpisModal polozky={polozky} onClose={() => setShowModal(false)} onSave={addOdpis} />}
+      {showModal && <AddOdpisModal polozky={polozky} onClose={() => setShowModal(false)} onSave={addOdpisTracked} />}
     </div>
   );
 }
@@ -1038,12 +1059,13 @@ function HistorieInventur() {
 // ── Editace položky skladu ────────────────────────────────────────────────────
 function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onClose: () => void }) {
   const t = useT();
-  const { updatePolozka } = useProvozStore();
+  const { updatePolozka, dodavatele } = useProvozStore();
   const [nazev, setNazev] = useState(polozka.nazev);
   const [jednotka, setJednotka] = useState(polozka.jednotka);
   const [minZasoba, setMinZasoba] = useState(String(polozka.minZasoba));
+  const [aktualniStav, setAktualniStav] = useState(String(polozka.aktualniStav));
   const [cena, setCena] = useState(polozka.cenaJednotka ? String(polozka.cenaJednotka) : "");
-  const [dodavatel, setDodavatel] = useState(polozka.dodavatel ?? "");
+  const [dodavatelId, setDodavatelId] = useState(polozka.dodavatelId ?? "");
   const [minTrvanlivost, setMinTrvanlivost] = useState(polozka.minTrvanlivost ?? "");
   const [fotoUrl, setFotoUrl] = useState<string | null>(polozka.fotoUrl ?? null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1063,8 +1085,10 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
       nazev: nazev.trim(),
       jednotka,
       minZasoba: parseFloat(minZasoba) || 1,
+      aktualniStav: parseFloat(aktualniStav) || 0,
       cenaJednotka: cena ? parseFloat(cena) : undefined,
-      dodavatel: dodavatel.trim() || undefined,
+      dodavatelId: dodavatelId || undefined,
+      dodavatel: undefined, // při editaci přecházíme na dodavatelId, starý text čistíme
       minTrvanlivost: minTrvanlivost || undefined,
       fotoUrl: fotoUrl ?? undefined,
     });
@@ -1086,15 +1110,21 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
             className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
             style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
         </div>
+        <div>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.jednotka")}</label>
+          <select value={jednotka} onChange={e => setJednotka(e.target.value)}
+            style={{ width: "100%", background: "white", border: "1.5px solid var(--border)", borderRadius: 12, padding: "10px 12px", fontSize: 14, outline: "none", color: "var(--text-primary)" }}>
+            {JEDNOTKY.map(j => <option key={j} value={j}>{j}</option>)}
+          </select>
+        </div>
         <div className="flex gap-3">
-          <div style={{ flex: 1 }}>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.jednotka")}</label>
-            <select value={jednotka} onChange={e => setJednotka(e.target.value)}
-              style={{ width: "100%", background: "white", border: "1.5px solid var(--border)", borderRadius: 12, padding: "10px 12px", fontSize: 14, outline: "none", color: "var(--text-primary)" }}>
-              {JEDNOTKY.map(j => <option key={j} value={j}>{j}</option>)}
-            </select>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.aktualniStav")}</label>
+            <input type="number" value={aktualniStav} onChange={e => setAktualniStav(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none text-center"
+              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
           </div>
-          <div style={{ flex: 1 }}>
+          <div style={{ flex: 1, minWidth: 0 }}>
             <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.minZasoba")}</label>
             <input type="number" value={minZasoba} onChange={e => setMinZasoba(e.target.value)}
               className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none text-center"
@@ -1110,9 +1140,12 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
           </div>
           <div style={{ flex: 1 }}>
             <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.dodavatel")}</label>
-            <input value={dodavatel} onChange={e => setDodavatel(e.target.value)} placeholder={t("provoz.volitelne")}
+            <select value={dodavatelId} onChange={e => setDodavatelId(e.target.value)}
               className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
-              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+              style={{ border: "1.5px solid var(--border)", background: "white", color: dodavatelId ? "var(--text-primary)" : "var(--text-tertiary)" }}>
+              <option value="">{t("provoz.dodavatelZadny")}</option>
+              {dodavatele.map(d => <option key={d.id} value={d.id}>{d.nazev}</option>)}
+            </select>
           </div>
         </div>
         <div>
@@ -1266,12 +1299,15 @@ function SkladVoiceFab({ onItems }: { onItems: (items: { name: string; quantity:
 function SpravaSkladu() {
   const t = useT();
   const locale = useLocale();
-  const { polozky, inventury, removePolozka, getPolozkyCritical, addPolozka } = useProvozStore();
+  const { polozky, removePolozka, getPolozkyCritical, addPolozka, dodavatele } = useProvozStore();
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const critical = getPolozkyCritical();
+  // Jméno dodavatele z číselníku (fallback na starý volný text při migraci).
+  const dodavatelNazev = (p: InventuraPolozka) =>
+    dodavatele.find(d => d.id === p.dodavatelId)?.nazev ?? p.dodavatel ?? "";
 
   // Hlasem nadiktované položky se rovnou založí do skladu Provozu
   const handleVoiceAdd = (items: { name: string; quantity: number; unit: string }[]) => {
@@ -1286,16 +1322,6 @@ function SpravaSkladu() {
     setToast(items.length === 1 ? t("provoz.pridanoDoSkladu").replace("{n}", items[0].name) : t("provoz.polozkyPridany").replace("{n}", String(items.length)));
     setTimeout(() => setToast(null), 3000);
   };
-
-  // Vypočítej poslední stav každé položky
-  const posledniStav: Record<string, number> = {};
-  [...inventury].sort((a, b) => b.datum.localeCompare(a.datum)).forEach(inv => {
-    inv.zaznamy.forEach(z => {
-      if (posledniStav[z.polozkaId] === undefined) {
-        posledniStav[z.polozkaId] = z.skutecnyStav;
-      }
-    });
-  });
 
   const q = search.trim().toLowerCase();
   const filtrovane = q ? polozky.filter(p => p.nazev.toLowerCase().includes(q)) : polozky;
@@ -1377,8 +1403,8 @@ function SpravaSkladu() {
                       <div style={{ flex: 1, minWidth: 0 }}>
                         <p className="text-sm font-medium truncate" style={{ color: "var(--text-primary)" }}>{p.nazev}</p>
                         <p className="text-xs" style={{ color: isCritical ? "#F57C00" : "var(--text-secondary)" }}>
-                          {t("provoz.min")} {p.minZasoba} {p.jednotka}
-                          {p.dodavatel ? ` · ${p.dodavatel}` : ""}
+                          {t("provoz.skladem")} {p.aktualniStav} {p.jednotka} · {t("provoz.min")} {p.minZasoba}
+                          {dodavatelNazev(p) ? ` · ${dodavatelNazev(p)}` : ""}
                           {isCritical ? " ⚠️" : ""}
                         </p>
                         {(() => {
@@ -1392,19 +1418,14 @@ function SpravaSkladu() {
                         })()}
                       </div>
                       {p.cenaJednotka && (
-                        <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>
+                        <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)", flexShrink: 0, whiteSpace: "nowrap" }}>
                           {p.cenaJednotka} Kč/{p.jednotka}
                         </span>
                       )}
-                      {posledniStav[p.id] !== undefined && (
-                        <span className="text-xs font-bold" style={{ color: posledniStav[p.id] <= p.minZasoba ? "#E65100" : "var(--green-primary)" }}>
-                          {posledniStav[p.id]} {p.jednotka}
-                        </span>
-                      )}
-                      <button onClick={() => setEditId(p.id)} style={{ marginRight: 4 }}>
+                      <button onClick={() => setEditId(p.id)} style={{ marginRight: 4, flexShrink: 0 }}>
                         <Pencil size={14} style={{ color: "var(--text-tertiary)" }} />
                       </button>
-                      <button onClick={() => removePolozka(p.id)}>
+                      <button onClick={() => removePolozka(p.id)} style={{ flexShrink: 0 }}>
                         <X size={15} style={{ color: "var(--text-tertiary)" }} />
                       </button>
                     </div>
@@ -1484,14 +1505,14 @@ function DodavateleView() {
         <div className="space-y-3">
           {dodavatele.map(d => (
             <div key={d.id} className="card p-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{d.nazev}</p>
-                  {d.telefon && <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>📞 {d.telefon}</p>}
-                  {d.email && <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>✉️ {d.email}</p>}
-                  {d.poznamka && <p className="text-xs mt-0.5 italic" style={{ color: "var(--text-tertiary)" }}>{d.poznamka}</p>}
+              <div className="flex items-start justify-between gap-2">
+                <div style={{ minWidth: 0 }}>
+                  <p className="font-bold text-sm" style={{ color: "var(--text-primary)", overflowWrap: "anywhere" }}>{d.nazev}</p>
+                  {d.telefon && <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)", overflowWrap: "anywhere" }}>📞 {d.telefon}</p>}
+                  {d.email && <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)", overflowWrap: "anywhere" }}>✉️ {d.email}</p>}
+                  {d.poznamka && <p className="text-xs mt-0.5 italic" style={{ color: "var(--text-tertiary)", overflowWrap: "anywhere" }}>{d.poznamka}</p>}
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2" style={{ flexShrink: 0 }}>
                   {d.telefon && (
                     <a href={`tel:${d.telefon}`}
                       className="w-8 h-8 rounded-full flex items-center justify-center"
@@ -1558,21 +1579,52 @@ function DodavateleView() {
 function CoDokoupit() {
   const t = useT();
   const { getPolozkyCritical } = useProvozStore();
+  const addShoppingItem = useShoppingStore((s) => s.addItem);
   const critical = getPolozkyCritical();
+  const [added, setAdded] = useState<Set<string>>(new Set());
   if (critical.length === 0) return null;
+
+  // Doporučené množství k doobjednání = kolik chybí do minima (aspoň 1).
+  const toBuy = (p: InventuraPolozka) => Math.max(1, p.minZasoba - p.aktualniStav);
+
+  const addOne = (p: InventuraPolozka) => {
+    addShoppingItem({ name: p.nazev, quantity: toBuy(p), unit: p.jednotka }, "provoz");
+    setAdded((s) => new Set(s).add(p.id));
+  };
+  const addAll = () => {
+    critical.forEach((p) => addShoppingItem({ name: p.nazev, quantity: toBuy(p), unit: p.jednotka }, "provoz"));
+    setAdded(new Set(critical.map((p) => p.id)));
+  };
+
   return (
     <div style={{ marginBottom: 16 }}>
-      <p style={{ fontSize: 11, fontWeight: 700, color: "#E65100", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 8 }}>
-        {t("provoz.coDokoupit").replace("{n}", String(critical.length))}
-      </p>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: "#E65100", letterSpacing: "0.06em", textTransform: "uppercase", margin: 0 }}>
+          {t("provoz.coDokoupit").replace("{n}", String(critical.length))}
+        </p>
+        <button
+          onClick={addAll}
+          style={{ fontSize: 11, fontWeight: 700, color: "#E65100", background: "#FFE0B2", border: "none", borderRadius: 99, padding: "4px 10px", display: "flex", alignItems: "center", gap: 4 }}
+        >
+          <Plus size={12} /> {t("provoz.coDokoupitAddAll")}
+        </button>
+      </div>
       <div style={{ background: "#FFF3E0", border: "1px solid #FFE0B2", borderRadius: 16, overflow: "hidden" }}>
         {critical.map((p, idx) => (
-          <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "11px 16px", borderBottom: idx < critical.length - 1 ? "1px solid #FFE0B2" : "none" }}>
-            <div>
-              <p style={{ fontSize: 13, fontWeight: 700, color: "#BF360C", margin: 0 }}>{p.nazev}</p>
-              <p style={{ fontSize: 11, color: "#E65100", margin: 0 }}>{t("provoz.minZasobaLabel").replace("{n}", String(p.minZasoba)).replace("{j}", p.jednotka)}</p>
+          <div key={p.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, padding: "11px 16px", borderBottom: idx < critical.length - 1 ? "1px solid #FFE0B2" : "none" }}>
+            <div style={{ minWidth: 0 }}>
+              <p style={{ fontSize: 13, fontWeight: 700, color: "#BF360C", margin: 0, overflowWrap: "anywhere" }}>{p.nazev}</p>
+              <p style={{ fontSize: 11, color: "#E65100", margin: 0 }}>
+                {t("provoz.skladStavLabel").replace("{stav}", String(p.aktualniStav)).replace("{min}", String(p.minZasoba)).replace("{j}", p.jednotka)}
+              </p>
             </div>
-            <AlertTriangle size={16} style={{ color: "#F57C00" }} />
+            <button
+              onClick={() => addOne(p)}
+              disabled={added.has(p.id)}
+              style={{ flexShrink: 0, fontSize: 11, fontWeight: 700, borderRadius: 99, padding: "5px 10px", border: "none", display: "flex", alignItems: "center", gap: 4, background: added.has(p.id) ? "#C8E6C9" : "white", color: added.has(p.id) ? "#2E7D32" : "#E65100" }}
+            >
+              {added.has(p.id) ? <><Check size={12} /> {t("provoz.coDokoupitAdded")}</> : <><Plus size={12} /> {t("provoz.coDokoupitAdd")}</>}
+            </button>
           </div>
         ))}
       </div>
