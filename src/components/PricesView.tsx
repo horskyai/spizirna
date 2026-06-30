@@ -65,10 +65,10 @@ export function PricesView() {
               <div className="space-y-2">
                 {history.slice(0, 5).map((r, i) => (
                   <div key={i} className="flex items-center gap-3 p-2.5 rounded-xl" style={{ background: r === best ? "var(--green-light)" : "var(--bg-primary)" }}>
-                    <Store size={14} style={{ color: "var(--text-tertiary)" }} />
-                    <span className="text-sm flex-1 font-medium" style={{ color: "var(--text-primary)" }}>{r.store}</span>
-                    <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>{formatDateShort(r.date)}</span>
-                    <span className="text-sm font-bold" style={{ color: r === best ? "var(--green-dark)" : "var(--text-primary)" }}>
+                    <Store size={14} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
+                    <span className="text-sm flex-1 min-w-0 truncate font-medium" style={{ color: "var(--text-primary)" }}>{r.store}</span>
+                    <span className="text-xs" style={{ color: "var(--text-tertiary)", flexShrink: 0, whiteSpace: "nowrap" }}>{formatDateShort(r.date)}</span>
+                    <span className="text-sm font-bold" style={{ color: r === best ? "var(--green-dark)" : "var(--text-primary)", flexShrink: 0, whiteSpace: "nowrap" }}>
                       {r.price} CZK
                       {r === best && <span className="text-xs font-normal ml-1" style={{ color: "var(--green-dark)" }}>{t("prices.cheapest")}</span>}
                     </span>

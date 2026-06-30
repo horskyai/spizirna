@@ -41,6 +41,7 @@ export const addproduct: Record<string, Translation> = {
   "addproduct.packagingLabel": { cs: "BALENÍ", sk: "BALENIE" },
   "addproduct.qtyPlaceholderG": { cs: "např. 350", sk: "napr. 350" },
   "addproduct.qtyPlaceholderMl": { cs: "např. 500", sk: "napr. 500" },
+  "addproduct.qtyPlaceholderL": { cs: "např. 1,5", sk: "napr. 1,5" },
   "addproduct.qtyPlaceholderKs": { cs: "např. 6", sk: "napr. 6" },
 
   // ── Tlačítka kroku Basic ──

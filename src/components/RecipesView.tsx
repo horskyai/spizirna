@@ -127,7 +127,7 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
           }
         </div>
 
-        <div className="flex items-center gap-4 mt-3">
+        <div className="flex items-center gap-4 mt-3 flex-wrap">
           {(recipe.prep_time_min + recipe.cook_time_min) > 0 && (
             <div className="flex items-center gap-1">
               <Clock size={13} style={{ color: "var(--text-tertiary)" }} />
@@ -220,7 +220,7 @@ function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void
                       }} />
                     )}
                     <div className="flex-1 min-w-0">
-                      <span className="text-sm font-semibold" style={{ color: ing.available ? "var(--text-primary)" : "var(--text-secondary)" }}>
+                      <span className="text-sm font-semibold block" style={{ color: ing.available ? "var(--text-primary)" : "var(--text-secondary)", overflowWrap: "anywhere" }}>
                         {ing.name}, {ing.quantity} {ing.unit}
                       </span>
                       {ing.partial && (
@@ -659,7 +659,7 @@ function TodaySuggestionWidget() {
         </div>
 
         {/* Meta */}
-        <div className="flex gap-3 mt-2.5">
+        <div className="flex gap-3 mt-2.5 flex-wrap">
           {(recipe.prep_time_min + recipe.cook_time_min) > 0 && (
             <div className="flex items-center gap-1">
               <Clock size={11} color="rgba(255,255,255,0.65)" />

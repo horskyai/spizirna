@@ -46,3 +46,6 @@ next-env.d.ts
 
 # interni navod - jen lokalne, nepatri na GitHub
 SKILLS.md
+
+# zalohy receptu - jen lokalne
+*.bak

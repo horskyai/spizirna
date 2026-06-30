@@ -250,7 +250,7 @@ export function AddRecipeModal({ onClose }: Props) {
                     if (s === "ingredients" && canProceedBasic) setStep("ingredients");
                     if (s === "instructions" && canProceedBasic && canProceedIngredients) setStep("instructions");
                   }}
-                  className="flex-1 py-2 rounded-full text-xs font-semibold transition-all"
+                  className="flex-1 min-w-0 truncate py-2 rounded-full text-xs font-semibold transition-all"
                   style={{
                     background: active ? "var(--green-primary)" : done ? "var(--green-light)" : "var(--border)",
                     color: active ? "white" : done ? "var(--green-dark)" : "var(--text-tertiary)",

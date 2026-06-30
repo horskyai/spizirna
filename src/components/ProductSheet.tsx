@@ -185,10 +185,10 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
           )}
 
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-medium mb-0.5" style={{ color: "var(--text-tertiary)" }}>
+            <p className="text-xs font-medium mb-0.5" style={{ color: "var(--text-tertiary)", overflowWrap: "anywhere" }}>
               {product.brand}{product.brand && " · "}EAN {product.ean_code}
             </p>
-            <h2 className="text-lg font-bold leading-tight" style={{ color: "var(--text-primary)" }}>
+            <h2 className="text-lg font-bold leading-tight" style={{ color: "var(--text-primary)", overflowWrap: "anywhere" }}>
               {product.product_name}
             </h2>
             <div className="flex items-center gap-1.5 mt-1" style={{ flexWrap: "wrap" }}>

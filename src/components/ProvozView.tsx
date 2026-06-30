@@ -1438,10 +1438,10 @@ function SpravaSkladu() {
             borderRadius: 16, padding: "10px 18px",
             fontSize: 13, fontWeight: 600,
             display: "flex", alignItems: "center", gap: 8,
-            zIndex: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", whiteSpace: "nowrap",
+            zIndex: 200, boxShadow: "0 4px 16px rgba(0,0,0,0.15)", maxWidth: "calc(100vw - 32px)",
           }}
         >
-          <Check size={15} strokeWidth={3} /> {toast}
+          <Check size={15} strokeWidth={3} style={{ flexShrink: 0 }} /> <span style={{ minWidth: 0, overflowWrap: "anywhere" }}>{toast}</span>
         </div>
       )}
     </div>

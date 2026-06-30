@@ -45,12 +45,12 @@ export function ProgressBadge() {
       <div className="px-3.5 py-2.5">
         {/* Řádek: úroveň + body vlevo, série + zachráněno vpravo */}
         <div className="flex items-center gap-2 mb-2">
-          <span style={{ fontSize: 18, lineHeight: 1 }}>{level.emoji}</span>
-          <span className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{t(level.levelKey)}</span>
-          <span className="text-xs font-bold" style={{ color: "var(--green-dark)" }}>
+          <span style={{ fontSize: 18, lineHeight: 1, flexShrink: 0 }}>{level.emoji}</span>
+          <span className="font-bold text-sm truncate" style={{ color: "var(--text-primary)", minWidth: 0 }}>{t(level.levelKey)}</span>
+          <span className="text-xs font-bold" style={{ color: "var(--green-dark)", whiteSpace: "nowrap", flexShrink: 0 }}>
             · {t("game.points").replace("{n}", String(score))}
           </span>
-          <div className="flex items-center gap-2.5 ml-auto">
+          <div className="flex items-center gap-2.5 ml-auto" style={{ flexShrink: 0 }}>
             <span className="flex items-center gap-1 text-xs font-medium" style={{ color: "var(--text-secondary)" }} title={streakText}>
               <Flame size={13} style={{ color: streak > 0 ? "#F59E42" : "var(--text-tertiary)" }} />
               {streak}

@@ -50,7 +50,10 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
   const [weightG, setWeightG] = useState("");
   const [volumeMl, setVolumeMl] = useState("");
   const [pieces, setPieces] = useState("");
-  const [unit, setUnit] = useState<"g" | "ml" | "ks">("g");
+  const [liters, setLiters] = useState("");
+  // Vstupní jednotka ve formuláři. "l" je jen pohodlnější zadání objemu —
+  // ukládá se vždy jako základní jednotka produktu (g/ml/ks), litry → ml.
+  const [unit, setUnit] = useState<"g" | "ml" | "ks" | "l">("g");
 
   // Foto
   const [photoUrl, setPhotoUrl] = useState<string | null>(null);
@@ -153,9 +156,12 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
       subcategory: "",
       image_url: photoUrl ?? "",
       weight_g: weightG ? parseFloat(weightG) : undefined,
-      volume_ml: volumeMl ? parseFloat(volumeMl) : undefined,
+      // Litry převádíme na ml (1 l = 1000 ml) — produkt zná jen g/ml/ks.
+      volume_ml: unit === "l"
+        ? (liters ? parseFloat(liters) * 1000 : undefined)
+        : (volumeMl ? parseFloat(volumeMl) : undefined),
       pieces_count: pieces ? parseFloat(pieces) : undefined,
-      unit,
+      unit: unit === "l" ? "ml" : unit,
       calories_kcal: kcal ? parseFloat(kcal) : undefined,
       protein_g: protein ? parseFloat(protein) : undefined,
       carbs_g: carbs ? parseFloat(carbs) : undefined,
@@ -406,7 +412,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
               <div className="card p-4">
                 <p className="text-xs font-semibold mb-2" style={{ color: "var(--text-secondary)" }}>{t("addproduct.packagingLabel")}</p>
                 <div className="flex gap-2 mb-2">
-                  {(["g", "ml", "ks"] as const).map((u) => (
+                  {(["g", "ml", "l", "ks"] as const).map((u) => (
                     <button
                       key={u}
                       onClick={() => setUnit(u)}
@@ -422,13 +428,14 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                 </div>
                 <input
                   type="number"
-                  value={unit === "g" ? weightG : unit === "ml" ? volumeMl : pieces}
+                  value={unit === "g" ? weightG : unit === "ml" ? volumeMl : unit === "l" ? liters : pieces}
                   onChange={(e) => {
                     if (unit === "g") setWeightG(e.target.value);
                     else if (unit === "ml") setVolumeMl(e.target.value);
+                    else if (unit === "l") setLiters(e.target.value);
                     else setPieces(e.target.value);
                   }}
-                  placeholder={unit === "g" ? t("addproduct.qtyPlaceholderG") : unit === "ml" ? t("addproduct.qtyPlaceholderMl") : t("addproduct.qtyPlaceholderKs")}
+                  placeholder={unit === "g" ? t("addproduct.qtyPlaceholderG") : unit === "ml" ? t("addproduct.qtyPlaceholderMl") : unit === "l" ? t("addproduct.qtyPlaceholderL") : t("addproduct.qtyPlaceholderKs")}
                   className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
                   style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--text-primary)" }}
                 />
@@ -546,7 +553,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                   value={expires}
                   onChange={(e) => setExpires(e.target.value)}
                   className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
-                  style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: expires ? "var(--text-primary)" : "var(--text-tertiary)" }}
+                  style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: expires ? "var(--text-primary)" : "var(--text-tertiary)", textAlign: "left", appearance: "none", WebkitAppearance: "none" }}
                 />
                 {expires && (() => {
                   const d = daysUntil(expires);
@@ -554,9 +561,9 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                   const txt = d < 0 ? t("addproduct.dateExpired") : d === 0 ? t("addproduct.consumeToday") : d === 1 ? t("addproduct.consumeTomorrow") : t("addproduct.lastsDays").replace("{n}", String(d));
                   return (
                     <div className="mt-2.5 flex items-center gap-2 flex-wrap">
-                      <span className={`text-xs font-semibold ${cls}`} style={{ padding: "4px 10px", borderRadius: 10 }}>{txt}</span>
+                      <span className={`text-xs font-semibold ${cls}`} style={{ padding: "4px 10px", borderRadius: 10, whiteSpace: "nowrap" }}>{txt}</span>
                       {d >= 0 && d <= 3 && (
-                        <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>
+                        <span className="text-xs" style={{ color: "var(--text-tertiary)", flex: 1, minWidth: 0 }}>
                           {t("addproduct.recipeTip")}
                         </span>
                       )}
@@ -588,10 +595,11 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                     <button
                       key={s}
                       onClick={() => setStore(s)}
-                      className="px-2.5 py-1 rounded-full text-xs font-medium transition-all"
                       style={{
+                        padding: "5px 11px", borderRadius: 99, fontSize: 11, fontWeight: 600,
                         background: store === s ? "var(--green-primary)" : "var(--bg-primary)",
                         color: store === s ? "white" : "var(--text-secondary)",
+                        border: `1px solid ${store === s ? "var(--green-primary)" : "var(--border)"}`,
                       }}
                     >
                       {s === "Jiný" ? t(`addproduct.store.${s}`) : s}
