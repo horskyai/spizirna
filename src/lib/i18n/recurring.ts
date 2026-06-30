@@ -34,6 +34,7 @@ export const recurring: Record<string, Translation> = {
   "recurring.added": { cs: "Přidáno", sk: "Pridané" },
   "recurring.toShopping": { cs: "Do nákupu", sk: "Do nákupu" },
   "recurring.purchased": { cs: "Koupeno", sk: "Kúpené" },
+  "recurring.addedToPantry": { cs: "✓ Do spižírny", sk: "✓ Do špajze" },
   "recurring.removeReminder": { cs: "Odebrat připomínku", sk: "Odobrať pripomienku" },
 
   // ── Predikce ze spižírny ──

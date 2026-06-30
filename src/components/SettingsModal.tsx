@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
-import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store } from "lucide-react";
+import { useState, useMemo } from "react";
+import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useModeStore } from "@/store/modeStore";
 import { useBusinessStore } from "@/store/businessStore";
 import { useFoodLogStore } from "@/store/foodLogStore";
+import { useGamificationStore, type BadgeState } from "@/store/gamificationStore";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/dateUtils";
 
@@ -30,6 +31,19 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const setBusinessName = useBusinessStore((s) => s.setName);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+
+  // Odznaky — počítáme přes metodu storu, ale přepočet vážeme na surová čísla
+  // (stejný vzor jako ProgressBadge), ať se getBadges() nevolá v reaktivním selektoru.
+  const unlockedCount = useGamificationStore((s) => Object.keys(s.unlockedBadges).length);
+  const totalCooked = useGamificationStore((s) => s.totalCooked);
+  const totalScanned = useGamificationStore((s) => s.totalScanned);
+  const totalSaved = useGamificationStore((s) => s.totalSaved);
+  const streak = useGamificationStore((s) => s.streak);
+  const badges = useMemo(
+    () => useGamificationStore.getState().getBadges(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [unlockedCount, totalCooked, totalScanned, totalSaved, streak],
+  );
   const [notif, setNotif] = useState(() => {
     if (typeof window === "undefined") return true;
     return localStorage.getItem(EXPIRY_NOTIF_KEY) !== "off";
@@ -208,6 +222,13 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.expiryAlertsHint")}</p>
           </Section>
 
+          {/* ── Odznaky ── jen v domácnosti (gamifikace běží zatím tam) */}
+          {mode !== "provoz" && (
+            <Section icon={<Award size={15} />} title={t("game.badges.title")}>
+              <BadgesSection badges={badges} t={t} />
+            </Section>
+          )}
+
           {/* ── Správa dat ── */}
           <Section icon={<Trash2 size={15} />} title={t("settings.data")}>
             {!confirmReset ? (
@@ -283,6 +304,51 @@ function LinkRow({ icon, label, href, last }: { icon: React.ReactNode; label: st
     return <a href={href} target="_blank" rel="noopener noreferrer" style={style}>{inner}</a>;
   }
   return <button style={style}>{inner}</button>;
+}
+
+// Mřížka odznaků: získané barevně + datum, nezískané zašedlé + progress n/goal.
+// Získané řadíme nahoru a podle data získání (nejnovější první).
+function BadgesSection({ badges, t }: { badges: BadgeState[]; t: ReturnType<typeof useT> }) {
+  const unlocked = badges.filter((b) => b.unlocked);
+  const sorted = [...badges].sort((a, b) => {
+    if (a.unlocked !== b.unlocked) return a.unlocked ? -1 : 1;
+    if (a.unlocked && b.unlocked) return (b.unlockedAt || "").localeCompare(a.unlockedAt || "");
+    // nezískané: nejblíž ke splnění první
+    return (b.current / b.goal) - (a.current / a.goal);
+  });
+
+  return (
+    <>
+      <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: "0 2px 10px" }}>
+        {t("game.badges.progress" as Parameters<typeof t>[0]).replace("{n}", String(unlocked.length)).replace("{total}", String(badges.length))}
+      </p>
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8 }}>
+        {sorted.map((b) => {
+          const name = t(`game.badge.${b.id}.name` as Parameters<typeof t>[0]);
+          const sub = b.unlocked
+            ? (b.unlockedAt ? t("game.badges.unlockedOn" as Parameters<typeof t>[0]).replace("{date}", formatDateShort(b.unlockedAt)) : "")
+            : t("game.badges.locked" as Parameters<typeof t>[0]).replace("{n}", String(b.current)).replace("{goal}", String(b.goal));
+          return (
+            <div
+              key={b.id}
+              title={`${name} · ${t(`game.badge.${b.id}.desc` as Parameters<typeof t>[0])}`}
+              style={{
+                display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center",
+                gap: 3, padding: "10px 4px", borderRadius: 12,
+                background: b.unlocked ? "var(--green-light)" : "var(--bg-primary)",
+                border: `1.5px solid ${b.unlocked ? "var(--green-primary)" : "var(--border)"}`,
+                opacity: b.unlocked ? 1 : 0.55,
+              }}
+            >
+              <span style={{ fontSize: 24, lineHeight: 1, filter: b.unlocked ? "none" : "grayscale(1)" }}>{b.emoji}</span>
+              <span style={{ fontSize: 9.5, fontWeight: 700, lineHeight: 1.15, color: b.unlocked ? "var(--green-dark)" : "var(--text-secondary)", overflowWrap: "anywhere" }}>{name}</span>
+              <span style={{ fontSize: 8.5, color: "var(--text-tertiary)", lineHeight: 1.1 }}>{sub}</span>
+            </div>
+          );
+        })}
+      </div>
+    </>
+  );
 }
 
 function rowBtn(bg: string, color: string): React.CSSProperties {

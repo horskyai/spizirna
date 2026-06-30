@@ -1,15 +1,25 @@
 import type { Translation } from "./dict";
 
-// Texty pro odznak pokroku (gamifikace) — úrovně, série, zachráněné potraviny.
+// Texty pro gamifikaci — úrovně, série, zachráněné potraviny a odznaky.
 export const game: Record<string, Translation> = {
-  // Úrovně (podle skóre)
-  "game.level.beginner": { cs: "Začátečník", sk: "Začiatočník" },
-  "game.level.cook": { cs: "Domácí kuchař", sk: "Domáci kuchár" },
-  "game.level.chef": { cs: "Spořivý šéfkuchař", sk: "Šetrný šéfkuchár" },
-  "game.level.master": { cs: "Mistr spižírny", sk: "Majster špajze" },
-  "game.level.legend": { cs: "Legendární hospodář", sk: "Legendárny hospodár" },
+  // ── Úrovně (15, podle skóre) ──
+  "game.level.l1": { cs: "Začátečník", sk: "Začiatočník" },
+  "game.level.l2": { cs: "Domácí kuchař", sk: "Domáci kuchár" },
+  "game.level.l3": { cs: "Zkušený kuchař", sk: "Skúsený kuchár" },
+  "game.level.l4": { cs: "Spořivý šéfkuchař", sk: "Šetrný šéfkuchár" },
+  "game.level.l5": { cs: "Mistr pánve", sk: "Majster panvice" },
+  "game.level.l6": { cs: "Strážce spižírny", sk: "Strážca špajze" },
+  "game.level.l7": { cs: "Kuchařský odborník", sk: "Kuchársky odborník" },
+  "game.level.l8": { cs: "Mistr spižírny", sk: "Majster špajze" },
+  "game.level.l9": { cs: "Velmistr kuchyně", sk: "Veľmajster kuchyne" },
+  "game.level.l10": { cs: "Šampion bez plýtvání", sk: "Šampión bez plytvania" },
+  "game.level.l11": { cs: "Diamantový hospodář", sk: "Diamantový hospodár" },
+  "game.level.l12": { cs: "Král kuchyně", sk: "Kráľ kuchyne" },
+  "game.level.l13": { cs: "Hvězda spižírny", sk: "Hviezda špajze" },
+  "game.level.l14": { cs: "Legendární hospodář", sk: "Legendárny hospodár" },
+  "game.level.l15": { cs: "Nesmrtelná legenda", sk: "Nesmrteľná legenda" },
 
-  // Odznak v přehledu
+  // ── Odznak v přehledu ──
   "game.streak": { cs: "{n} dní v řadě", sk: "{n} dní v rade" },
   "game.streakOne": { cs: "1 den v řadě", sk: "1 deň v rade" },
   "game.streakZero": { cs: "Začni sérii ještě dnes", sk: "Začni sériu ešte dnes" },
@@ -19,4 +29,68 @@ export const game: Record<string, Translation> = {
   "game.toNext": { cs: "{n} bodů do další úrovně", sk: "{n} bodov do ďalšej úrovne" },
   "game.maxLevel": { cs: "Nejvyšší úroveň 🎉", sk: "Najvyššia úroveň 🎉" },
   "game.points": { cs: "{n} bodů", sk: "{n} bodov" },
+
+  // ── Sekce odznaků v Nastavení ──
+  "game.badges.title": { cs: "Odznaky", sk: "Odznaky" },
+  "game.badges.progress": { cs: "{n} z {total} získáno", sk: "{n} z {total} získaných" },
+  "game.badges.unlockedOn": { cs: "Získáno {date}", sk: "Získané {date}" },
+  "game.badges.locked": { cs: "{n}/{goal}", sk: "{n}/{goal}" },
+
+  // ── Odznaky (název + popis) ──
+  // Vaření
+  "game.badge.cook_1.name": { cs: "První jídlo", sk: "Prvé jedlo" },
+  "game.badge.cook_1.desc": { cs: "Uvař svůj první recept", sk: "Uvar svoj prvý recept" },
+  "game.badge.cook_10.name": { cs: "Kuchtík", sk: "Kuchtík" },
+  "game.badge.cook_10.desc": { cs: "Uvař 10 jídel", sk: "Uvar 10 jedál" },
+  "game.badge.cook_50.name": { cs: "Šikovný kuchař", sk: "Šikovný kuchár" },
+  "game.badge.cook_50.desc": { cs: "Uvař 50 jídel", sk: "Uvar 50 jedál" },
+  "game.badge.cook_100.name": { cs: "Mistr vaření", sk: "Majster varenia" },
+  "game.badge.cook_100.desc": { cs: "Uvař 100 jídel", sk: "Uvar 100 jedál" },
+  "game.badge.cook_250.name": { cs: "Kuchařská legenda", sk: "Kuchárska legenda" },
+  "game.badge.cook_250.desc": { cs: "Uvař 250 jídel", sk: "Uvar 250 jedál" },
+  // Skenování
+  "game.badge.scan_1.name": { cs: "První sken", sk: "Prvý sken" },
+  "game.badge.scan_1.desc": { cs: "Naskenuj první produkt", sk: "Naskenuj prvý produkt" },
+  "game.badge.scan_25.name": { cs: "Sběrač čárek", sk: "Zberač čiarok" },
+  "game.badge.scan_25.desc": { cs: "Naskenuj 25 produktů", sk: "Naskenuj 25 produktov" },
+  "game.badge.scan_100.name": { cs: "Skener profík", sk: "Skener profík" },
+  "game.badge.scan_100.desc": { cs: "Naskenuj 100 produktů", sk: "Naskenuj 100 produktov" },
+  "game.badge.scan_500.name": { cs: "Pán čárových kódů", sk: "Pán čiarových kódov" },
+  "game.badge.scan_500.desc": { cs: "Naskenuj 500 produktů", sk: "Naskenuj 500 produktov" },
+  // Záchrana
+  "game.badge.save_1.name": { cs: "Zachránce", sk: "Záchranca" },
+  "game.badge.save_1.desc": { cs: "Zachraň první potravinu před vyhozením", sk: "Zachráň prvú potravinu pred vyhodením" },
+  "game.badge.save_10.name": { cs: "Ochránce jídla", sk: "Ochranca jedla" },
+  "game.badge.save_10.desc": { cs: "Zachraň 10 potravin", sk: "Zachráň 10 potravín" },
+  "game.badge.save_50.name": { cs: "Bojovník proti plýtvání", sk: "Bojovník proti plytvaniu" },
+  "game.badge.save_50.desc": { cs: "Zachraň 50 potravin", sk: "Zachráň 50 potravín" },
+  "game.badge.save_150.name": { cs: "Strážce planety", sk: "Strážca planéty" },
+  "game.badge.save_150.desc": { cs: "Zachraň 150 potravin", sk: "Zachráň 150 potravín" },
+  "game.badge.save_500.name": { cs: "Hrdina spižírny", sk: "Hrdina špajze" },
+  "game.badge.save_500.desc": { cs: "Zachraň 500 potravin", sk: "Zachráň 500 potravín" },
+  // Série
+  "game.badge.streak_3.name": { cs: "Rozjezd", sk: "Rozbeh" },
+  "game.badge.streak_3.desc": { cs: "3 dny v řadě", sk: "3 dni v rade" },
+  "game.badge.streak_7.name": { cs: "Týden v kuse", sk: "Týždeň v kuse" },
+  "game.badge.streak_7.desc": { cs: "7 dní v řadě", sk: "7 dní v rade" },
+  "game.badge.streak_30.name": { cs: "Měsíční disciplína", sk: "Mesačná disciplína" },
+  "game.badge.streak_30.desc": { cs: "30 dní v řadě", sk: "30 dní v rade" },
+  "game.badge.streak_100.name": { cs: "Stovkař", sk: "Stovkár" },
+  "game.badge.streak_100.desc": { cs: "100 dní v řadě", sk: "100 dní v rade" },
+  "game.badge.streak_365.name": { cs: "Celý rok!", sk: "Celý rok!" },
+  "game.badge.streak_365.desc": { cs: "365 dní v řadě", sk: "365 dní v rade" },
+  // Týdenní
+  "game.badge.week_10.name": { cs: "Pilný týden", sk: "Usilovný týždeň" },
+  "game.badge.week_10.desc": { cs: "Přidej 10 položek za týden", sk: "Pridaj 10 položiek za týždeň" },
+  "game.badge.week_25.name": { cs: "Nákupní maraton", sk: "Nákupný maratón" },
+  "game.badge.week_25.desc": { cs: "Přidej 25 položek za týden", sk: "Pridaj 25 položiek za týždeň" },
+  // Skóre
+  "game.badge.score_500.name": { cs: "Na rozjezdu", sk: "Na rozbehu" },
+  "game.badge.score_500.desc": { cs: "Získej 500 bodů", sk: "Získaj 500 bodov" },
+  "game.badge.score_2000.name": { cs: "Sběratel bodů", sk: "Zberateľ bodov" },
+  "game.badge.score_2000.desc": { cs: "Získej 2 000 bodů", sk: "Získaj 2 000 bodov" },
+  "game.badge.score_10000.name": { cs: "Bodový král", sk: "Bodový kráľ" },
+  "game.badge.score_10000.desc": { cs: "Získej 10 000 bodů", sk: "Získaj 10 000 bodov" },
+  "game.badge.score_50000.name": { cs: "Bodová legenda", sk: "Bodová legenda" },
+  "game.badge.score_50000.desc": { cs: "Získej 50 000 bodů", sk: "Získaj 50 000 bodov" },
 };

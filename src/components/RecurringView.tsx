@@ -7,6 +7,9 @@ import { useShoppingStore } from "@/store/shoppingStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useModeStore } from "@/store/modeStore";
 import { useT } from "@/lib/i18n";
+import { guessCategory } from "@/lib/guessCategory";
+import { toBaseUnit } from "@/lib/units";
+import type { ProductInfo, StorageLocation } from "@/types";
 
 const UNITS = ["ks", "g", "kg", "ml", "l", "balení", "lžíce", "hrnek"];
 const INTERVALS = [
@@ -183,11 +186,13 @@ function RecurringCard({ item }: { item: RecurringItem }) {
   const t = useT();
   const { updateItem, removeItem, markPurchased } = useRecurringStore();
   const addShoppingItem = useShoppingStore((s) => s.addItem);
+  const addPantryItem = usePantryStore((s) => s.addItem);
   const appMode = useModeStore((s) => s.mode);
   const shoppingMode = appMode === "provoz" ? "provoz" : "domacnost";
   const [expanded, setExpanded] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [boughtToast, setBoughtToast] = useState(false);
 
   const days = daysUntil(item.next_reminder);
   const isOverdue = days <= 0;
@@ -206,15 +211,42 @@ function RecurringCard({ item }: { item: RecurringItem }) {
         : t("recurring.inDays")
       ).replace("{n}", String(days));
 
+  // DO NÁKUPU: přidá do nákupního seznamu a rovnou přiřadí kategorii podle názvu.
   const handleAddToShopping = () => {
-    addShoppingItem({ name: item.name, quantity: item.quantity, unit: item.unit }, shoppingMode);
+    addShoppingItem(
+      { name: item.name, quantity: item.quantity, unit: item.unit, category: guessCategory(item.name) },
+      shoppingMode,
+    );
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
   };
 
+  // KOUPENO: přidá položku do spižírny A posune příští připomínku.
+  // Z připomínky složíme minimální ProductInfo; množství/jednotku převedeme
+  // na základní jednotku produktu (kg→g, l→ml, balení→ks), kterou spižírna umí.
   const handleMarkPurchased = () => {
+    const base = toBaseUnit(item.quantity, item.unit);
+    const product: ProductInfo = {
+      ean_code: `recurring-${item.id}`,
+      product_name: item.name,
+      brand: "",
+      category: "",
+      subcategory: "",
+      image_url: "",
+      unit: base.unit,
+      ...(base.unit === "g" ? { weight_g: base.quantity }
+        : base.unit === "ml" ? { volume_ml: base.quantity }
+        : { pieces_count: base.quantity }),
+      allergens: [],
+      source: "user_added",
+      verified: false,
+    };
+    // Výchozí umístění "spiz"; cenu/expiraci uživatel doplní ve spižírně.
+    addPantryItem(product, base.quantity, "spiz" as StorageLocation, undefined, item.store);
     markPurchased(item.id);
     setAddedToCart(false);
+    setBoughtToast(true);
+    setTimeout(() => setBoughtToast(false), 2000);
   };
 
   const matchedInterval = INTERVALS.find((i) => i.days === item.interval_days);
@@ -258,7 +290,7 @@ function RecurringCard({ item }: { item: RecurringItem }) {
               className="flex-1 py-2.5 rounded-2xl text-sm font-semibold flex items-center justify-center gap-1.5"
               style={{ background: "var(--green-primary)", color: "white" }}
             >
-              <Check size={14} /> {t("recurring.purchased")}
+              <Check size={14} /> {boughtToast ? t("recurring.addedToPantry") : t("recurring.purchased")}
             </button>
           </div>
 
@@ -319,7 +351,7 @@ function PantryPredictions() {
               </p>
             </div>
             <button
-              onClick={() => addShoppingItem({ name: item.product.product_name, quantity: item.quantity, unit: item.unit }, shoppingMode)}
+              onClick={() => addShoppingItem({ name: item.product.product_name, quantity: item.quantity, unit: item.unit, category: guessCategory(item.product.product_name) }, shoppingMode)}
               className="px-3 py-1.5 rounded-xl text-xs font-semibold flex-shrink-0"
               style={{ background: "#FEF3E2", color: "#B85C00" }}
             >
