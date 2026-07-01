@@ -34,6 +34,18 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const setBusinessName = useBusinessStore((s) => s.setName);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const deleteAccount = useAuthStore((s) => s.deleteAccount);
+
+  const handleDeleteAccount = async () => {
+    setDeleting(true);
+    setDeleteError(null);
+    const err = await deleteAccount();
+    if (err) { setDeleteError(err); setDeleting(false); }
+    // při úspěchu appka sama přesměruje na "/" (localStorage.clear + replace)
+  };
 
   // Odznaky — počítáme přes metodu storu, ale přepočet vážeme na surová čísla
   // (stejný vzor jako ProgressBadge), ať se getBadges() nevolá v reaktivním selektoru.
@@ -280,6 +292,31 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               </div>
             )}
             <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.dataHint")}</p>
+          </Section>
+
+          {/* ── Smazat účet ── nevratné, GDPR. Volá Edge Function delete-account. */}
+          <Section icon={<Trash2 size={15} />} title={t("settings.deleteAccount")}>
+            {!confirmDelete ? (
+              <button onClick={() => setConfirmDelete(true)} style={rowBtn("#FDE8E8", "#C0392B")}>
+                <Trash2 size={15} /> {t("settings.deleteAccount")}
+              </button>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <p style={{ fontSize: 13, color: "#C0392B", textAlign: "center", margin: "4px 0", lineHeight: 1.4, fontWeight: 600 }}>{t("settings.deleteAccountConfirm")}</p>
+                {deleteError && (
+                  <p style={{ fontSize: 12, color: "#C0392B", textAlign: "center", margin: 0 }}>{deleteError}</p>
+                )}
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => { setConfirmDelete(false); setDeleteError(null); }} disabled={deleting} style={{ ...rowBtn("var(--bg-primary)", "var(--text-secondary)"), flex: 1, border: "1.5px solid var(--border)" }}>
+                    {t("common.cancel")}
+                  </button>
+                  <button onClick={handleDeleteAccount} disabled={deleting} style={{ ...rowBtn("#C0392B", "white"), flex: 1, opacity: deleting ? 0.6 : 1 }}>
+                    {deleting ? t("settings.deleteAccountBusy") : t("settings.deleteAccountConfirmBtn")}
+                  </button>
+                </div>
+              </div>
+            )}
+            <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.deleteAccountHint")}</p>
           </Section>
 
           {/* ── Odkazy ── Soukromí a Podmínky vedou na stránky v projektu.

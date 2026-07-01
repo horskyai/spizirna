@@ -64,6 +64,17 @@ export const settings: Record<string, Translation> = {
     cs: "Smaže lokální data v tomto zařízení a restartuje aplikaci.",
     sk: "Vymaže lokálne dáta v tomto zariadení a reštartuje aplikáciu.",
   },
+  "settings.deleteAccount": { cs: "Smazat účet", sk: "Zmazať účet" },
+  "settings.deleteAccountConfirm": {
+    cs: "Opravdu nevratně smazat účet? Tvůj profil i všechna data na serveru budou trvale odstraněny. Tuto akci nelze vrátit.",
+    sk: "Naozaj nenávratne zmazať účet? Tvoj profil aj všetky dáta na serveri budú trvalo odstránené. Túto akciu nie je možné vrátiť.",
+  },
+  "settings.deleteAccountConfirmBtn": { cs: "Smazat účet", sk: "Zmazať účet" },
+  "settings.deleteAccountBusy": { cs: "Mažu…", sk: "Mažem…" },
+  "settings.deleteAccountHint": {
+    cs: "Trvale smaže tvůj účet a všechna data ze serveru (GDPR).",
+    sk: "Trvalo zmaže tvoj účet a všetky dáta zo servera (GDPR).",
+  },
 
   // ── Odkazy (zatím šablona — doplnit cílové URL) ──
   "settings.links": { cs: "Odkazy", sk: "Odkazy" },

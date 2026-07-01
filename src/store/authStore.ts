@@ -46,6 +46,8 @@ interface AuthStore {
   // Nastaví nové heslo přihlášenému uživateli (po kliknutí na odkaz z e-mailu).
   updatePassword: (newPassword: string) => Promise<string | null>;
   signOut: () => Promise<void>;
+  // Nevratně smaže účet a všechna data (přes Edge Function delete-account).
+  deleteAccount: () => Promise<string | null>;
   isTrialActive: () => boolean;
   isPaidPlan: () => boolean;
 }
@@ -175,6 +177,25 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   signOut: async () => {
     await supabase.auth.signOut();
     set({ user: null, session: null, profile: null });
+  },
+
+  deleteAccount: async () => {
+    // Zavolej Edge Function s access tokenem přihlášeného uživatele.
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+    if (!token) return "not_authenticated";
+    const { error } = await supabase.functions.invoke("delete-account", {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (error) return error.message;
+    // Účet smazán → lokální odhlášení + vyčištění všech lokálních dat.
+    await supabase.auth.signOut();
+    set({ user: null, session: null, profile: null, deviceLimitHit: null });
+    if (typeof window !== "undefined") {
+      localStorage.clear();
+      window.location.replace("/");
+    }
+    return null;
   },
 
   isTrialActive: () => {

@@ -17,6 +17,7 @@ const FAQ_CS: QA[] = [
   { q: "Jak změním nebo zruším předplatné?", a: "Plán spravuješ v Nastavení → Plán. Platby a zrušení předplatného se řídí pravidly obchodu, ze kterého jsi appku stáhl (např. Google Play)." },
   { q: "Zapomněl jsem heslo, co teď?", a: "Na přihlašovací obrazovce klepni na „Zapomněli jste heslo?“, zadej e-mail a přijde ti odkaz pro nastavení nového hesla." },
   { q: "Jak smažu všechna data?", a: "V Nastavení → Vymazat všechna data. Tím se smažou lokální data v tomto zařízení." },
+  { q: "Jak trvale smažu účet?", a: "V Nastavení → Smazat účet. Tím se nevratně odstraní tvůj účet i všechna data ze serveru. Tuto akci nelze vrátit." },
   { q: "Mám další dotaz.", a: "Napiš nám na spizirnacz@gmail.com — rádi pomůžeme." },
 ];
 
@@ -31,6 +32,7 @@ const FAQ_SK: QA[] = [
   { q: "Ako zmením alebo zruším predplatné?", a: "Plán spravuješ v Nastaveniach → Plán. Platby a zrušenie predplatného sa riadia pravidlami obchodu, z ktorého si appku stiahol (napr. Google Play)." },
   { q: "Zabudol som heslo, čo teraz?", a: "Na prihlasovacej obrazovke klepni na „Zabudli ste heslo?“, zadaj e-mail a príde ti odkaz na nastavenie nového hesla." },
   { q: "Ako zmažem všetky dáta?", a: "V Nastaveniach → Vymazať všetky dáta. Tým sa zmažú lokálne dáta v tomto zariadení." },
+  { q: "Ako trvalo zmažem účet?", a: "V Nastaveniach → Zmazať účet. Tým sa nenávratne odstráni tvoj účet aj všetky dáta zo servera. Túto akciu nie je možné vrátiť." },
   { q: "Mám ďalšiu otázku.", a: "Napíš nám na spizirnacz@gmail.com — radi pomôžeme." },
 ];
 
