@@ -1,11 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Trash2, ChevronRight, Pencil, X, RefrigeratorIcon, ScanLine, Minus, Search } from "lucide-react";
+import { Plus, Trash2, ChevronRight, Pencil, X, RefrigeratorIcon, ScanLine, Minus, Search, ChefHat } from "lucide-react";
 import { usePantryStore } from "@/store/pantryStore";
 import { useUIStore } from "@/store/uiStore";
 import { useModeStore } from "@/store/modeStore";
 import { useGamificationStore } from "@/store/gamificationStore";
+import { useRecurringStore } from "@/store/recurringStore";
 import { ProvozSkladView } from "@/components/ProvozSkladView";
 import { PantryItem, StorageLocation } from "@/types";
 import { daysUntil, formatDateShort } from "@/lib/dateUtils";
@@ -141,7 +142,11 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
   const [justConsumed, setJustConsumed] = useState(false);
   const { consumeItem } = usePantryStore();
   const { recordSaved, recordActivity } = useGamificationStore();
+  const recordConsumption = useRecurringStore((s) => s.recordConsumption);
+  const setTab = useUIStore((s) => s.setTab);
   const loc = LOCATION_LABELS[item.location];
+  // Brzy expirující (≤3 dny) — nabídneme "uvařit z toho, než to vyhodíš".
+  const expiringSoon = item.expires_at != null && daysUntil(item.expires_at) <= 3;
 
   const handleQuickConsume = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -152,6 +157,8 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
       const days = daysUntil(item.expires_at);
       if (days <= 3) recordSaved();
     }
+    // Zaznamenej spotřebu pro predikci docházejících zásob.
+    recordConsumption(item.product.product_name, 1);
     setTimeout(() => {
       consumeItem(item.id, 1);
       setJustConsumed(false);
@@ -237,6 +244,15 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
               {t("pantry.item.expires")}: <b>{formatDateShort(item.expires_at)}</b>
             </p>
           )}
+          {expiringSoon && (
+            <button
+              onClick={() => setTab("recepty")}
+              className="flex items-center justify-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-full transition-all w-full"
+              style={{ background: "#FEF3E2", color: "#B85C00", border: "1px solid #FDE8A0" }}
+            >
+              <ChefHat size={13} /> {t("pantry.item.cookBeforeExpiry")}
+            </button>
+          )}
           <div className="flex gap-2">
             <button
               onClick={() => setShowEdit(true)}
@@ -263,8 +279,16 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
 export function PantryView() {
   const t = useT();
   const { items, removeItem } = usePantryStore();
+  const recordWasted = useGamificationStore((s) => s.recordWasted);
   const { setTab, pantryFilter, setPantryFilter } = useUIStore();
   const mode = useModeStore((s) => s.mode);
+
+  // Vyhození položky ze spižírny. Prošlou/brzy expirující počítáme jako plýtvání
+  // (symetrie k recordSaved). Mazání čerstvé položky je spíš úklid, neplýtvá se.
+  const handleRemove = (item: PantryItem) => {
+    if (item.expires_at && daysUntil(item.expires_at) <= 3) recordWasted();
+    removeItem(item.id);
+  };
   const [filter, setFilter] = useState<StorageLocation | "vse">("vse");
   const [search, setSearch] = useState("");
   const [showManual, setShowManual] = useState(false);
@@ -418,7 +442,7 @@ export function PantryView() {
           </div>
         ) : (
           filtered.map((item) => (
-            <PantryItemCard key={item.id} item={item} onRemove={() => removeItem(item.id)} />
+            <PantryItemCard key={item.id} item={item} onRemove={() => handleRemove(item)} />
           ))
         )}
 

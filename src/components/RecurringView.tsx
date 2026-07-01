@@ -187,6 +187,8 @@ function RecurringCard({ item }: { item: RecurringItem }) {
   const { updateItem, removeItem, markPurchased } = useRecurringStore();
   const addShoppingItem = useShoppingStore((s) => s.addItem);
   const addPantryItem = usePantryStore((s) => s.addItem);
+  const pantryItems = usePantryStore((s) => s.items);
+  const updatePantryItem = usePantryStore((s) => s.updateItem);
   const appMode = useModeStore((s) => s.mode);
   const shoppingMode = appMode === "provoz" ? "provoz" : "domacnost";
   const [expanded, setExpanded] = useState(false);
@@ -241,8 +243,17 @@ function RecurringCard({ item }: { item: RecurringItem }) {
       source: "user_added",
       verified: false,
     };
-    // Výchozí umístění "spiz"; cenu/expiraci uživatel doplní ve spižírně.
-    addPantryItem(product, base.quantity, "spiz" as StorageLocation, undefined, item.store);
+    // De-duplikace: když už stejná položka (název + jednotka) ve spižírně je,
+    // jen přičti množství místo vytváření duplicitního záznamu.
+    const existing = pantryItems.find(
+      (p) => p.product.product_name.toLowerCase().trim() === item.name.toLowerCase().trim() && p.unit === base.unit,
+    );
+    if (existing) {
+      updatePantryItem(existing.id, { quantity: existing.quantity + base.quantity });
+    } else {
+      // Výchozí umístění "spiz"; cenu/expiraci uživatel doplní ve spižírně.
+      addPantryItem(product, base.quantity, "spiz" as StorageLocation, undefined, item.store);
+    }
     markPurchased(item.id);
     setAddedToCart(false);
     setBoughtToast(true);
