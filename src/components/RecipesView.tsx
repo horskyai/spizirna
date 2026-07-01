@@ -10,12 +10,34 @@ import { useModeStore } from "@/store/modeStore";
 import { useProvozStore } from "@/store/provozStore";
 import { useRecipeStore } from "@/store/recipeStore";
 import { useGamificationStore } from "@/store/gamificationStore";
+import { useRecurringStore } from "@/store/recurringStore";
+import { useFoodLogStore } from "@/store/foodLogStore";
+import { useFeaturesStore } from "@/store/featuresStore";
+import { toBaseUnit } from "@/lib/units";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { useT, useLocale } from "@/lib/i18n";
 import { localizeRecipe } from "@/lib/localizeRecipe";
 
 // Unifikovaná zásoba napříč režimy (spižírna i provozní sklad).
 interface StockItem { id: string; name: string; quantity: number; ean?: string }
+
+// JEDNA sdílená matchovací logika pro celý soubor (karta receptu i denní návrh),
+// ať se STOP sety nerozcházejí. Rozseká název na klíčová slova bez stopslov.
+const MATCH_STOP = new Set(["konzervovaná", "konzervovaný", "konzervované", "čerstvý", "čerstvá", "čerstvé",
+  "sušený", "sušená", "sušené", "mražený", "mražená", "mražené", "celý", "celá", "celé",
+  "strouhaný", "strouhaná", "nakrájený", "nakrájená", "mletý", "mletá", "mleté",
+  "uvařená", "uvařený", "velký", "velká", "malý", "malá", "baby", "sterilované", "sterilovaný"]);
+function matchKeywords(str: string): string[] {
+  return str.toLowerCase()
+    .split(/[\s,()\/]+/)
+    .map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, ""))
+    .filter(w => w.length > 2 && !MATCH_STOP.has(w));
+}
+// Shodují se názvy ingredience a produktu aspoň jedním klíčovým slovem?
+function nameMatches(ingName: string, stockName: string): boolean {
+  const iw = matchKeywords(ingName), pw = matchKeywords(stockName);
+  return iw.some(a => pw.some(b => b.includes(a) || a.includes(b)));
+}
 
 // Najde ve skladu položku odpovídající ingredienci (přesně přes EAN/název,
 // jinak fuzzy přes klíčová slova). Sdíleno domácností i provozem.
@@ -28,20 +50,7 @@ function findStock(stock: StockItem[], ing: { name: string; linked_ean?: string;
     const m = stock.find((p) => p.name === ing.linked_product_name);
     if (m) return m;
   }
-  const STOP = new Set(["konzervovaná", "konzervovaný", "konzervované", "čerstvý", "čerstvá", "čerstvé",
-    "sušený", "sušená", "sušené", "mražený", "mražená", "mražené", "celý", "celá", "celé",
-    "strouhaný", "strouhaná", "nakrájený", "nakrájená", "mletý", "mletá", "mleté",
-    "uvařená", "uvařený", "velký", "velká", "malý", "malá", "baby", "sterilované", "sterilovaný"]);
-  const keywords = (str: string) =>
-    str.toLowerCase()
-      .split(/[\s,()\/]+/)
-      .map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, ""))
-      .filter(w => w.length > 2 && !STOP.has(w));
-  const ingWords = keywords(ing.name);
-  return stock.find((p) => {
-    const prodWords = keywords(p.name);
-    return ingWords.some(iw => prodWords.some(pw => pw.includes(iw) || iw.includes(pw)));
-  }) ?? null;
+  return stock.find((p) => nameMatches(ing.name, p.name)) ?? null;
 }
 
 function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void }) {
@@ -368,8 +377,15 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
   const appMode = useModeStore((s) => s.mode);
   const shoppingMode = appMode === "provoz" ? "provoz" : "domacnost";
   const recordCooked = useGamificationStore((s) => s.recordCooked);
+  const recordConsumption = useRecurringStore((s) => s.recordConsumption);
+  const addFoodEntry = useFoodLogStore((s) => s.addEntry);
+  const calorieTracking = useFeaturesStore((s) => s.calorieTracking);
   const [done, setDone] = useState(false);
   const [addedMissing, setAddedMissing] = useState(false);
+  // Zapsat snědenou porci do deníku — jen když je zapnuté sledování kalorií,
+  // domácnost a recept má kcal.
+  const canLogDiary = calorieTracking && appMode !== "provoz" && !!recipe.calories_per_serving;
+  const [logToDiary, setLogToDiary] = useState(true);
   const ratio = portions / recipe.servings;
   const scaledKcal = recipe.calories_per_serving ? Math.round(recipe.calories_per_serving * ratio) : null;
 
@@ -383,10 +399,35 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
     recipe.ingredients.forEach((ing) => {
       const m = findStock(stock, ing);
       if (!m) return;
-      if (appMode === "provoz") odeberZeSkladu(m.id, ing.quantity * ratio);
-      else consumeItem(m.id, ing.quantity * ratio);
+      // Množství receptu převeď na základní jednotku spižírny/skladu (0,5 l → 500 ml).
+      const need = toBaseUnit(ing.quantity * ratio, ing.unit).quantity;
+      if (appMode === "provoz") odeberZeSkladu(m.id, need);
+      else {
+        consumeItem(m.id, need);
+        // Nakrm predikci docházejících zásob (bez toho je sekce "Dochází vám" mrtvá).
+        recordConsumption(m.name, need);
+      }
     });
     recordCooked();
+    // Zapiš snědenou porci do deníku kalorií (1 porce, ne celý hrnec).
+    if (canLogDiary && logToDiary) {
+      addFoodEntry({
+        date: new Date().toISOString().split("T")[0],
+        meal: "obed",
+        items: [{
+          name: recipe.name,
+          quantity_g: 0,
+          calories_kcal: recipe.calories_per_serving ?? 0,
+          protein_g: recipe.protein_per_serving ?? 0,
+          fat_g: recipe.fat_per_serving ?? 0,
+          carbs_g: recipe.carbs_per_serving ?? 0,
+        }],
+        total_kcal: recipe.calories_per_serving ?? 0,
+        total_protein_g: recipe.protein_per_serving ?? 0,
+        total_fat_g: recipe.fat_per_serving ?? 0,
+        total_carbs_g: recipe.carbs_per_serving ?? 0,
+      });
+    }
     setDone(true);
     setTimeout(onClose, 1200);
   };
@@ -466,6 +507,23 @@ function CookModal({ recipe, portions, onPortionsChange, onClose, ingredientsWit
             </div>
           )}
 
+          {canLogDiary && !done && (
+            <button
+              onClick={() => setLogToDiary((v) => !v)}
+              className="w-full flex items-center justify-between px-3 py-2.5 rounded-xl text-sm"
+              style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)" }}
+            >
+              <span style={{ color: "var(--text-secondary)" }}>
+                {t("recipes.cook.logToDiary").replace("{n}", String(scaledKcal ? Math.round((recipe.calories_per_serving ?? 0)) : 0))}
+              </span>
+              <span style={{
+                width: 40, height: 24, borderRadius: 99, flexShrink: 0, position: "relative",
+                background: logToDiary ? "var(--green-primary)" : "var(--border)", transition: "background 0.2s",
+              }}>
+                <span style={{ position: "absolute", top: 3, left: logToDiary ? 19 : 3, width: 18, height: 18, borderRadius: "50%", background: "white", transition: "left 0.2s" }} />
+              </span>
+            </button>
+          )}
           <button onClick={handleCook} className="btn-primary" style={done ? { background: "#4A6B3F" } : {}}>
             {done ? t("recipes.cook.deductedDone") : <><ChefHat size={18} /> {t("recipes.cook.cookedDeduct")}</>}
           </button>
@@ -519,9 +577,12 @@ function TodaySuggestionWidget() {
   const t = useT();
   const locale = useLocale();
   const pantryItems = usePantryStore((s) => s.items);
+  const consumeItem = usePantryStore((s) => s.consumeItem);
   const provozPolozky = useProvozStore((s) => s.polozky);
+  const odeberZeSkladu = useProvozStore((s) => s.odeberZeSkladu);
   const { recipes } = useRecipeStore();
   const recordCooked = useGamificationStore((s) => s.recordCooked);
+  const recordConsumption = useRecurringStore((s) => s.recordConsumption);
   const addItems = useShoppingStore((s) => s.addItems);
   const appMode = useModeStore((s) => s.mode);
   const shoppingMode = appMode === "provoz" ? "provoz" : "domacnost";
@@ -540,24 +601,10 @@ function TodaySuggestionWidget() {
   const suggestion = useMemo(() => {
     if (recipes.length === 0 || stockNames.length === 0) return null;
 
-    const STOP = new Set(["konzervovaná","konzervovaný","konzervované","čerstvý","čerstvá","čerstvé",
-      "sušený","sušená","sušené","mražený","mražená","mražené","celý","celá","celé",
-      "strouhaný","strouhaná","nakrájený","nakrájená","mletý","mletá","mleté"]);
-    const keywords = (str: string) =>
-      str.toLowerCase().split(/[\s,()\/]+/)
-        .map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, ""))
-        .filter(w => w.length > 2 && !STOP.has(w));
-
-    const stockWords = stockNames.map((n) => keywords(n));
-
     const scored = recipes.map((r) => {
       let matched = 0;
       r.ingredients.forEach((ing) => {
-        const ingWords = keywords(ing.name);
-        const found = stockWords.some((prodWords) =>
-          ingWords.some(iw => prodWords.some(pw => pw.includes(iw) || iw.includes(pw)))
-        );
-        if (found) matched++;
+        if (stockNames.some((n) => nameMatches(ing.name, n))) matched++;
       });
       const total = r.ingredients.length || 1;
       return { recipe: r, score: matched / total, matched, total };
@@ -582,24 +629,26 @@ function TodaySuggestionWidget() {
   const recipe = localizeRecipe(rawRecipe, locale);
   const percent = Math.round((matched / total) * 100);
   // Chybějící suroviny počítáme proti aktuálním zásobám podle režimu (stockNames).
-  const missing = recipe.ingredients.filter((ing) => {
-    const STOP = new Set(["konzervovaná","konzervovaný","konzervované","čerstvý","čerstvá","čerstvé",
-      "sušený","sušená","sušené","mražený","mražená","mražené"]);
-    const keywords = (str: string) =>
-      str.toLowerCase().split(/[\s,()\/]+/)
-        .map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, ""))
-        .filter(w => w.length > 2 && !STOP.has(w));
-    const ingWords = keywords(ing.name);
-    return !stockNames.some((n) => {
-      const prodWords = keywords(n);
-      return ingWords.some(iw => prodWords.some(pw => pw.includes(iw) || iw.includes(pw)));
-    });
-  });
+  const missing = recipe.ingredients.filter((ing) => !stockNames.some((n) => nameMatches(ing.name, n)));
 
   const [showDetail, setShowDetail] = useState(false);
   const [cookStep, setCookStep] = useState(0);
 
   const handleCookNow = () => {
+    // Stejně jako v kartě receptu: odečti suroviny z příslušného skladu podle režimu.
+    const stock: StockItem[] = appMode === "provoz"
+      ? provozPolozky.map((p) => ({ id: p.id, name: p.nazev, quantity: p.aktualniStav }))
+      : pantryItems.map((p) => ({ id: p.id, name: p.product.product_name, quantity: p.quantity, ean: p.product.ean_code }));
+    recipe.ingredients.forEach((ing) => {
+      const m = findStock(stock, ing);
+      if (!m) return;
+      const need = toBaseUnit(ing.quantity, ing.unit).quantity;
+      if (appMode === "provoz") odeberZeSkladu(m.id, need);
+      else {
+        consumeItem(m.id, need);
+        recordConsumption(m.name, need);
+      }
+    });
     recordCooked();
     setCookDone(true);
     setTimeout(() => setCookDone(false), 2000);

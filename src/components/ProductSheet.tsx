@@ -7,6 +7,8 @@ import { usePantryStore } from "@/store/pantryStore";
 import { usePriceStore } from "@/store/priceStore";
 import { useProvozStore } from "@/store/provozStore";
 import { useModeStore } from "@/store/modeStore";
+import { useGamificationStore } from "@/store/gamificationStore";
+import { rememberProduct } from "@/lib/productLookup";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG } from "@/components/LocationIcons";
 import { daysUntil } from "@/lib/dateUtils";
 import { useT } from "@/lib/i18n";
@@ -36,6 +38,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
   const isProvoz = mode === "provoz";
   const addPolozka = useProvozStore((s) => s.addPolozka);
   const addRecord = usePriceStore((s) => s.addRecord);
+  const recordAdded = useGamificationStore((s) => s.recordAdded);
   const allPriceRecords = usePriceStore((s) => s.records);
   const priceRecords = useMemo(
     () => allPriceRecords.filter((r) => r.ean_code === product.ean_code).sort((a, b) => b.date.localeCompare(a.date)),
@@ -85,6 +88,16 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
   const handleAdd = () => {
     if (savingRef.current) return;
     savingRef.current = true;
+    // Propíšeme ručně dopsané nutriční hodnoty do produktu (jinak se zahodí a
+    // v deníku pak vyjde 0 kcal). Číslo použijeme, jen když se liší od původního.
+    const num = (s: string, orig?: number) => { const n = parseFloat(s); return isNaN(n) ? orig : n; };
+    const finalProduct: ProductInfo = {
+      ...product,
+      calories_kcal: num(manualKcal, product.calories_kcal),
+      protein_g: num(manualProtein, product.protein_g),
+      carbs_g: num(manualCarbs, product.carbs_g),
+      fat_g: num(manualFat, product.fat_g),
+    };
     if (isProvoz) {
       // Provozovna: přidej do skladu (inventury), ne do spížírny.
       addPolozka({
@@ -96,11 +109,16 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
         minTrvanlivost: expires || undefined,
         fotoUrl: product.image_url || undefined,
       });
+      recordAdded();
       setAdded(true);
       setTimeout(onClose, 1200);
       return;
     }
-    addItem(product, qty, location, price ? parseFloat(price) : undefined, store, undefined, undefined, expires || undefined);
+    addItem(finalProduct, qty, location, price ? parseFloat(price) : undefined, store, undefined, undefined, expires || undefined);
+    recordAdded();
+    // Zapamatuj doplněné nutriční hodnoty do katalogu (jen u reálného EAN),
+    // ať je příští sken téhož produktu už zná.
+    rememberProduct(finalProduct);
     if (price) {
       addRecord({
         ean_code: product.ean_code,

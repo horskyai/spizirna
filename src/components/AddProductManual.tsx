@@ -4,6 +4,7 @@ import { useState, useRef } from "react";
 import { X, Plus, ChevronDown, Camera, Image, Tag } from "lucide-react";
 import { ProductInfo, StorageLocation } from "@/types";
 import { usePantryStore } from "@/store/pantryStore";
+import { useGamificationStore } from "@/store/gamificationStore";
 import { rememberProduct } from "@/lib/productLookup";
 import { daysUntil } from "@/lib/dateUtils";
 import { toBaseUnit } from "@/lib/units";
@@ -37,6 +38,7 @@ const SUGGESTED_TAGS = ["Bio", "Bez lepku", "Laktóza free", "Vegán", "Oblíben
 export function AddProductManual({ onClose, prefillEAN }: Props) {
   const t = useT();
   const { addItem, customCategories, addCustomCategory } = usePantryStore();
+  const recordAdded = useGamificationStore((s) => s.recordAdded);
 
   const [step, setStep] = useState<"basic" | "nutrition" | "pantry">("basic");
   const [added, setAdded] = useState(false);
@@ -139,6 +141,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
         verified: false,
       };
       addItem(product, quantity, location, undefined, undefined, undefined, item.photoUrl ?? undefined);
+      recordAdded();
     });
     setVoiceReviewItems(null);
     setAdded(true);
@@ -176,6 +179,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
     // příští sken ho najde okamžitě, i ostatním uživatelům
     rememberProduct(product);
     addItem(product, qty, location, price ? parseFloat(price) : undefined, store, tags, photoUrl ?? undefined, expires || undefined);
+    recordAdded();
     setAdded(true);
     setTimeout(onClose, 1000);
   };

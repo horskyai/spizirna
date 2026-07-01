@@ -31,6 +31,7 @@ export const foodlog: Record<string, Translation> = {
   "foodlog.carbs": { cs: "Sacharidy", sk: "Sacharidy" },
   "foodlog.fat": { cs: "Tuky", sk: "Tuky" },
   "foodlog.proteinShort": { cs: "bílk.", sk: "biel." },
+  "foodlog.noKcalWarning": { cs: "Tento produkt nemá vyplněné kalorie — do deníku se přičte 0 kcal. Doplň je u produktu (sken → detail).", sk: "Tento produkt nemá vyplnené kalórie — do denníka sa pripíše 0 kcal. Doplň ich pri produkte (sken → detail)." },
   "foodlog.carbsShort": { cs: "sach.", sk: "sach." },
   "foodlog.fatShort": { cs: "tuky", sk: "tuky" },
   "foodlog.proteinLabel": { cs: "Bílkoviny (g)", sk: "Bielkoviny (g)" },

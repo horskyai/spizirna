@@ -43,6 +43,7 @@ export const recipes: Record<string, Translation> = {
   "recipes.cook.addMissingToList": { cs: "Přidat chybějící na seznam", sk: "Pridať chýbajúce do zoznamu" },
   "recipes.cook.deductedDone": { cs: "✓ Odečteno ze spižírny!", sk: "✓ Odpočítané zo špajzy!" },
   "recipes.cook.cookedDeduct": { cs: "Uvařeno — odečíst ze spižírny", sk: "Uvarené — odpočítať zo špajzy" },
+  "recipes.cook.logToDiary": { cs: "Zapsat porci do deníku ({n} kcal)", sk: "Zapísať porciu do denníka ({n} kcal)" },
 
   // ── TodaySuggestionWidget ──
   "recipes.today.title": { cs: "Co uvařím dnes?", sk: "Čo uvarím dnes?" },

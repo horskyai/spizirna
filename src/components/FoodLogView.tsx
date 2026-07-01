@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { Plus, X, Search, Package, Settings } from "lucide-react";
 import { useFoodLogStore } from "@/store/foodLogStore";
 import { usePantryStore } from "@/store/pantryStore";
+import { useRecurringStore } from "@/store/recurringStore";
 import { FoodLogEntry, FoodLogItem } from "@/types";
 import { todayISO } from "@/lib/dateUtils";
 import { useT } from "@/lib/i18n";
@@ -36,6 +37,8 @@ function MacroBar({ label, value, goal, color }: { label: string; value: number;
 function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: Omit<FoodLogEntry, "id">) => void }) {
   const t = useT();
   const pantryItems = usePantryStore((s) => s.items);
+  const consumeItem = usePantryStore((s) => s.consumeItem);
+  const recordConsumption = useRecurringStore((s) => s.recordConsumption);
   const [meal, setMeal] = useState<MealId>("obed");
   const [mode, setMode] = useState<"pantry" | "manual">("pantry");
   const [search, setSearch] = useState("");
@@ -76,6 +79,12 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
         fat_g: calc.fat,
         carbs_g: calc.carbs,
       };
+      // Snědené jídlo ze spižírny z ní i odečti — deník a spižírna teď drží krok.
+      // Gramy odečítáme jen u hmotnostních/objemových jednotek (u "ks" nevíme převod).
+      if (selectedProduct.unit === "g" || selectedProduct.unit === "ml") {
+        consumeItem(selectedProduct.id, grams);
+        recordConsumption(selectedProduct.product.product_name, grams);
+      }
     } else {
       if (!name || !kcal) return;
       item = {
@@ -270,6 +279,13 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
                       ))}
                     </div>
 
+                    {/* Upozornění: produkt bez kalorií → v deníku by tiše přidal 0 kcal */}
+                    {selectedProduct && selectedProduct.product.calories_kcal == null && (
+                      <div className="rounded-xl p-3 text-xs" style={{ background: "#FEF3E2", color: "#B85C00", lineHeight: 1.4 }}>
+                        ⚠️ {t("foodlog.noKcalWarning")}
+                      </div>
+                    )}
+
                     {/* Preview */}
                     {preview && grams > 0 && (
                       <div className="rounded-xl p-3" style={{ background: "var(--green-light)" }}>
@@ -350,16 +366,16 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
 
 export function FoodLogView() {
   const t = useT();
-  const { entries, addEntry, removeEntry, goal, setGoal } = useFoodLogStore();
+  const { entries, addEntry, removeEntry, goal, setGoal, getTodayTotals } = useFoodLogStore();
   const [showModal, setShowModal] = useState(false);
   const [showGoalModal, setShowGoalModal] = useState(false);
 
   const today = new Date().toISOString().split("T")[0];
   const todayEntries = useMemo(() => entries.filter((e) => e.date === today), [entries, today]);
-  const totals = useMemo(() => todayEntries.reduce(
-    (acc, e) => ({ kcal: acc.kcal + e.total_kcal, protein: acc.protein + e.total_protein_g, fat: acc.fat + e.total_fat_g, carbs: acc.carbs + e.total_carbs_g }),
-    { kcal: 0, protein: 0, fat: 0, carbs: 0 }
-  ), [todayEntries]);
+  // Denní součet bere jediná pravda — getTodayTotals ze storu (ne duplicitní reduce).
+  const totals = useMemo(() => getTodayTotals(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [entries, today]);
   const kcalPct = Math.min(100, (totals.kcal / goal.calories_kcal) * 100);
 
   return (
