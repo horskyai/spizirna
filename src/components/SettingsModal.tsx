@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award } from "lucide-react";
-import { useAuthStore } from "@/store/authStore";
+import { useState, useMemo, useEffect } from "react";
+import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus } from "lucide-react";
+import { useAuthStore, type DeviceRow } from "@/store/authStore";
 import { useModeStore } from "@/store/modeStore";
 import { useBusinessStore } from "@/store/businessStore";
 import { useFoodLogStore } from "@/store/foodLogStore";
+import { useFeaturesStore } from "@/store/featuresStore";
 import { useGamificationStore, type BadgeState } from "@/store/gamificationStore";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/dateUtils";
@@ -26,6 +27,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const mode = useModeStore((s) => s.mode);
   const goal = useFoodLogStore((s) => s.goal);
   const setGoal = useFoodLogStore((s) => s.setGoal);
+  const calorieTracking = useFeaturesStore((s) => s.calorieTracking);
+  const setCalorieTracking = useFeaturesStore((s) => s.setCalorieTracking);
   // Název provozovny — jen v provozním režimu.
   const businessName = useBusinessStore((s) => s.name);
   const setBusinessName = useBusinessStore((s) => s.setName);
@@ -141,6 +144,11 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             )}
           </Section>
 
+          {/* ── Moje zařízení ── seznam + odebrat + přidat slot */}
+          <Section icon={<Smartphone size={15} />} title={t("device.settingsTitle")}>
+            <DevicesSection t={t} />
+          </Section>
+
           {/* ── Plán ── tlačítka zatím ŠABLONA, bez napojení na platby */}
           <Section icon={<Crown size={15} />} title={t("settings.plan")}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 2px 10px" }}>
@@ -162,8 +170,31 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             )}
           </Section>
 
-          {/* ── Denní cíl ── jen v domácnosti (pro provozovnu nedává smysl) */}
+          {/* ── Sledování kalorií ── volitelná funkce, jen v domácnosti.
+              Zapnutím se zobrazí tab "Jídlo", kalorie u produktů a denní cíl. */}
           {mode !== "provoz" && (
+            <Section icon={<Flame size={15} />} title={t("settings.calorieTracking")}>
+              <button
+                onClick={() => setCalorieTracking(!calorieTracking)}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "2px", background: "transparent" }}
+              >
+                <span style={{ fontSize: 13, color: "var(--text-primary)", textAlign: "left" }}>{t("settings.calorieTrackingLabel")}</span>
+                <span style={{
+                  width: 44, height: 26, borderRadius: 99, flexShrink: 0, position: "relative",
+                  background: calorieTracking ? "var(--green-primary)" : "var(--border)", transition: "background 0.2s",
+                }}>
+                  <span style={{
+                    position: "absolute", top: 3, left: calorieTracking ? 21 : 3, width: 20, height: 20, borderRadius: "50%",
+                    background: "white", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                  }} />
+                </span>
+              </button>
+              <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.calorieTrackingHint")}</p>
+            </Section>
+          )}
+
+          {/* ── Denní cíl ── jen v domácnosti + když je sledování kalorií zapnuté */}
+          {mode !== "provoz" && calorieTracking && (
           <Section icon={<Target size={15} />} title={t("settings.goal")}>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
               {([
@@ -347,6 +378,66 @@ function BadgesSection({ badges, t }: { badges: BadgeState[]; t: ReturnType<type
           );
         })}
       </div>
+    </>
+  );
+}
+
+// Seznam přihlášených zařízení účtu + odebrání + přidání slotu (testovací).
+function DevicesSection({ t }: { t: ReturnType<typeof useT> }) {
+  const { listDevices, removeDevice, addDeviceSlot, currentDeviceId } = useAuthStore();
+  const [devices, setDevices] = useState<DeviceRow[]>([]);
+  const [busy, setBusy] = useState(false);
+  const thisId = currentDeviceId();
+
+  const reload = async () => setDevices(await listDevices());
+  useEffect(() => { reload(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, []);
+
+  const handleRemove = async (rowId: string) => {
+    setBusy(true);
+    await removeDevice(rowId);
+    await reload();
+    setBusy(false);
+  };
+  const handleAddSlot = async () => {
+    setBusy(true);
+    await addDeviceSlot();
+    await reload();
+    setBusy(false);
+  };
+
+  return (
+    <>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 10 }}>
+        {devices.length === 0 && (
+          <p style={{ fontSize: 12, color: "var(--text-tertiary)", margin: "2px" }}>{t("device.yourDevices")}…</p>
+        )}
+        {devices.map((d) => {
+          const isThis = d.device_id === thisId;
+          return (
+            <div key={d.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "8px 2px", borderBottom: "1px solid var(--border)" }}>
+              <Smartphone size={16} style={{ color: isThis ? "var(--green-primary)" : "var(--text-tertiary)", flexShrink: 0 }} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)", margin: 0, overflowWrap: "anywhere" }}>
+                  {d.device_name || t("device.unknownDevice")}{isThis ? ` · ${t("device.thisDevice")}` : ""}
+                </p>
+                <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "1px 0 0" }}>
+                  {t("device.lastSeen").replace("{date}", formatDateShort(d.last_seen_at))}
+                </p>
+              </div>
+              {!isThis && (
+                <button onClick={() => handleRemove(d.id)} disabled={busy}
+                  style={{ flexShrink: 0, color: "#C0392B", background: "transparent", border: "none", padding: 4, opacity: busy ? 0.5 : 1 }}>
+                  <Trash2 size={15} />
+                </button>
+              )}
+            </div>
+          );
+        })}
+      </div>
+      <button onClick={handleAddSlot} disabled={busy} style={{ ...rowBtn("var(--green-light)", "var(--green-dark)"), opacity: busy ? 0.5 : 1 }}>
+        <Plus size={15} /> {t("device.addSlot")}
+      </button>
+      <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("device.addSlotHint")}</p>
     </>
   );
 }

@@ -37,6 +37,9 @@ export const settings: Record<string, Translation> = {
 
   // ── Denní cíl ──
   "settings.goal": { cs: "Denní cíl", sk: "Denný cieľ" },
+  "settings.calorieTracking": { cs: "Sledování kalorií", sk: "Sledovanie kalórií" },
+  "settings.calorieTrackingLabel": { cs: "Zapnout deník jídla a kalorie", sk: "Zapnúť denník jedla a kalórie" },
+  "settings.calorieTrackingHint": { cs: "Přidá záložku Jídlo, počítání kalorií u produktů a denní cíl. Když nehlídáš jídlo, nech vypnuté.", sk: "Pridá záložku Jedlo, počítanie kalórií pri produktoch a denný cieľ. Keď nesleduješ jedlo, nechaj vypnuté." },
   "settings.goalCalories": { cs: "Kalorie", sk: "Kalórie" },
   "settings.goalProtein": { cs: "Bílkoviny", sk: "Bielkoviny" },
   "settings.goalCarbs": { cs: "Sacharidy", sk: "Sacharidy" },

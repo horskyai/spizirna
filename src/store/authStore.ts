@@ -15,11 +15,27 @@ interface Profile {
   family_id?: string;
 }
 
+// Zařízení evidované u účtu (z DB funkce register_device při LIMIT stavu).
+export interface DeviceRow {
+  id: string;
+  device_id: string;
+  device_name: string | null;
+  last_seen_at: string;
+}
+
 interface AuthStore {
   user: User | null;
   session: Session | null;
   profile: Profile | null;
   loading: boolean;
+  // Když je účet přihlášený na max počtu zařízení a tohle je nové → blokace.
+  // null = v pořádku; objekt = "plno", appka ukáže obrazovku Limit zařízení.
+  deviceLimitHit: { limit: number; devices: DeviceRow[] } | null;
+  registerCurrentDevice: () => Promise<void>;
+  removeDevice: (rowId: string) => Promise<void>;
+  addDeviceSlot: () => Promise<void>;
+  listDevices: () => Promise<DeviceRow[]>;
+  currentDeviceId: () => string;
   init: () => Promise<void>;
   // signUp vrací { error, needsConfirmation } — pokud je v Supabase vypnuté
   // potvrzování e-mailem, vznikne rovnou session a needsConfirmation = false.
@@ -34,17 +50,84 @@ interface AuthStore {
   isPaidPlan: () => boolean;
 }
 
+// Trvalé ID tohoto zařízení — uložené v localStorage, přežije odhlášení.
+const DEVICE_ID_KEY = "device-id";
+function getDeviceId(): string {
+  if (typeof window === "undefined") return "server";
+  let id = localStorage.getItem(DEVICE_ID_KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(DEVICE_ID_KEY, id);
+  }
+  return id;
+}
+
+// Přátelský název zařízení z user-agenta ("Chrome · Android").
+function deviceName(): string {
+  if (typeof navigator === "undefined") return "Neznámé zařízení";
+  const ua = navigator.userAgent;
+  const os = /Android/i.test(ua) ? "Android"
+    : /iPhone|iPad|iPod/i.test(ua) ? "iOS"
+    : /Windows/i.test(ua) ? "Windows"
+    : /Mac/i.test(ua) ? "Mac"
+    : "Web";
+  const browser = /Edg/i.test(ua) ? "Edge"
+    : /Chrome/i.test(ua) ? "Chrome"
+    : /Firefox/i.test(ua) ? "Firefox"
+    : /Safari/i.test(ua) ? "Safari"
+    : "Prohlížeč";
+  return `${browser} · ${os}`;
+}
+
 export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   session: null,
   profile: null,
   loading: true,
+  deviceLimitHit: null,
+
+  registerCurrentDevice: async () => {
+    const { data, error } = await supabase.rpc("register_device", {
+      p_device_id: getDeviceId(),
+      p_device_name: deviceName(),
+    });
+    if (error) return; // síťová chyba → nezablokujeme uživatele
+    if (data?.status === "LIMIT") {
+      set({ deviceLimitHit: { limit: data.limit, devices: data.devices ?? [] } });
+    } else {
+      set({ deviceLimitHit: null });
+    }
+  },
+
+  removeDevice: async (rowId) => {
+    await supabase.rpc("remove_device", { p_device_row_id: rowId });
+    // Po uvolnění slotu zkus zaregistrovat tohle zařízení znovu.
+    await get().registerCurrentDevice();
+  },
+
+  addDeviceSlot: async () => {
+    // DOČASNÉ (testovací na Vercelu): zvýší limit bez reálné platby.
+    // Později nahradí Google Play Billing.
+    await supabase.rpc("add_device_slot");
+    await get().registerCurrentDevice();
+  },
+
+  listDevices: async () => {
+    const { data } = await supabase
+      .from("user_devices")
+      .select("id, device_id, device_name, last_seen_at")
+      .order("last_seen_at", { ascending: false });
+    return (data as DeviceRow[]) ?? [];
+  },
+
+  currentDeviceId: () => getDeviceId(),
 
   init: async () => {
     const { data: { session } } = await supabase.auth.getSession();
     if (session?.user) {
       const profile = await fetchProfile(session.user.id);
       set({ user: session.user, session, profile, loading: false });
+      await get().registerCurrentDevice();
     } else {
       set({ loading: false });
     }
@@ -53,8 +136,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       if (session?.user) {
         const profile = await fetchProfile(session.user.id);
         set({ user: session.user, session, profile });
+        await get().registerCurrentDevice();
       } else {
-        set({ user: null, session: null, profile: null });
+        set({ user: null, session: null, profile: null, deviceLimitHit: null });
       }
     });
   },

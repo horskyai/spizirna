@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Component, ReactNode } from "react";
 import { useUIStore } from "@/store/uiStore";
+import { useFeaturesStore } from "@/store/featuresStore";
 import { useModeStore } from "@/store/modeStore";
 import { useAuthStore } from "@/store/authStore";
 import { TabBar } from "@/components/TabBar";
@@ -17,6 +18,7 @@ import { ProductSheet } from "@/components/ProductSheet";
 import { ModeSelect } from "@/components/ModeSelect";
 import { LanguageSelect } from "@/components/LanguageSelect";
 import { AuthScreen } from "@/components/AuthScreen";
+import { DeviceLimitScreen } from "@/components/DeviceLimitScreen";
 import { SettingsModal } from "@/components/SettingsModal";
 import { DiscountWheel } from "@/components/DiscountWheel";
 import { useDiscountStore, WHEEL_AFTER_DAYS } from "@/store/discountStore";
@@ -47,8 +49,11 @@ class ErrorBoundary extends Component<{ children: ReactNode }, { error: string |
 
 export default function Home() {
   const { activeTab, activeSheet, scannedProduct, closeSheet, settingsOpen, openSettings, closeSettings } = useUIStore();
+  const calorieTracking = useFeaturesStore((s) => s.calorieTracking);
+  // Deník jídla je dostupný jen se zapnutým sledováním kalorií; jinak fallback na spižírnu.
+  const showFoodLog = activeTab === "jidlo" && calorieTracking;
   const { mode, setMode } = useModeStore();
-  const { user, profile, loading: authLoading, init: authInit } = useAuthStore();
+  const { user, profile, loading: authLoading, init: authInit, deviceLimitHit } = useAuthStore();
   // Uvítací kolo štěstí — jen domácnost, 7 dní po prvním vstupu, jen jednou.
   const wheelSpun = useDiscountStore((s) => s.spun);
   const firstSeenAt = useDiscountStore((s) => s.firstSeenAt);
@@ -129,6 +134,14 @@ export default function Home() {
       </ErrorBoundary>
     );
   }
+  // Přihlášen, ale účet je na max počtu zařízení a tohle je nové → blokace.
+  if (deviceLimitHit) {
+    return (
+      <ErrorBoundary>
+        <DeviceLimitScreen />
+      </ErrorBoundary>
+    );
+  }
 
   return (
     <ErrorBoundary>
@@ -136,9 +149,9 @@ export default function Home() {
       <AppHeader onOpenSettings={openSettings} />
 
       <main className="flex-1 overflow-hidden flex flex-col">
-        {activeTab === "spizirna" && <PantryView />}
+        {(activeTab === "spizirna" || (activeTab === "jidlo" && !calorieTracking)) && <PantryView />}
         {activeTab === "skenovat" && <Scanner />}
-        {activeTab === "jidlo" && <FoodLogView />}
+        {showFoodLog && <FoodLogView />}
         {activeTab === "recepty" && <RecipesView />}
         {activeTab === "nakup" && <ShoppingView />}
         {activeTab === "opakujici" && <RecurringView />}

@@ -47,6 +47,21 @@ export const core: Record<string, Translation> = {
   "tab.nakup": { cs: "Nákup", sk: "Nákup" },
   "tab.opakujici": { cs: "Opakování", sk: "Opakovanie" },
   "tab.provoz": { cs: "Provoz", sk: "Prevádzka" },
+  "tab.jidlo": { cs: "Jídlo", sk: "Jedlo" },
+
+  // ── Limit zařízení ──
+  "device.limitTitle": { cs: "Dosažen limit zařízení", sk: "Dosiahnutý limit zariadení" },
+  "device.limitDesc": { cs: "Tvůj účet je přihlášený na {n} zařízeních. Odhlas některé, nebo si přidej další zařízení.", sk: "Tvoj účet je prihlásený na {n} zariadeniach. Odhlás niektoré, alebo si pridaj ďalšie zariadenie." },
+  "device.yourDevices": { cs: "Přihlášená zařízení", sk: "Prihlásené zariadenia" },
+  "device.unknownDevice": { cs: "Neznámé zařízení", sk: "Neznáme zariadenie" },
+  "device.lastSeen": { cs: "Naposledy: {date}", sk: "Naposledy: {date}" },
+  "device.logout": { cs: "Odhlásit", sk: "Odhlásiť" },
+  "device.addSlot": { cs: "Přidat zařízení (59 Kč)", sk: "Pridať zariadenie (59 Kč)" },
+  "device.addSlotHint": { cs: "Testovací režim — platba se zatím nestrhává.", sk: "Testovací režim — platba sa zatiaľ nestrháva." },
+  "device.signOut": { cs: "Odhlásit se z tohoto účtu", sk: "Odhlásiť sa z tohto účtu" },
+  "device.settingsTitle": { cs: "Moje zařízení", sk: "Moje zariadenia" },
+  "device.thisDevice": { cs: "Toto zařízení", sk: "Toto zariadenie" },
+  "device.slotsUsed": { cs: "{used} z {limit} zařízení", sk: "{used} z {limit} zariadení" },
 
   // ── Obecná tlačítka / akce (sdílené napříč appkou) ──
   "common.cancel": { cs: "Zrušit", sk: "Zrušiť" },
