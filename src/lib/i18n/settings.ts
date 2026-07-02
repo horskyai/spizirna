@@ -108,10 +108,11 @@ export const settings: Record<string, Translation> = {
 
   // ── Statistiky domácnosti ──
   "settings.stats": { cs: "Moje statistiky", sk: "Moje štatistiky" },
+  "settings.statsToggle": { cs: "Sledovat statistiky", sk: "Sledovať štatistiky" },
   "settings.statsOpen": { cs: "Zobrazit statistiky", sk: "Zobraziť štatistiky" },
   "settings.statsHint": {
-    cs: "Hodnota spižírny, plýtvání vs. záchrana a herní pokrok.",
-    sk: "Hodnota špajze, plytvanie vs. záchrana a herný pokrok.",
+    cs: "Hodnota spižírny, kolik jsi vyhodil/ušetřil v Kč a herní pokrok. Když tě čísla nezajímají, vypni to.",
+    sk: "Hodnota špajze, koľko si vyhodil/ušetril v € a herný pokrok. Keď ťa čísla nezaujímajú, vypni to.",
   },
   "stats.title": { cs: "Moje statistiky", sk: "Moje štatistiky" },
   "stats.pantryValue": { cs: "Hodnota spižírny", sk: "Hodnota špajze" },
@@ -122,6 +123,9 @@ export const settings: Record<string, Translation> = {
   "stats.wasteTitle": { cs: "Plýtvání vs. záchrana", sk: "Plytvanie vs. záchrana" },
   "stats.saved": { cs: "Zachráněno", sk: "Zachránené" },
   "stats.wasted": { cs: "Vyhozeno", sk: "Vyhodené" },
+  "stats.savedKc": { cs: "Ušetřeno", sk: "Ušetrené" },
+  "stats.wastedKc": { cs: "Vyhozeno za", sk: "Vyhodené za" },
+  "stats.kcEstimate": { cs: "Částky bez zadané ceny jsou odhad z průměru tvé spižírny.", sk: "Sumy bez zadanej ceny sú odhad z priemeru tvojej špajze." },
   "stats.saveRate": { cs: "Zachránil jsi {n} % potravin, které měly brzy projít. 💚", sk: "Zachránil si {n} % potravín, ktoré mali čoskoro prejsť. 💚" },
   "stats.byLocation": { cs: "Kde máš zásoby", sk: "Kde máš zásoby" },
   "stats.priciest": { cs: "Nejdražší položky", sk: "Najdrahšie položky" },

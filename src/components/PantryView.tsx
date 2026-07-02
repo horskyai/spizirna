@@ -152,10 +152,14 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
     e.stopPropagation();
     setJustConsumed(true);
     recordActivity();
-    // Pokud brzy expiruje a spotřebujeme → zachránili jsme před vyhozením
+    // Pokud brzy expiruje a spotřebujeme → zachránili jsme před vyhozením.
+    // Hodnota jedné spotřebované jednotky = cena / množství (když cenu známe).
     if (item.expires_at) {
       const days = daysUntil(item.expires_at);
-      if (days <= 3) recordSaved();
+      if (days <= 3) {
+        const perUnit = item.price_paid != null && item.quantity > 0 ? item.price_paid / item.quantity : undefined;
+        recordSaved(perUnit);
+      }
     }
     // Zaznamenej spotřebu pro predikci docházejících zásob.
     recordConsumption(item.product.product_name, 1);
@@ -285,8 +289,12 @@ export function PantryView() {
 
   // Vyhození položky ze spižírny. Prošlou/brzy expirující počítáme jako plýtvání
   // (symetrie k recordSaved). Mazání čerstvé položky je spíš úklid, neplýtvá se.
+  // Cenu (pro statistiky v Kč) předáme, když ji známe — cena × množství.
   const handleRemove = (item: PantryItem) => {
-    if (item.expires_at && daysUntil(item.expires_at) <= 3) recordWasted();
+    if (item.expires_at && daysUntil(item.expires_at) <= 3) {
+      const value = item.price_paid != null ? item.price_paid * (item.quantity || 1) : undefined;
+      recordWasted(value);
+    }
     removeItem(item.id);
   };
   const [filter, setFilter] = useState<StorageLocation | "vse">("vse");

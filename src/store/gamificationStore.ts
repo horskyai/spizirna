@@ -18,11 +18,17 @@ export interface GamificationStore extends GamificationStats {
   // Odemčené odznaky: id → ISO datum získání.
   unlockedBadges: Record<string, string>;
 
+  // Kumulativní hodnota (Kč) zachráněných / vyhozených potravin — pro statistiky.
+  // Sčítá se jen tam, kde známe cenu (jinak 0), historii kusů drží total*.
+  savedValue: number;
+  wastedValue: number;
+
   recordActivity: () => void; // zavolat při každé akci uživatele (skenování, přidání)
   recordScanned: () => void;
   recordCooked: () => void;
-  recordSaved: () => void;
-  recordWasted: () => void;
+  // value = orientační cena položky v Kč (nepovinné) — přičte se do *Value.
+  recordSaved: (value?: number) => void;
+  recordWasted: (value?: number) => void;
   recordAdded: () => void;
   getScore: () => number;
   getLevel: () => LevelInfo;
@@ -168,6 +174,8 @@ export const useGamificationStore = create<GamificationStore>()(
         weeklyAdded: 0,
         weekStart: null,
         unlockedBadges: {},
+        savedValue: 0,
+        wastedValue: 0,
 
         recordActivity: () => {
           const today = todayStr();
@@ -215,14 +223,20 @@ export const useGamificationStore = create<GamificationStore>()(
           checkBadges();
         },
 
-        recordSaved: () => {
+        recordSaved: (value) => {
           get().recordActivity();
-          set({ totalSaved: get().totalSaved + 1 });
+          set({
+            totalSaved: get().totalSaved + 1,
+            savedValue: get().savedValue + (value && value > 0 ? value : 0),
+          });
           checkBadges();
         },
 
-        recordWasted: () => {
-          set({ totalWasted: get().totalWasted + 1 });
+        recordWasted: (value) => {
+          set({
+            totalWasted: get().totalWasted + 1,
+            wastedValue: get().wastedValue + (value && value > 0 ? value : 0),
+          });
           checkBadges();
         },
 

@@ -31,6 +31,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const setGoal = useFoodLogStore((s) => s.setGoal);
   const calorieTracking = useFeaturesStore((s) => s.calorieTracking);
   const setCalorieTracking = useFeaturesStore((s) => s.setCalorieTracking);
+  const showStatsFeature = useFeaturesStore((s) => s.showStats);
+  const setShowStatsFeature = useFeaturesStore((s) => s.setShowStats);
   // Název provozovny — jen v provozním režimu.
   const businessName = useBusinessStore((s) => s.name);
   const setBusinessName = useBusinessStore((s) => s.setName);
@@ -275,12 +277,29 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             </Section>
           )}
 
-          {/* ── Moje statistiky ── jen domácnost. Otevře přehled hodnoty/plýtvání/hry. */}
+          {/* ── Moje statistiky ── jen domácnost. Přepínač + (když zapnuto) otevření přehledu. */}
           {mode !== "provoz" && (
             <Section icon={<BarChart3 size={15} />} title={t("settings.stats")}>
-              <button onClick={() => setShowStats(true)} style={rowBtn("var(--green-light)", "var(--green-dark)")}>
-                <BarChart3 size={15} /> {t("settings.statsOpen")}
+              <button
+                onClick={() => setShowStatsFeature(!showStatsFeature)}
+                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "2px", background: "transparent" }}
+              >
+                <span style={{ fontSize: 13, color: "var(--text-primary)", textAlign: "left" }}>{t("settings.statsToggle")}</span>
+                <span style={{
+                  width: 44, height: 26, borderRadius: 99, flexShrink: 0, position: "relative",
+                  background: showStatsFeature ? "var(--green-primary)" : "var(--border)", transition: "background 0.2s",
+                }}>
+                  <span style={{
+                    position: "absolute", top: 3, left: showStatsFeature ? 21 : 3, width: 20, height: 20, borderRadius: "50%",
+                    background: "white", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+                  }} />
+                </span>
               </button>
+              {showStatsFeature && (
+                <button onClick={() => setShowStats(true)} style={{ ...rowBtn("var(--green-light)", "var(--green-dark)"), marginTop: 10 }}>
+                  <BarChart3 size={15} /> {t("settings.statsOpen")}
+                </button>
+              )}
               <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.statsHint")}</p>
             </Section>
           )}

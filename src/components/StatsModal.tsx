@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { X, TrendingUp, Package, Leaf, Trash2, Trophy } from "lucide-react";
+import { X, TrendingUp, Package, Leaf, Trophy } from "lucide-react";
 import { usePantryStore } from "@/store/pantryStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { useT } from "@/lib/i18n";
@@ -21,6 +21,8 @@ export function StatsModal({ onClose }: { onClose: () => void }) {
   // Gamifikační počítadla — jediná spolehlivá historická data, co teď máme.
   const totalSaved = useGamificationStore((s) => s.totalSaved);
   const totalWasted = useGamificationStore((s) => s.totalWasted);
+  const savedValue = useGamificationStore((s) => s.savedValue);
+  const wastedValue = useGamificationStore((s) => s.wastedValue);
   const streak = useGamificationStore((s) => s.streak);
   const score = useGamificationStore((s) => s.getScore());
   const level = useGamificationStore((s) => s.getLevel());
@@ -53,8 +55,23 @@ export function StatsModal({ onClose }: { onClose: () => void }) {
     const handled = totalSaved + totalWasted;
     const saveRate = handled > 0 ? Math.round((totalSaved / handled) * 100) : null;
 
-    return { value, pricedItems, byLocation, priciest, saveRate };
-  }, [items, totalSaved, totalWasted]);
+    // Plýtvání/záchrana v Kč. Přesnou část (savedValue/wastedValue) máme z položek,
+    // co měly cenu. Zbytek odhadneme průměrnou cenou za kus aktuální spižírny.
+    const avgPerItem = pricedItems > 0 ? value / items.reduce((n, it) => n + (it.price_paid != null ? (it.quantity || 1) : 0), 0) : 0;
+    // Kolik událostí NEmělo cenu (odhadneme je průměrem). Přesné počty nevíme,
+    // tak odhad vážeme na to, kolik z hodnoty už máme reálně změřeno.
+    const wastedKc = wastedValue > 0 || avgPerItem === 0
+      ? Math.round(wastedValue)
+      : Math.round(totalWasted * avgPerItem);
+    const savedKc = savedValue > 0 || avgPerItem === 0
+      ? Math.round(savedValue)
+      : Math.round(totalSaved * avgPerItem);
+    // Odhad? Ano, když nemáme přesnou hodnotu, ale umíme ji dopočítat průměrem.
+    const kcEstimated = (wastedValue === 0 && totalWasted > 0 && avgPerItem > 0)
+      || (savedValue === 0 && totalSaved > 0 && avgPerItem > 0);
+
+    return { value, pricedItems, byLocation, priciest, saveRate, wastedKc, savedKc, kcEstimated };
+  }, [items, totalSaved, totalWasted, savedValue, wastedValue]);
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 210, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
@@ -106,6 +123,15 @@ export function StatsModal({ onClose }: { onClose: () => void }) {
               <MiniStat color="var(--green-dark)" bg="var(--green-light)" value={String(totalSaved)} label={t("stats.saved")} />
               <MiniStat color="#C0392B" bg="#FDE8E8" value={String(totalWasted)} label={t("stats.wasted")} />
             </div>
+            {(stats.savedKc > 0 || stats.wastedKc > 0) && (
+              <div style={{ display: "flex", gap: 10, marginTop: 10 }}>
+                <MiniStat color="var(--green-dark)" bg="var(--green-light)" value={`${stats.savedKc.toLocaleString("cs-CZ")} Kč`} label={t("stats.savedKc")} />
+                <MiniStat color="#C0392B" bg="#FDE8E8" value={`${stats.wastedKc.toLocaleString("cs-CZ")} Kč`} label={t("stats.wastedKc")} />
+              </div>
+            )}
+            {stats.kcEstimated && (
+              <p style={{ fontSize: 10.5, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("stats.kcEstimate")}</p>
+            )}
             {stats.saveRate !== null && (
               <>
                 <div style={{ height: 8, borderRadius: 99, background: "#FDE8E8", overflow: "hidden", marginTop: 12 }}>
