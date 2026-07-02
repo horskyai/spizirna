@@ -4,7 +4,7 @@ import { useLocale } from "@/lib/i18n";
 import { LegalPage } from "@/components/LegalPage";
 
 // Zásady ochrany soukromí (CZ/SK). Statický text — povinné pro Google Play.
-// POZN.: není to právní rada; před vydáním zkontroluj a doplň [HRANATÉ] údaje.
+// POZN.: není to právní rada; před vydáním doporučeno zkontrolovat s právníkem.
 export default function PrivacyPage() {
   const locale = useLocale();
   const cs = locale !== "sk";

@@ -4,7 +4,7 @@ import { useLocale } from "@/lib/i18n";
 import { LegalPage } from "@/components/LegalPage";
 
 // Podmínky použití (CZ/SK). Statický text.
-// POZN.: není to právní rada; před vydáním zkontroluj a doplň [HRANATÉ] údaje.
+// POZN.: není to právní rada; před vydáním doporučeno zkontrolovat s právníkem.
 export default function TermsPage() {
   const locale = useLocale();
   const cs = locale !== "sk";

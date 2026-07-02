@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus } from "lucide-react";
+import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus, Download, BarChart3 } from "lucide-react";
+import { exportHouseholdJSON, exportPantryCSV } from "@/lib/exportData";
+import { StatsModal } from "@/components/StatsModal";
 import { useAuthStore, type DeviceRow } from "@/store/authStore";
 import { useModeStore } from "@/store/modeStore";
 import { useBusinessStore } from "@/store/businessStore";
@@ -32,6 +34,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   // Název provozovny — jen v provozním režimu.
   const businessName = useBusinessStore((s) => s.name);
   const setBusinessName = useBusinessStore((s) => s.setName);
+  const [showStats, setShowStats] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -272,6 +275,45 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             </Section>
           )}
 
+          {/* ── Moje statistiky ── jen domácnost. Otevře přehled hodnoty/plýtvání/hry. */}
+          {mode !== "provoz" && (
+            <Section icon={<BarChart3 size={15} />} title={t("settings.stats")}>
+              <button onClick={() => setShowStats(true)} style={rowBtn("var(--green-light)", "var(--green-dark)")}>
+                <BarChart3 size={15} /> {t("settings.statsOpen")}
+              </button>
+              <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.statsHint")}</p>
+            </Section>
+          )}
+
+          {/* ── Export dat ── jen domácnost (provoz exportuje ze své záložky). GDPR přenositelnost. */}
+          {mode !== "provoz" && (
+            <Section icon={<Download size={15} />} title={t("settings.export")}>
+              <button
+                onClick={exportHouseholdJSON}
+                style={rowBtn("var(--green-light)", "var(--green-dark)")}
+              >
+                <Download size={15} /> {t("settings.exportJson")}
+              </button>
+              <button
+                onClick={() => exportPantryCSV({
+                  name: t("settings.export.name"),
+                  brand: t("settings.export.brand"),
+                  quantity: t("settings.export.quantity"),
+                  unit: t("settings.export.unit"),
+                  location: t("settings.export.location"),
+                  purchased: t("settings.export.purchased"),
+                  expires: t("settings.export.expires"),
+                  price: t("settings.export.price"),
+                  store: t("settings.export.store"),
+                })}
+                style={{ ...rowBtn("var(--bg-primary)", "var(--text-secondary)"), marginTop: 8, border: "1.5px solid var(--border)" }}
+              >
+                <FileText size={15} /> {t("settings.exportCsv")}
+              </button>
+              <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.exportHint")}</p>
+            </Section>
+          )}
+
           {/* ── Správa dat ── */}
           <Section icon={<Trash2 size={15} />} title={t("settings.data")}>
             {!confirmReset ? (
@@ -337,6 +379,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           </Section>
         </div>
       </div>
+
+      {showStats && <StatsModal onClose={() => setShowStats(false)} />}
     </div>
   );
 }

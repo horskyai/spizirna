@@ -64,6 +64,25 @@ export const settings: Record<string, Translation> = {
     cs: "Smaže lokální data v tomto zařízení a restartuje aplikaci.",
     sk: "Vymaže lokálne dáta v tomto zariadení a reštartuje aplikáciu.",
   },
+
+  // ── Export dat (GDPR — přenositelnost) ──
+  "settings.export": { cs: "Export mých dat", sk: "Export mojich dát" },
+  "settings.exportJson": { cs: "Stáhnout vše (záloha .json)", sk: "Stiahnuť všetko (záloha .json)" },
+  "settings.exportCsv": { cs: "Stáhnout spižírnu (.csv)", sk: "Stiahnuť špajzu (.csv)" },
+  "settings.exportHint": {
+    cs: "Stáhne tvoje data do souboru — záloha nebo přenos jinam. Máš na to právo (GDPR).",
+    sk: "Stiahne tvoje dáta do súboru — záloha alebo prenos inam. Máš na to právo (GDPR).",
+  },
+  // CSV hlavičky spižírny
+  "settings.export.name": { cs: "Název", sk: "Názov" },
+  "settings.export.brand": { cs: "Značka", sk: "Značka" },
+  "settings.export.quantity": { cs: "Množství", sk: "Množstvo" },
+  "settings.export.unit": { cs: "Jednotka", sk: "Jednotka" },
+  "settings.export.location": { cs: "Uložení", sk: "Uloženie" },
+  "settings.export.purchased": { cs: "Koupeno", sk: "Kúpené" },
+  "settings.export.expires": { cs: "Spotřebovat do", sk: "Spotrebovať do" },
+  "settings.export.price": { cs: "Cena", sk: "Cena" },
+  "settings.export.store": { cs: "Obchod", sk: "Obchod" },
   "settings.deleteAccount": { cs: "Smazat účet", sk: "Zmazať účet" },
   "settings.deleteAccountConfirm": {
     cs: "Opravdu nevratně smazat účet? Tvůj profil i všechna data na serveru budou trvale odstraněny. Tuto akci nelze vrátit.",
@@ -86,4 +105,28 @@ export const settings: Record<string, Translation> = {
   // ── O aplikaci ──
   "settings.about": { cs: "O aplikaci", sk: "O aplikácii" },
   "settings.version": { cs: "Verze", sk: "Verzia" },
+
+  // ── Statistiky domácnosti ──
+  "settings.stats": { cs: "Moje statistiky", sk: "Moje štatistiky" },
+  "settings.statsOpen": { cs: "Zobrazit statistiky", sk: "Zobraziť štatistiky" },
+  "settings.statsHint": {
+    cs: "Hodnota spižírny, plýtvání vs. záchrana a herní pokrok.",
+    sk: "Hodnota špajze, plytvanie vs. záchrana a herný pokrok.",
+  },
+  "stats.title": { cs: "Moje statistiky", sk: "Moje štatistiky" },
+  "stats.pantryValue": { cs: "Hodnota spižírny", sk: "Hodnota špajze" },
+  "stats.pantryValueHint": { cs: "z {n} položek s cenou", sk: "z {n} položiek s cenou" },
+  "stats.noPrices": { cs: "zadej ceny u položek", sk: "zadaj ceny pri položkách" },
+  "stats.itemCount": { cs: "Položek", sk: "Položiek" },
+  "stats.inPantry": { cs: "aktuálně ve spižírně", sk: "aktuálne v špajzi" },
+  "stats.wasteTitle": { cs: "Plýtvání vs. záchrana", sk: "Plytvanie vs. záchrana" },
+  "stats.saved": { cs: "Zachráněno", sk: "Zachránené" },
+  "stats.wasted": { cs: "Vyhozeno", sk: "Vyhodené" },
+  "stats.saveRate": { cs: "Zachránil jsi {n} % potravin, které měly brzy projít. 💚", sk: "Zachránil si {n} % potravín, ktoré mali čoskoro prejsť. 💚" },
+  "stats.byLocation": { cs: "Kde máš zásoby", sk: "Kde máš zásoby" },
+  "stats.priciest": { cs: "Nejdražší položky", sk: "Najdrahšie položky" },
+  "stats.gameTitle": { cs: "Herní pokrok", sk: "Herný pokrok" },
+  "stats.level": { cs: "Úroveň", sk: "Úroveň" },
+  "stats.score": { cs: "Skóre", sk: "Skóre" },
+  "stats.streak": { cs: "Série dní", sk: "Séria dní" },
 };
