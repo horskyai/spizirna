@@ -84,6 +84,7 @@ export const provoz: Record<string, Translation> = {
   "provoz.uzavritInventuru": { cs: "Uzavřít inventuru", sk: "Uzavrieť inventúru" },
   "provoz.uzavritInventuruQ": { cs: "Uzavřít inventuru?", sk: "Uzavrieť inventúru?" },
   "provoz.poUzavreni": { cs: "Po uzavření nelze editovat zadané stavy.", sk: "Po uzavretí nie je možné editovať zadané stavy." },
+  "provoz.srovnatSklad": { cs: "Srovnat sklad na napočítané stavy (evidence = realita)", sk: "Zrovnať sklad na napočítané stavy (evidencia = realita)" },
   "provoz.anoUzavrit": { cs: "Ano, uzavřít", sk: "Áno, uzavrieť" },
   "provoz.vse": { cs: "Vše ({n})", sk: "Všetko ({n})" },
   "provoz.zadnePolozkyKat": { cs: "Žádné položky v této kategorii", sk: "Žiadne položky v tejto kategórii" },

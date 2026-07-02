@@ -535,6 +535,8 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
   const [vstupy, setVstupy] = useState<Record<string, string>>({});
   const [ulozeno, setUlozeno] = useState<Set<string>>(new Set());
   const [showZavrit, setShowZavrit] = useState(false);
+  // Při uzavření: srovnat evidovaný stav skladu na napočítanou realitu? Default ano.
+  const [srovnatSklad, setSrovnatSklad] = useState(true);
 
   const hodnotaSkladu = getHodnotaSkladu(inventura.id);
 
@@ -605,8 +607,22 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
         <div className="card p-4 mb-4 animate-fade-in" style={{ background: "#FFF3E0", border: "1px solid #FFE0B2" }}>
           <p className="text-sm font-bold mb-2" style={{ color: "#E65100" }}>{t("provoz.uzavritInventuruQ")}</p>
           <p className="text-xs mb-3" style={{ color: "#BF360C" }}>{t("provoz.poUzavreni")}</p>
+          {/* Volba: srovnat sklad na napočítané stavy (evidence = realita) */}
+          <button
+            onClick={() => setSrovnatSklad((v) => !v)}
+            className="flex items-center gap-2.5 w-full mb-3 text-left"
+            style={{ background: "white", border: "1px solid #FFE0B2", borderRadius: 12, padding: "10px 12px" }}
+          >
+            <span style={{
+              width: 40, height: 24, borderRadius: 99, flexShrink: 0, position: "relative",
+              background: srovnatSklad ? "#E65100" : "var(--border)", transition: "background 0.2s",
+            }}>
+              <span style={{ position: "absolute", top: 3, left: srovnatSklad ? 19 : 3, width: 18, height: 18, borderRadius: "50%", background: "white", transition: "left 0.2s" }} />
+            </span>
+            <span style={{ fontSize: 12, color: "#BF360C", lineHeight: 1.35 }}>{t("provoz.srovnatSklad")}</span>
+          </button>
           <div className="flex gap-2">
-            <button onClick={() => zavritInventuru(inventura.id)} className="flex-1 py-2 rounded-xl text-sm font-bold" style={{ background: "#E65100", color: "white" }}>
+            <button onClick={() => zavritInventuru(inventura.id, srovnatSklad)} className="flex-1 py-2 rounded-xl text-sm font-bold" style={{ background: "#E65100", color: "white" }}>
               {t("provoz.anoUzavrit")}
             </button>
             <button onClick={() => setShowZavrit(false)} className="flex-1 py-2 rounded-xl text-sm font-bold" style={{ background: "var(--border)", color: "var(--text-secondary)" }}>

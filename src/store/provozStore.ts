@@ -105,7 +105,9 @@ interface ProvozStore {
 
   // Inventury
   vytvorInventuru: (nazev: string, slepa?: boolean) => string;
-  zavritInventuru: (id: string) => void;
+  // srovnatSklad=true: po uzavření srovná aktualniStav položek na napočítané
+  // skutečné stavy z této inventury (evidence = realita). Default false.
+  zavritInventuru: (id: string, srovnatSklad?: boolean) => void;
   setAktivniInventura: (id: string | null) => void;
   zadatZaznam: (inventuraId: string, polozkaId: string, skutecnyStav: number, poznamka?: string) => void;
   removeInventura: (id: string) => void;
@@ -191,18 +193,31 @@ export const useProvozStore = create<ProvozStore>()(
         return id;
       },
 
-      zavritInventuru: (id) =>
-        set((s) => ({
-          inventury: s.inventury.map((i) => i.id === id ? { ...i, zavrena: true } : i),
-          aktivniInventuraId: s.aktivniInventuraId === id ? null : s.aktivniInventuraId,
-        })),
+      zavritInventuru: (id, srovnatSklad = false) =>
+        set((s) => {
+          const inv = s.inventury.find((i) => i.id === id);
+          // Volitelně srovnej evidovaný stav skladu na napočítanou realitu.
+          const polozky = srovnatSklad && inv
+            ? s.polozky.map((p) => {
+                const z = inv.zaznamy.find((z) => z.polozkaId === p.id);
+                return z ? { ...p, aktualniStav: z.skutecnyStav } : p;
+              })
+            : s.polozky;
+          return {
+            inventury: s.inventury.map((i) => i.id === id ? { ...i, zavrena: true } : i),
+            aktivniInventuraId: s.aktivniInventuraId === id ? null : s.aktivniInventuraId,
+            polozky,
+          };
+        }),
 
       setAktivniInventura: (id) => set({ aktivniInventuraId: id }),
 
       zadatZaznam: (inventuraId, polozkaId, skutecnyStav, poznamka) => {
-        // Očekávaný stav = poslední známý stav z předchozích inventur. Spočítá
-        // se jednou při prvním zadání a dál se zachová (rozdíl pak dává smysl).
-        const ocekavany = get().getLastKnownStav(polozkaId, inventuraId);
+        // Očekávaný stav = aktuální evidovaný stav skladu ("kolik má být").
+        // Proti němu se počítá rozdíl (manko/přebytek). Spočítá se jednou při
+        // prvním zadání a dál se zachová, ať rozdíl dává smysl i po úpravách.
+        const polozka = get().polozky.find((p) => p.id === polozkaId);
+        const ocekavany = polozka?.aktualniStav;
         set((s) => ({
           inventury: s.inventury.map((inv) => {
             if (inv.id !== inventuraId) return inv;
@@ -221,10 +236,9 @@ export const useProvozStore = create<ProvozStore>()(
               : [...inv.zaznamy, zaznam];
             return { ...inv, zaznamy };
           }),
-          // Inventura koriguje živý stav skladu na napočítanou realitu.
-          polozky: s.polozky.map((p) =>
-            p.id === polozkaId ? { ...p, aktualniStav: skutecnyStav } : p,
-          ),
+          // POZOR: napočítaný stav SKLAD NEPŘEPISUJE. Sklad zůstává evidencí
+          // ("kolik má být"); inventura jen ukazuje rozdíl. Srovnání skladu na
+          // realitu se provede až vědomě při uzavření inventury (viz zavritInventuru).
         }));
       },
 
