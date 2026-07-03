@@ -5,7 +5,7 @@ import {
   ClipboardList, Plus, X, ChevronRight,
   AlertTriangle, Check, Truck, Package, BarChart3, Trash2, ScanLine, Keyboard,
   FileText, Download, FileSpreadsheet, Pencil, Share2, Mic, MicOff, Loader, Search,
-  Camera, Image as ImageIcon, TrendingDown
+  Camera, Image as ImageIcon, TrendingDown, ShoppingCart
 } from "lucide-react";
 import { parseSpokenText } from "@/components/VoiceInput";
 import {
@@ -19,6 +19,8 @@ import {
 } from "@/store/provozStore";
 import { lookupProductByEAN } from "@/lib/productLookup";
 import { Scanner } from "@/components/Scanner";
+import { KasaView } from "@/components/KasaView";
+import { UcetnictviView } from "@/components/UcetnictviView";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { useT, useLocale } from "@/lib/i18n";
@@ -264,6 +266,29 @@ function trvanlivostStatus(datum: string | undefined, t: TFn, locale: Locale): {
   return { label: t("provoz.trv.minTrvanlivost").replace("{d}", d), color: "var(--text-secondary)", bg: "transparent" };
 }
 
+// ── Výběr sazby DPH (21 / 12 / 0 %) ───────────────────────────────────────────
+function DphSelect({ value, onChange, t }: { value: number; onChange: (v: number) => void; t: TFn }) {
+  const SAZBY = [21, 12, 0];
+  return (
+    <div>
+      <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.dphSazba")}</label>
+      <div style={{ display: "flex", gap: 8 }}>
+        {SAZBY.map((s) => (
+          <button key={s} onClick={() => onChange(s)}
+            style={{
+              flex: 1, padding: "9px 0", borderRadius: 12, fontSize: 13, fontWeight: 700,
+              background: value === s ? "var(--green-primary)" : "white",
+              color: value === s ? "white" : "var(--text-secondary)",
+              border: `1.5px solid ${value === s ? "var(--green-primary)" : "var(--border)"}`,
+            }}>
+            {s} %
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 // ── Formulář nové položky skladu ──────────────────────────────────────────────
 function AddPolozkaModal({ onClose }: { onClose: () => void }) {
   const t = useT();
@@ -274,8 +299,15 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
   const [minZasoba, setMinZasoba] = useState("1");
   const [pocStav, setPocStav] = useState("0");
   const [cena, setCena] = useState("");
+  const [prodejniCena, setProdejniCena] = useState("");
+  const [dphSazba, setDphSazba] = useState(21);
+  const [plu, setPlu] = useState(""); // krátký kód pro numpad
   const [dodavatelId, setDodavatelId] = useState("");
   const [minTrvanlivost, setMinTrvanlivost] = useState("");
+  const [ean, setEan] = useState(""); // uložený EAN položky (sken i ruční)
+  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
+  const photoRef = useRef<HTMLInputElement>(null);
+  const cameraRef = useRef<HTMLInputElement>(null);
   const [showScanner, setShowScanner] = useState(false);
   const [scanLoading, setScanLoading] = useState(false);
   const [eanInput, setEanInput] = useState("");
@@ -285,6 +317,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
   const handleEanScanned = useCallback(async (ean: string) => {
     setShowScanner(false);
     setScanLoading(true);
+    setEan(ean);
     try {
       const product = await lookupProductByEAN(ean);
       if (product) {
@@ -305,6 +338,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
   const handleEanManual = async () => {
     if (!eanInput.trim()) return;
     setScanLoading(true);
+    setEan(eanInput.trim());
     try {
       const product = await lookupProductByEAN(eanInput.trim());
       if (product) {
@@ -324,6 +358,14 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
     }
   };
 
+  const handlePhotoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => setFotoUrl(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const save = () => {
     if (!nazev.trim()) return;
     addPolozka({
@@ -333,6 +375,11 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
       aktualniStav: parseFloat(pocStav) || 0,
       minZasoba: parseFloat(minZasoba) || 1,
       cenaJednotka: cena ? parseFloat(cena) : undefined,
+      prodejniCena: prodejniCena ? parseFloat(prodejniCena) : undefined,
+      dphSazba,
+      ean: ean.trim() || undefined,
+      plu: plu.trim() || undefined,
+      fotoUrl: fotoUrl ?? undefined,
       dodavatelId: dodavatelId || undefined,
       minTrvanlivost: minTrvanlivost || undefined,
     });
@@ -498,14 +545,21 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
                   style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
               </div>
               <div style={{ flex: 1 }}>
-                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.dodavatel")}</label>
-                <select value={dodavatelId} onChange={e => setDodavatelId(e.target.value)}
+                <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.prodejniCena")}</label>
+                <input type="number" value={prodejniCena} onChange={e => setProdejniCena(e.target.value)} placeholder={t("provoz.volitelne")}
                   className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
-                  style={{ border: "1.5px solid var(--border)", background: "white", color: dodavatelId ? "var(--text-primary)" : "var(--text-tertiary)" }}>
-                  <option value="">{t("provoz.dodavatelZadny")}</option>
-                  {dodavatele.map(d => <option key={d.id} value={d.id}>{d.nazev}</option>)}
-                </select>
+                  style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
               </div>
+            </div>
+
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.dodavatel")}</label>
+              <select value={dodavatelId} onChange={e => setDodavatelId(e.target.value)}
+                className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+                style={{ border: "1.5px solid var(--border)", background: "white", color: dodavatelId ? "var(--text-primary)" : "var(--text-tertiary)" }}>
+                <option value="">{t("provoz.dodavatelZadny")}</option>
+                {dodavatele.map(d => <option key={d.id} value={d.id}>{d.nazev}</option>)}
+              </select>
             </div>
 
             <div>
@@ -513,6 +567,41 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
               <input type="date" value={minTrvanlivost} onChange={e => setMinTrvanlivost(e.target.value)}
                 className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
                 style={{ border: "1.5px solid var(--border)", background: "white", color: minTrvanlivost ? "var(--text-primary)" : "var(--text-tertiary)" }} />
+            </div>
+
+            {/* Vlastní kód (PLU) pro rychlé markování v kase */}
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.plu")}</label>
+              <input type="text" inputMode="numeric" value={plu} onChange={e => setPlu(e.target.value)} placeholder={t("provoz.pluPlaceholder")}
+                className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+                style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+            </div>
+
+            <DphSelect value={dphSazba} onChange={setDphSazba} t={t} />
+
+            {/* Fotka položky */}
+            <div>
+              <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.foto")}</label>
+              {fotoUrl ? (
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={fotoUrl} alt="" style={{ width: 64, height: 64, borderRadius: 12, objectFit: "cover", border: "1.5px solid var(--border)" }} />
+                  <button onClick={() => setFotoUrl(null)} style={{ fontSize: 13, fontWeight: 600, color: "#C0392B" }}>{t("provoz.odebratFoto")}</button>
+                </div>
+              ) : (
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={() => cameraRef.current?.click()}
+                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 14, fontSize: 13, fontWeight: 600, background: "white", color: "var(--text-secondary)", border: "1.5px solid var(--border)" }}>
+                    <Camera size={15} /> {t("provoz.fotit")}
+                  </button>
+                  <button onClick={() => photoRef.current?.click()}
+                    style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 6, padding: "10px 0", borderRadius: 14, fontSize: 13, fontWeight: 600, background: "white", color: "var(--text-secondary)", border: "1.5px solid var(--border)" }}>
+                    <ImageIcon size={15} /> {t("provoz.galerie")}
+                  </button>
+                </div>
+              )}
+              <input ref={photoRef} type="file" accept="image/*" onChange={handlePhotoFile} style={{ display: "none" }} />
+              <input ref={cameraRef} type="file" accept="image/*" capture="environment" onChange={handlePhotoFile} style={{ display: "none" }} />
             </div>
           </>
         )}
@@ -1081,6 +1170,10 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
   const [minZasoba, setMinZasoba] = useState(String(polozka.minZasoba));
   const [aktualniStav, setAktualniStav] = useState(String(polozka.aktualniStav));
   const [cena, setCena] = useState(polozka.cenaJednotka ? String(polozka.cenaJednotka) : "");
+  const [prodejniCena, setProdejniCena] = useState(polozka.prodejniCena != null ? String(polozka.prodejniCena) : "");
+  const [dphSazba, setDphSazba] = useState(polozka.dphSazba ?? 21);
+  const [plu, setPlu] = useState(polozka.plu ?? "");
+  const [ean, setEan] = useState(polozka.ean ?? "");
   const [dodavatelId, setDodavatelId] = useState(polozka.dodavatelId ?? "");
   const [minTrvanlivost, setMinTrvanlivost] = useState(polozka.minTrvanlivost ?? "");
   const [fotoUrl, setFotoUrl] = useState<string | null>(polozka.fotoUrl ?? null);
@@ -1103,6 +1196,10 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
       minZasoba: parseFloat(minZasoba) || 1,
       aktualniStav: parseFloat(aktualniStav) || 0,
       cenaJednotka: cena ? parseFloat(cena) : undefined,
+      prodejniCena: prodejniCena ? parseFloat(prodejniCena) : undefined,
+      dphSazba,
+      plu: plu.trim() || undefined,
+      ean: ean.trim() || undefined,
       dodavatelId: dodavatelId || undefined,
       dodavatel: undefined, // při editaci přecházíme na dodavatelId, starý text čistíme
       minTrvanlivost: minTrvanlivost || undefined,
@@ -1155,15 +1252,36 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
               style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
           </div>
           <div style={{ flex: 1 }}>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.dodavatel")}</label>
-            <select value={dodavatelId} onChange={e => setDodavatelId(e.target.value)}
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.prodejniCena")}</label>
+            <input type="number" value={prodejniCena} onChange={e => setProdejniCena(e.target.value)} placeholder={t("provoz.volitelne")}
               className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
-              style={{ border: "1.5px solid var(--border)", background: "white", color: dodavatelId ? "var(--text-primary)" : "var(--text-tertiary)" }}>
-              <option value="">{t("provoz.dodavatelZadny")}</option>
-              {dodavatele.map(d => <option key={d.id} value={d.id}>{d.nazev}</option>)}
-            </select>
+              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
           </div>
         </div>
+        <div>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.dodavatel")}</label>
+          <select value={dodavatelId} onChange={e => setDodavatelId(e.target.value)}
+            className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+            style={{ border: "1.5px solid var(--border)", background: "white", color: dodavatelId ? "var(--text-primary)" : "var(--text-tertiary)" }}>
+            <option value="">{t("provoz.dodavatelZadny")}</option>
+            {dodavatele.map(d => <option key={d.id} value={d.id}>{d.nazev}</option>)}
+          </select>
+        </div>
+        <div className="flex gap-3">
+          <div style={{ flex: 1 }}>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.plu")}</label>
+            <input type="text" inputMode="numeric" value={plu} onChange={e => setPlu(e.target.value)} placeholder={t("provoz.volitelne")}
+              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+          </div>
+          <div style={{ flex: 1 }}>
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.eanKod")}</label>
+            <input type="text" inputMode="numeric" value={ean} onChange={e => setEan(e.target.value)} placeholder={t("provoz.volitelne")}
+              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+          </div>
+        </div>
+        <DphSelect value={dphSazba} onChange={setDphSazba} t={t} />
         <div>
           <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("provoz.minTrvanlivostDo")}</label>
           <input type="date" value={minTrvanlivost} onChange={e => setMinTrvanlivost(e.target.value)}
@@ -1649,7 +1767,7 @@ function CoDokoupit() {
 }
 
 // ── Hlavní view ───────────────────────────────────────────────────────────────
-type ProvozTab = "inventura" | "sklad" | "historie" | "odpisy" | "dodavatele";
+type ProvozTab = "kasa" | "ucetnictvi" | "inventura" | "sklad" | "historie" | "odpisy" | "dodavatele";
 
 export function ProvozView() {
   const t = useT();
@@ -1672,6 +1790,8 @@ export function ProvozView() {
   };
 
   const TABS: { id: ProvozTab; labelKey: string; icon: React.ReactNode }[] = [
+    { id: "kasa", labelKey: "provoz.tab.kasa", icon: <ShoppingCart size={15} /> },
+    { id: "ucetnictvi", labelKey: "provoz.tab.ucetnictvi", icon: <FileSpreadsheet size={15} /> },
     { id: "inventura", labelKey: "provoz.tab.inventura", icon: <ClipboardList size={15} /> },
     { id: "sklad", labelKey: "provoz.tab.sklad", icon: <Package size={15} /> },
     { id: "historie", labelKey: "provoz.tab.historie", icon: <BarChart3 size={15} /> },
@@ -1681,7 +1801,7 @@ export function ProvozView() {
 
   return (
     <div className="relative flex-1 overflow-y-auto">
-      <div className="px-5 pt-2 pb-24">
+      <div className="px-5 pt-2 pb-24" style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
 
         {/* Interní navigace */}
         <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto", scrollbarWidth: "none" }}>
@@ -1779,6 +1899,8 @@ export function ProvozView() {
           </div>
         )}
 
+        {tab === "kasa" && <KasaView />}
+        {tab === "ucetnictvi" && <UcetnictviView />}
         {tab === "sklad" && <SpravaSkladu />}
         {tab === "historie" && <HistorieInventur />}
         {tab === "odpisy" && <OdpisyView />}

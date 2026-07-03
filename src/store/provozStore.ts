@@ -29,7 +29,12 @@ export interface InventuraPolozka {
   jednotka: string;
   aktualniStav: number; // ŽIVÉ množství na skladě — nákup zvyšuje, odpis/vaření snižuje, inventura koriguje
   minZasoba: number; // minimální zásoba — pod tím upozornit
-  cenaJednotka?: number; // cena za jednotku pro výpočet hodnoty skladu
+  cenaJednotka?: number; // NÁKUPNÍ cena za jednotku pro výpočet hodnoty skladu
+  prodejniCena?: number; // PRODEJNÍ cena v kase (za 1 ks/jednotku); fallback cenaJednotka
+  dphSazba?: number; // sazba DPH v % (21 | 12 | 0). Default 21. Pro rozpad DPH v účetnictví.
+  skrytoZKasy?: boolean; // true = neukazovat jako prodejní dlaždici v kase (suroviny)
+  ean?: string; // čárový kód (EAN/UPC) — sken v kase i naskladnění
+  plu?: string; // krátký vlastní kód pro rychlé namarkování na numpadu (např. "15")
   dodavatelId?: string; // reference na Dodavatel.id (číselník)
   dodavatel?: string; // ZASTARALÉ: volný text dodavatele (migrace → dodavatelId)
   minTrvanlivost?: string; // YYYY-MM-DD
