@@ -17,7 +17,8 @@ import { useT } from "@/lib/i18n";
 // Příručka pro každé okno: id (localStorage flag), titulek, intro a kroky.
 // Skener má vlastní nápovědu, proto tu není.
 const GUIDES: Record<string, { id: string; title: string; intro: string; steps: string[] }> = {
-  spizirna: { id: "pantry", title: "guide.pantry.title", intro: "guide.pantry.intro", steps: ["guide.pantry.s1", "guide.pantry.s2", "guide.pantry.s3"] },
+  spizirna: { id: "pantry2", title: "guide.pantry.title", intro: "guide.pantry.intro", steps: ["guide.pantry.s1", "guide.pantry.s2", "guide.pantry.s3", "guide.pantry.s4"] },
+  jidlo: { id: "jidlo", title: "guide.jidlo.title", intro: "guide.jidlo.intro", steps: ["guide.jidlo.s1", "guide.jidlo.s2", "guide.jidlo.s3"] },
   // V provozu tab Spižírna ukazuje sklad → vlastní příručka o skladu.
   spizirna_provoz: { id: "sklad", title: "guide.sklad.title", intro: "guide.sklad.intro", steps: ["guide.sklad.s1", "guide.sklad.s2", "guide.sklad.s3"] },
   recepty: { id: "recipes", title: "guide.recipes.title", intro: "guide.recipes.intro", steps: ["guide.recipes.s1", "guide.recipes.s2", "guide.recipes.s3"] },

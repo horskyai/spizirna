@@ -27,6 +27,33 @@ export const guide: Record<string, Translation> = {
     cs: "Uprav množství, datum spotřeby nebo potravinu odeber, když ji spotřebuješ.",
     sk: "Uprav množstvo, dátum spotreby alebo potravinu odober, keď ju spotrebuješ.",
   },
+  "guide.pantry.s4t": { cs: "Statistiky & úspory", sk: "Štatistiky & úspory" },
+  "guide.pantry.s4d": {
+    cs: "V Nastavení najdeš statistiky: hodnotu spížírny, kolik jsi ušetřil i vyhodil v Kč, a svůj herní pokrok (úrovně a odznaky).",
+    sk: "V Nastaveniach nájdeš štatistiky: hodnotu špajze, koľko si ušetril aj vyhodil v €, a svoj herný pokrok (úrovne a odznaky).",
+  },
+
+  // ── Deník jídla (kalorie) — jen když je zapnuté sledování kalorií ──
+  "guide.jidlo.title": { cs: "Deník jídla", sk: "Denník jedla" },
+  "guide.jidlo.intro": {
+    cs: "Zapisuj, co jíš, a sleduj kalorie a živiny. Zapíná se v Nastavení („Sledování kalorií“).",
+    sk: "Zapisuj, čo ješ, a sleduj kalórie a živiny. Zapína sa v Nastaveniach („Sledovanie kalórií“).",
+  },
+  "guide.jidlo.s1t": { cs: "Zapiš, co jíš", sk: "Zapíš, čo ješ" },
+  "guide.jidlo.s1d": {
+    cs: "Přidej jídlo naskenováním, hlasem nebo ručně. Aplikace dopočítá kalorie a živiny z databáze.",
+    sk: "Pridaj jedlo naskenovaním, hlasom alebo ručne. Aplikácia dopočíta kalórie a živiny z databázy.",
+  },
+  "guide.jidlo.s2t": { cs: "Denní cíl", sk: "Denný cieľ" },
+  "guide.jidlo.s2d": {
+    cs: "Nastav si denní cíl kalorií a bílkovin. Vidíš, kolik jsi snědl a kolik ještě zbývá.",
+    sk: "Nastav si denný cieľ kalórií a bielkovín. Vidíš, koľko si zjedol a koľko ešte zostáva.",
+  },
+  "guide.jidlo.s3t": { cs: "Z receptu i spížírny", sk: "Z receptu aj špajze" },
+  "guide.jidlo.s3d": {
+    cs: "Uvařený recept přidáš do deníku jedním klepnutím. Sledování kalorií můžeš kdykoli vypnout v Nastavení.",
+    sk: "Uvarený recept pridáš do denníka jedným klepnutím. Sledovanie kalórií môžeš kedykoľvek vypnúť v Nastaveniach.",
+  },
 
   // ── Skenovat ──
   "guide.scan.title": { cs: "Skenování", sk: "Skenovanie" },

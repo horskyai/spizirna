@@ -78,6 +78,15 @@ const SLIDES: { img: string; title: L10n; text: L10n; plans: Plan[] }[] = [
     plans: ["domacnost"],
   },
   {
+    img: "/onboarding/zasoby.png",
+    title: { cs: "Kalorie & statistiky", sk: "Kalórie & štatistiky" },
+    text: {
+      cs: "Volitelně si zapneš deník jídla — zapisuješ, co jíš, a sleduješ kalorie i cíl. A statistiky ukážou hodnotu spížírny i kolik jsi ušetřil nebo vyhodil.",
+      sk: "Voliteľne si zapneš denník jedla — zapisuješ, čo ješ, a sleduješ kalórie aj cieľ. A štatistiky ukážu hodnotu špajze aj koľko si ušetril alebo vyhodil.",
+    },
+    plans: ["domacnost"],
+  },
+  {
     img: "/onboarding/provozovna.png",
     title: { cs: "Kasa (pokladna)", sk: "Pokladňa" },
     text: {
@@ -239,14 +248,14 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
 
         {/* ── VÝBĚR PLÁNU ── */}
         {isChoosing && (
-          <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0 }}>
+          <div style={{ flex: 1, display: "flex", flexDirection: "column", minHeight: 0, overflowY: "auto", paddingBottom: 16 }}>
             <div style={{ textAlign: "center", padding: "16px 0 14px" }}>
               <p style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: "0 0 3px" }}>{t("onb.choosePlanTitle")}</p>
               <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: 0 }}>{t("onb.freeTrial")}</p>
             </div>
 
-            {/* Dvě karty vedle sebe */}
-            <div style={{ display: "flex", gap: 10, flex: 1, minHeight: 0, maxHeight: 340 }}>
+            {/* Dvě karty vedle sebe — stejně vysoké, rostou dle obsahu (žádné ořezání). */}
+            <div style={{ display: "flex", gap: 10, alignItems: "stretch" }}>
 
               {/* Domácnost */}
               <button
