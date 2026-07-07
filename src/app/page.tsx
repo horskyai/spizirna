@@ -19,6 +19,8 @@ import { ModeSelect } from "@/components/ModeSelect";
 import { LanguageSelect } from "@/components/LanguageSelect";
 import { AuthScreen } from "@/components/AuthScreen";
 import { DeviceLimitScreen } from "@/components/DeviceLimitScreen";
+import { BusinessTypeSelect } from "@/components/BusinessTypeSelect";
+import { useBusinessStore } from "@/store/businessStore";
 import { SettingsModal } from "@/components/SettingsModal";
 import { DiscountWheel } from "@/components/DiscountWheel";
 import { useDiscountStore, WHEEL_AFTER_DAYS } from "@/store/discountStore";
@@ -53,6 +55,7 @@ export default function Home() {
   // Deník jídla je dostupný jen se zapnutým sledováním kalorií; jinak fallback na spižírnu.
   const showFoodLog = activeTab === "jidlo" && calorieTracking;
   const { mode, setMode } = useModeStore();
+  const businessTyp = useBusinessStore((s) => s.typProvozu);
   const { user, profile, loading: authLoading, init: authInit, deviceLimitHit } = useAuthStore();
   // Uvítací kolo štěstí — jen domácnost, 7 dní po prvním vstupu, jen jednou.
   const wheelSpun = useDiscountStore((s) => s.spun);
@@ -139,6 +142,15 @@ export default function Home() {
     return (
       <ErrorBoundary>
         <DeviceLimitScreen />
+      </ErrorBoundary>
+    );
+  }
+  // Provozní režim, ale ještě nevybraný typ (obchod/restaurace) → výběr, jednou.
+  // Po výběru se typProvozu uloží do store a komponenta se překreslí sama.
+  if (mode === "provoz" && businessTyp === null) {
+    return (
+      <ErrorBoundary>
+        <BusinessTypeSelect onDone={() => { /* store update překreslí */ }} />
       </ErrorBoundary>
     );
   }

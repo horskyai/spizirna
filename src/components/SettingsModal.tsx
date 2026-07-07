@@ -36,6 +36,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   // Název provozovny — jen v provozním režimu.
   const businessName = useBusinessStore((s) => s.name);
   const setBusinessName = useBusinessStore((s) => s.setName);
+  const typProvozu = useBusinessStore((s) => s.typProvozu);
+  const setTypProvozu = useBusinessStore((s) => s.setTypProvozu);
   const [showStats, setShowStats] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -247,6 +249,32 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               placeholder={t("settings.businessNamePlaceholder")}
               style={{ width: "100%", background: "var(--bg-primary)", borderRadius: 12, padding: "12px 14px", border: "1.5px solid var(--border)", outline: "none", fontSize: 15, color: "var(--text-primary)" }}
             />
+          </Section>
+          )}
+
+          {/* ── Typ provozu ── jen v provozu; změna je zamčená přes potvrzení ── */}
+          {mode === "provoz" && typProvozu && (
+          <Section icon={<Store size={15} />} title={t("settings.typProvozu")}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
+                {typProvozu === "obchod" ? t("settings.typObchod") : t("settings.typRestaurace")}
+              </span>
+              <button
+                onClick={() => {
+                  const cil = typProvozu === "obchod" ? "restaurace" : "obchod";
+                  const cilLabel = cil === "obchod" ? t("settings.typObchod") : t("settings.typRestaurace");
+                  if (confirm(t("settings.typZmenaQ").replace("{typ}", cilLabel))) {
+                    setTypProvozu(cil);
+                  }
+                }}
+                style={{ fontSize: 13, fontWeight: 600, color: "var(--green-primary)", background: "var(--green-light)", border: "none", borderRadius: 10, padding: "8px 14px" }}
+              >
+                {t("settings.typZmenit")}
+              </button>
+            </div>
+            <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>
+              {t("settings.typHint")}
+            </p>
           </Section>
           )}
 

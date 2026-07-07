@@ -25,6 +25,7 @@ import { RecipesView } from "@/components/RecipesView";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { useUIStore, type ProvozSubTab } from "@/store/uiStore";
+import { useBusinessStore } from "@/store/businessStore";
 import { useT, useLocale } from "@/lib/i18n";
 import type { Locale } from "@/store/localeStore";
 
@@ -1794,6 +1795,7 @@ export function ProvozView() {
   const { polozky, inventury, vytvorInventuru, aktivniInventuraId, setAktivniInventura } = useProvozStore();
   const provozSubTab = useUIStore((s) => s.provozSubTab);
   const setProvozSubTab = useUIStore((s) => s.setProvozSubTab);
+  const jeObchod = useBusinessStore((s) => s.typProvozu) === "obchod";
   const [tab, setTab] = useState<ProvozTab>("kasa");
 
   // Spodní provozní lišta nastaví provozSubTab → skoč na tu vnitřní záložku.
@@ -1826,9 +1828,9 @@ export function ProvozView() {
   };
 
   // Sekce pod tlačítkem „Víc" (spodní lišta). Hlavní 4 (Kasa/Sklad/Inventura/
-  // Účto) jsou přímo ve spodní liště, tady nejsou.
+  // Účto) jsou přímo ve spodní liště, tady nejsou. Recepty jen restaurace.
   const VIC_TABS: { id: ProvozTab; labelKey: string; icon: React.ReactNode }[] = [
-    { id: "recepty", labelKey: "provoz.tab.recepty", icon: <ChefHat size={15} /> },
+    ...(jeObchod ? [] : [{ id: "recepty" as ProvozTab, labelKey: "provoz.tab.recepty", icon: <ChefHat size={15} /> }]),
     { id: "dodavatele", labelKey: "provoz.tab.dodavatele", icon: <Truck size={15} /> },
     { id: "odpisy", labelKey: "provoz.tab.odpisy", icon: <TrendingDown size={15} /> },
     { id: "historie", labelKey: "provoz.tab.historie", icon: <BarChart3 size={15} /> },

@@ -11,6 +11,7 @@ import {
 } from "@/store/kasaStore";
 import { useProvozStore, INVENTURA_KATEGORIE } from "@/store/provozStore";
 import { useRecipeStore } from "@/store/recipeStore";
+import { useBusinessStore } from "@/store/businessStore";
 import { Scanner } from "@/components/Scanner";
 import { lookupProductByEAN } from "@/lib/productLookup";
 import { useT, useLocale } from "@/lib/i18n";
@@ -27,11 +28,14 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
   const { addMenuPolozka, updateMenuPolozka, removeMenuPolozka } = useKasaStore();
   const polozky = useProvozStore((s) => s.polozky);
   const recepty = useRecipeStore((s) => s.recipes);
+  const typProvozu = useBusinessStore((s) => s.typProvozu);
+  const jeObchod = typProvozu === "obchod";
 
   const [nazev, setNazev] = useState(edit?.nazev ?? "");
   const [cena, setCena] = useState(edit ? String(edit.cena) : "");
   const [kategorie, setKategorie] = useState(edit?.kategorie ?? "");
-  const [vazbaTyp, setVazbaTyp] = useState<MenuVazbaTyp>(edit?.vazbaTyp ?? "sklad");
+  // Default vazba dle typu: obchod → kusové (sklad), restaurace → denní porce.
+  const [vazbaTyp, setVazbaTyp] = useState<MenuVazbaTyp>(edit?.vazbaTyp ?? (jeObchod ? "sklad" : "porce"));
   const [polozkaId, setPolozkaId] = useState(edit?.polozkaId ?? "");
   const [odbet, setOdbet] = useState(edit?.odbet != null ? String(edit.odbet) : "1");
   const [receptId, setReceptId] = useState(edit?.receptId ?? "");
@@ -80,12 +84,14 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
     onClose();
   };
 
-  const vazby: { id: MenuVazbaTyp; icon: React.ReactNode; label: string; desc: string }[] = [
+  const vsechnyVazby: { id: MenuVazbaTyp; icon: React.ReactNode; label: string; desc: string }[] = [
     { id: "porce", icon: <UtensilsCrossed size={16} />, label: t("kasa.vazba.porce"), desc: t("kasa.vazba.porceDesc") },
     { id: "recept", icon: <Soup size={16} />, label: t("kasa.vazba.recept"), desc: t("kasa.vazba.receptDesc") },
     { id: "sklad", icon: <Package size={16} />, label: t("kasa.vazba.sklad"), desc: t("kasa.vazba.skladDesc") },
     { id: "zadna", icon: <Ban size={16} />, label: t("kasa.vazba.zadna"), desc: t("kasa.vazba.zadnaDesc") },
   ];
+  // Obchod prodává jen kusové zboží → skryj recept a denní porce.
+  const vazby = jeObchod ? vsechnyVazby.filter((v) => v.id === "sklad" || v.id === "zadna") : vsechnyVazby;
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>

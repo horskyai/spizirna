@@ -5,6 +5,7 @@ import { useUIStore, type Tab, type ProvozSubTab } from "@/store/uiStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useRecurringStore } from "@/store/recurringStore";
 import { useModeStore } from "@/store/modeStore";
+import { useBusinessStore } from "@/store/businessStore";
 import { useFeaturesStore } from "@/store/featuresStore";
 import { useT, TranslationKey } from "@/lib/i18n";
 
@@ -25,14 +26,18 @@ const FOOD_TAB: TabDef = { id: "jidlo", labelKey: "tab.jidlo", icon: "lucide:ute
 
 // Provozní lišta — nejdůležitější pro provozovnu hned po ruce. Všechny míří na
 // tab "provoz", ale skočí na svou vnitřní záložku (provozSub). "Víc" otevře
-// Provoz bez konkrétní podzáložky (zůstane poslední / výchozí = Kasa).
-const TABS_PROVOZ: readonly TabDef[] = [
-  { id: "provoz", labelKey: "tab.kasa", icon: "lucide:cart", provozSub: "kasa" },
-  { id: "provoz", labelKey: "tab.sklad", icon: "lucide:box", provozSub: "sklad" },
-  { id: "provoz", labelKey: "tab.inventura", icon: "lucide:clipboard", provozSub: "inventura" },
-  { id: "provoz", labelKey: "tab.ucto", icon: "lucide:sheet", provozSub: "ucetnictvi" },
-  { id: "provoz", labelKey: "tab.vic", icon: "lucide:menu", provozSub: "recepty" },
-];
+// Provozní lišta se liší podle typu provozu (obchod/restaurace):
+//   • název Sklad → „Sklad zboží" (obchod) vs „Sklad surovin" (restaurace)
+//   • „Víc" míří na první vedlejší sekci — obchod nemá Recepty → Dodavatelé.
+function provozTabs(jeObchod: boolean): readonly TabDef[] {
+  return [
+    { id: "provoz", labelKey: "tab.kasa", icon: "lucide:cart", provozSub: "kasa" },
+    { id: "provoz", labelKey: jeObchod ? "tab.skladZbozi" : "tab.skladSurovin", icon: "lucide:box", provozSub: "sklad" },
+    { id: "provoz", labelKey: "tab.inventura", icon: "lucide:clipboard", provozSub: "inventura" },
+    { id: "provoz", labelKey: "tab.ucto", icon: "lucide:sheet", provozSub: "ucetnictvi" },
+    { id: "provoz", labelKey: "tab.vic", icon: "lucide:menu", provozSub: jeObchod ? "dodavatele" : "recepty" },
+  ];
+}
 
 // Lucide ikony dostupné pro taby bez PNG.
 const LUCIDE_ICONS: Record<string, React.ComponentType<{ size?: number; color?: string }>> = {
@@ -49,6 +54,7 @@ export function TabBar() {
   const provozSubTab = useUIStore((s) => s.provozSubTab);
   const openProvoz = useUIStore((s) => s.openProvoz);
   const { mode } = useModeStore();
+  const jeObchod = useBusinessStore((s) => s.typProvozu) === "obchod";
   const t = useT();
   const shoppingMode = mode === "provoz" ? "provoz" : "domacnost";
   const shoppingCount = useShoppingStore((s) => s.getItems(shoppingMode).filter((i) => !i.checked).length);
@@ -58,7 +64,7 @@ export function TabBar() {
   // Domácnost: když má uživatel zapnuté sledování kalorií, vlož tab "Jídlo"
   // před poslední (Opakování). V provozu se kalorie nesledují.
   const TABS = mode === "provoz"
-    ? TABS_PROVOZ
+    ? provozTabs(jeObchod)
     : calorieTracking
       ? [...TABS_DOMACNOST.slice(0, -1), FOOD_TAB, TABS_DOMACNOST[TABS_DOMACNOST.length - 1]]
       : TABS_DOMACNOST;

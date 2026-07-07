@@ -34,6 +34,12 @@ export const settings: Record<string, Translation> = {
   // ── Název provozovny (jen provoz) ──
   "settings.businessName": { cs: "Název provozovny", sk: "Názov prevádzky" },
   "settings.businessNamePlaceholder": { cs: "Např. Kavárna U Lípy", sk: "Napr. Kaviareň U Lipy" },
+  "settings.typProvozu": { cs: "Typ provozu", sk: "Typ prevádzky" },
+  "settings.typObchod": { cs: "Obchod s potravinami", sk: "Obchod s potravinami" },
+  "settings.typRestaurace": { cs: "Restaurace / jídelna", sk: "Reštaurácia / jedáleň" },
+  "settings.typZmenit": { cs: "Změnit", sk: "Zmeniť" },
+  "settings.typZmenaQ": { cs: "Opravdu změnit typ provozu na „{typ}“? Změní se nabídka, názvy a záložky.", sk: "Naozaj zmeniť typ prevádzky na „{typ}“? Zmení sa ponuka, názvy a záložky." },
+  "settings.typHint": { cs: "Typ provozu určuje, jak kasa a sklad fungují. Měň jen když je to opravdu potřeba.", sk: "Typ prevádzky určuje, ako pokladňa a sklad fungujú. Meň len keď je to naozaj potrebné." },
 
   // ── Denní cíl ──
   "settings.goal": { cs: "Denní cíl", sk: "Denný cieľ" },
