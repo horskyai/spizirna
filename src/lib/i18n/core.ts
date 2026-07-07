@@ -48,6 +48,11 @@ export const core: Record<string, Translation> = {
   "tab.opakujici": { cs: "Opakování", sk: "Opakovanie" },
   "tab.provoz": { cs: "Provoz", sk: "Prevádzka" },
   "tab.jidlo": { cs: "Jídlo", sk: "Jedlo" },
+  "tab.kasa": { cs: "Kasa", sk: "Pokladňa" },
+  "tab.sklad": { cs: "Sklad", sk: "Sklad" },
+  "tab.inventura": { cs: "Inventura", sk: "Inventúra" },
+  "tab.ucto": { cs: "Účto", sk: "Účto" },
+  "tab.vic": { cs: "Víc", sk: "Viac" },
 
   // ── Limit zařízení ──
   "device.limitTitle": { cs: "Dosažen limit zařízení", sk: "Dosiahnutý limit zariadení" },

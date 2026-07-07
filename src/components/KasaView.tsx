@@ -37,6 +37,13 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
   const [receptId, setReceptId] = useState(edit?.receptId ?? "");
   const [dphSazba, setDphSazba] = useState(edit?.dphSazba ?? 21);
   const [plu, setPlu] = useState(edit?.plu ?? "");
+  // Přednastavené skupiny jídel (restaurace) — klik místo psaní.
+  const SKUPINY = [
+    t("kasa.skup.polevky"), t("kasa.skup.predkrmy"), t("kasa.skup.hlavni"),
+    t("kasa.skup.priloha"), t("kasa.skup.dezerty"), t("kasa.skup.napoje"), t("kasa.skup.alkohol"),
+  ];
+  // Vlastní režim = položka má skupinu, která není mezi přednastavenými.
+  const [vlastniSkup, setVlastniSkup] = useState(!!edit?.kategorie && !SKUPINY.includes(edit.kategorie));
 
   const recept = recepty.find((r) => r.id === receptId);
   // Kolik surovin receptu se nepodaří spárovat na sklad (upozornění obsluze).
@@ -93,19 +100,36 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
             style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
         </div>
 
-        <div className="flex gap-3">
-          <div style={{ flex: 1 }}>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("kasa.cena")}</label>
-            <input type="number" inputMode="decimal" value={cena} onChange={(e) => setCena(e.target.value)} placeholder="0"
-              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
-              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+        <div>
+          <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("kasa.cena")}</label>
+          <input type="number" inputMode="decimal" value={cena} onChange={(e) => setCena(e.target.value)} placeholder="0"
+            className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+            style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+        </div>
+
+        {/* Skupina — přednastavené (restaurace) na klik + vlastní */}
+        <div>
+          <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-tertiary)" }}>{t("kasa.kategorie")}</label>
+          <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+            {SKUPINY.map((sk) => {
+              const aktivni = kategorie === sk;
+              return (
+                <button key={sk} onClick={() => { setKategorie(sk); setVlastniSkup(false); }}
+                  style={{ padding: "7px 12px", borderRadius: 20, fontSize: 12.5, fontWeight: aktivni ? 700 : 500, background: aktivni ? "var(--green-primary)" : "white", color: aktivni ? "white" : "var(--text-secondary)", border: `1.5px solid ${aktivni ? "var(--green-primary)" : "var(--border)"}` }}>
+                  {sk}
+                </button>
+              );
+            })}
+            <button onClick={() => { setVlastniSkup(true); setKategorie(""); }}
+              style={{ padding: "7px 12px", borderRadius: 20, fontSize: 12.5, fontWeight: vlastniSkup ? 700 : 500, background: vlastniSkup ? "var(--green-primary)" : "white", color: vlastniSkup ? "white" : "var(--text-secondary)", border: `1.5px solid ${vlastniSkup ? "var(--green-primary)" : "var(--border)"}` }}>
+              {t("kasa.skupinaVlastni")}
+            </button>
           </div>
-          <div style={{ flex: 1 }}>
-            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("kasa.kategorie")}</label>
-            <input value={kategorie} onChange={(e) => setKategorie(e.target.value)} placeholder={t("kasa.kategoriePlaceholder")}
-              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+          {vlastniSkup && (
+            <input value={kategorie} onChange={(e) => setKategorie(e.target.value)} placeholder={t("kasa.kategoriePlaceholder")} autoFocus
+              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none mt-2"
               style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
-          </div>
+          )}
         </div>
 
         <div className="flex gap-3">

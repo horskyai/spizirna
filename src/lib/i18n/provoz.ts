@@ -3,14 +3,27 @@ import type { Translation } from "./dict";
 // Překlady oblasti Provoz (ProvozView) — inventura, sklad, dodavatelé, export.
 export const provoz: Record<string, Translation> = {
   // ── Kategorie skladu (label podle id, id se nepřekládá) ──
-  "provoz.kat.potraviny": { cs: "Potraviny", sk: "Potraviny" },
+  // Nové jemnější kategorie (Tesco-styl)
+  "provoz.kat.pecivo": { cs: "Pečivo", sk: "Pečivo" },
+  "provoz.kat.ovoce": { cs: "Ovoce", sk: "Ovocie" },
+  "provoz.kat.zelenina": { cs: "Zelenina", sk: "Zelenina" },
   "provoz.kat.maso-ryby": { cs: "Maso & ryby", sk: "Mäso & ryby" },
   "provoz.kat.mlecne": { cs: "Mléčné", sk: "Mliečne" },
-  "provoz.kat.ovoce-zelenina": { cs: "Ovoce & zelenina", sk: "Ovocie & zelenina" },
-  "provoz.kat.suche-zbozi": { cs: "Suché zboží", sk: "Suchý tovar" },
-  "provoz.kat.napoje-nealkohol": { cs: "Nápoje", sk: "Nápoje" },
+  "provoz.kat.sladke-slane": { cs: "Sladké & slané", sk: "Sladké & slané" },
+  "provoz.kat.napoje-slazene": { cs: "Nápoje slazené", sk: "Nápoje sladené" },
+  "provoz.kat.vody": { cs: "Vody", sk: "Vody" },
+  "provoz.kat.kava-caj": { cs: "Káva & čaj", sk: "Káva & čaj" },
+  "provoz.kat.vino": { cs: "Víno", sk: "Víno" },
+  "provoz.kat.pivo": { cs: "Pivo", sk: "Pivo" },
   "provoz.kat.alkohol": { cs: "Alkohol", sk: "Alkohol" },
+  "provoz.kat.suche-zbozi": { cs: "Suché zboží", sk: "Suchý tovar" },
+  "provoz.kat.mrazene": { cs: "Mražené", sk: "Mrazené" },
+  "provoz.kat.drogerie": { cs: "Drogerie", sk: "Drogéria" },
   "provoz.kat.ostatni": { cs: "Ostatní", sk: "Ostatné" },
+  // Původní ID — zachováno pro dřív uložené položky
+  "provoz.kat.potraviny": { cs: "Potraviny", sk: "Potraviny" },
+  "provoz.kat.ovoce-zelenina": { cs: "Ovoce & zelenina", sk: "Ovocie & zelenina" },
+  "provoz.kat.napoje-nealkohol": { cs: "Nápoje", sk: "Nápoje" },
 
   // ── Záložky / navigace ──
   "provoz.tab.inventura": { cs: "Inventura", sk: "Inventúra" },

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import {
   ClipboardList, Plus, X, ChevronRight,
   AlertTriangle, Check, Truck, Package, BarChart3, Trash2, ScanLine, Keyboard,
@@ -23,6 +23,7 @@ import { KasaView } from "@/components/KasaView";
 import { UcetnictviView } from "@/components/UcetnictviView";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useGamificationStore } from "@/store/gamificationStore";
+import { useUIStore } from "@/store/uiStore";
 import { useT, useLocale } from "@/lib/i18n";
 import type { Locale } from "@/store/localeStore";
 
@@ -294,7 +295,7 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
   const t = useT();
   const { addPolozka, dodavatele } = useProvozStore();
   const [nazev, setNazev] = useState("");
-  const [kategorie, setKategorie] = useState<InventuraKategorie>("potraviny");
+  const [kategorie, setKategorie] = useState<InventuraKategorie>("pecivo");
   const [jednotka, setJednotka] = useState("ks");
   const [minZasoba, setMinZasoba] = useState("1");
   const [pocStav, setPocStav] = useState("0");
@@ -1330,13 +1331,31 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
 function guessSkladKategorie(name: string): InventuraKategorie {
   const n = name.toLowerCase();
   const has = (...kw: string[]) => kw.some((k) => n.includes(k));
-  if (has("víno", "vino", "pivo", "rum", "vodka", "whisky", "becher", "fernet", "likér", "liker", "tequila", "gin", "alkohol", "sekt", "šampaň", "sampan")) return "alkohol";
-  if (has("kuř", "kur", "hověz", "hovez", "vepřov", "veprov", "maso", "šunk", "sunk", "salám", "salam", "klobás", "klobas", "ryb", "losos", "filet", "mlet")) return "maso-ryby";
-  if (has("mlék", "mlek", "másl", "masl", "sýr", "syr", "jogurt", "tvaroh", "smetan", "vejc", "vajíčk", "vajick")) return "mlecne";
-  if (has("brambor", "cibul", "česnek", "cesnek", "rajč", "rajc", "paprik", "okurk", "mrkev", "mrkv", "jablk", "banán", "banan", "salát", "salat", "zelenin", "ovoce")) return "ovoce-zelenina";
-  if (has("mouk", "cukr", "rýže", "ryze", "těstovin", "testovin", "luštěn", "lusten", "olej", "ocet", "koření", "koreni", "konzerv", "rýži", "ryzi")) return "suche-zbozi";
-  if (has("voda", "vody", "džus", "dzus", "limonád", "limonad", "kofol", "cola", "kola", "sirup", "minerálk", "mineralk")) return "napoje-nealkohol";
-  if (has("chléb", "chleb", "pečiv", "peciv", "rohlík", "rohlik", "housk")) return "potraviny";
+  // Alkohol rozdělený: víno / pivo / tvrdý
+  if (has("víno", "vino", "sekt", "šampaň", "sampan", "prosecco")) return "vino";
+  if (has("pivo", "piva", "ležák", "lezak", "radler")) return "pivo";
+  if (has("rum", "vodka", "whisky", "becher", "fernet", "likér", "liker", "tequila", "gin", "alkohol", "slivovic", "griotk")) return "alkohol";
+  // Nápoje nealko rozdělené: káva/čaj / vody / slazené
+  if (has("káv", "kav", "čaj", "caj", "espresso", "cappuccino", "latte")) return "kava-caj";
+  if (has("voda", "vody", "minerálk", "mineralk", "perliv", "kojeneck")) return "vody";
+  if (has("džus", "dzus", "limonád", "limonad", "kofol", "cola", "kola", "sirup", "energ", "juice", "malinovk")) return "napoje-slazene";
+  // Maso & ryby
+  if (has("kuř", "kur", "hověz", "hovez", "vepřov", "veprov", "maso", "šunk", "sunk", "salám", "salam", "klobás", "klobas", "ryb", "losos", "filet", "mlet", "slanin", "párk", "park")) return "maso-ryby";
+  // Mléčné
+  if (has("mlék", "mlek", "másl", "masl", "sýr", "syr", "jogurt", "tvaroh", "smetan", "vejc", "vajíčk", "vajick", "kefír", "kefir")) return "mlecne";
+  // Pečivo
+  if (has("chléb", "chleb", "pečiv", "peciv", "rohlík", "rohlik", "housk", "bageta", "toustov", "koláč", "kolac", "croissant")) return "pecivo";
+  // Ovoce / zelenina rozdělené
+  if (has("jablk", "banán", "banan", "hrušk", "hrusk", "pomeranč", "pomeranc", "citrón", "citron", "jahod", "hrozn", "meloun", "ovoce", "mandarink", "kiwi")) return "ovoce";
+  if (has("brambor", "cibul", "česnek", "cesnek", "rajč", "rajc", "paprik", "okurk", "mrkev", "mrkv", "salát", "salat", "zelenin", "zelí", "zeli", "květák", "kvetak", "špenát", "spenat")) return "zelenina";
+  // Sladké & slané
+  if (has("čokolád", "cokolad", "bonbón", "bonbon", "sušenk", "susenk", "chips", "chips", "oříšk", "orisk", "tyčink", "tycink", "žvýkač", "zvykac", "wafl", "keks")) return "sladke-slane";
+  // Mražené
+  if (has("mražen", "mrazen", "zmrzlin", "nanuk")) return "mrazene";
+  // Drogerie
+  if (has("mýdl", "mydl", "šampon", "sampon", "prášek", "prasek", "toaletn", "ubrous", "sáčk", "sacek", "čistič", "cistic", "sav", "houbičk", "houbick")) return "drogerie";
+  // Suché zboží
+  if (has("mouk", "cukr", "rýže", "ryze", "těstovin", "testovin", "luštěn", "lusten", "olej", "ocet", "koření", "koreni", "konzerv", "rýži", "ryzi", "sůl", "sul")) return "suche-zbozi";
   return "ostatni";
 }
 
@@ -1772,7 +1791,18 @@ type ProvozTab = "kasa" | "ucetnictvi" | "inventura" | "sklad" | "historie" | "o
 export function ProvozView() {
   const t = useT();
   const { polozky, inventury, vytvorInventuru, aktivniInventuraId, setAktivniInventura } = useProvozStore();
-  const [tab, setTab] = useState<ProvozTab>("inventura");
+  const provozSubTab = useUIStore((s) => s.provozSubTab);
+  const setProvozSubTab = useUIStore((s) => s.setProvozSubTab);
+  const [tab, setTab] = useState<ProvozTab>("kasa");
+
+  // Spodní provozní lišta nastaví provozSubTab → skoč na tu vnitřní záložku
+  // a rovnou ji vynuluj, ať jde na stejnou položku kliknout znovu.
+  useEffect(() => {
+    if (provozSubTab) {
+      setTab(provozSubTab);
+      setProvozSubTab(null);
+    }
+  }, [provozSubTab, setProvozSubTab]);
   const [showNazevModal, setShowNazevModal] = useState(false);
   const [novyNazev, setNovyNazev] = useState("");
   const [slepa, setSlepa] = useState(false);

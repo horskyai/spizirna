@@ -2,25 +2,50 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
 export type InventuraKategorie =
-  | "potraviny"
-  | "napoje-nealkohol"
-  | "alkohol"
+  // Nové jemnější kategorie (Tesco-styl)
+  | "pecivo"
+  | "ovoce"
+  | "zelenina"
   | "maso-ryby"
   | "mlecne"
-  | "ovoce-zelenina"
+  | "sladke-slane"
+  | "napoje-slazene"
+  | "vody"
+  | "kava-caj"
+  | "vino"
+  | "pivo"
+  | "alkohol"
   | "suche-zbozi"
-  | "ostatni";
+  | "mrazene"
+  | "drogerie"
+  | "ostatni"
+  // Původní (zachované kvůli již uloženým datům; nová položka je nepoužije)
+  | "potraviny"
+  | "napoje-nealkohol"
+  | "ovoce-zelenina";
 
+// Kategorie nabízené v UI (výběr, filtry, sekce v kase). Staré ID (potraviny,
+// napoje-nealkohol, ovoce-zelenina) tu ZÁMĚRNĚ nejsou — zůstávají platné pro
+// dřív uložené položky (viz katLabelFallback), ale nová položka je nedostane.
 export const INVENTURA_KATEGORIE: { id: InventuraKategorie; label: string; emoji: string }[] = [
-  { id: "potraviny", label: "Potraviny", emoji: "🥫" },
+  { id: "pecivo", label: "Pečivo", emoji: "🍞" },
+  { id: "ovoce", label: "Ovoce", emoji: "🍎" },
+  { id: "zelenina", label: "Zelenina", emoji: "🥦" },
   { id: "maso-ryby", label: "Maso & ryby", emoji: "🥩" },
   { id: "mlecne", label: "Mléčné", emoji: "🧀" },
-  { id: "ovoce-zelenina", label: "Ovoce & zelenina", emoji: "🥦" },
-  { id: "suche-zbozi", label: "Suché zboží", emoji: "🌾" },
-  { id: "napoje-nealkohol", label: "Nápoje", emoji: "🥤" },
-  { id: "alkohol", label: "Alkohol", emoji: "🍷" },
+  { id: "sladke-slane", label: "Sladké & slané", emoji: "🍫" },
+  { id: "napoje-slazene", label: "Nápoje slazené", emoji: "🥤" },
+  { id: "vody", label: "Vody", emoji: "💧" },
+  { id: "kava-caj", label: "Káva & čaj", emoji: "☕" },
+  { id: "vino", label: "Víno", emoji: "🍷" },
+  { id: "pivo", label: "Pivo", emoji: "🍺" },
+  { id: "alkohol", label: "Alkohol", emoji: "🥃" },
+  { id: "suche-zbozi", label: "Suché zboží", emoji: "🍚" },
+  { id: "mrazene", label: "Mražené", emoji: "🧊" },
+  { id: "drogerie", label: "Drogerie", emoji: "🧴" },
   { id: "ostatni", label: "Ostatní", emoji: "📦" },
 ];
+
 
 export interface InventuraPolozka {
   id: string;
@@ -342,10 +367,12 @@ export const useProvozStore = create<ProvozStore>()(
     }),
     {
       name: "provoz-store",
-      version: 1,
+      version: 2,
       // Migrace v0→v1: starým položkám bez `aktualniStav` ho dopočítáme
       // z posledního zaznamenaného stavu v inventurách (jinak 0), a volný
       // text `dodavatel` necháme — spárování na dodavatelId řeší UI volitelně.
+      // Migrace v1→v2: přechod na jemnější kategorie (Tesco-styl). Stará 3
+      // hrubá ID přemapujeme na nová, ať položky nezmizí ze seznamů/kasy.
       migrate: (persisted: unknown, version: number) => {
         const state = persisted as ProvozStore;
         if (version < 1 && state?.polozky) {
@@ -360,6 +387,17 @@ export const useProvozStore = create<ProvozStore>()(
             ...p,
             aktualniStav: p.aktualniStav ?? lastStav[p.id]?.stav ?? 0,
           }));
+        }
+        if (version < 2 && state?.polozky) {
+          const remap: Record<string, InventuraKategorie> = {
+            potraviny: "ostatni",
+            "napoje-nealkohol": "napoje-slazene",
+            "ovoce-zelenina": "zelenina",
+          };
+          state.polozky = state.polozky.map((p) => {
+            const nova = remap[p.kategorie as string];
+            return nova ? { ...p, kategorie: nova } : p;
+          });
         }
         return state;
       },
