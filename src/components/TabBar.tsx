@@ -31,7 +31,7 @@ const TABS_PROVOZ: readonly TabDef[] = [
   { id: "provoz", labelKey: "tab.sklad", icon: "lucide:box", provozSub: "sklad" },
   { id: "provoz", labelKey: "tab.inventura", icon: "lucide:clipboard", provozSub: "inventura" },
   { id: "provoz", labelKey: "tab.ucto", icon: "lucide:sheet", provozSub: "ucetnictvi" },
-  { id: "provoz", labelKey: "tab.vic", icon: "lucide:menu", provozSub: "dodavatele" },
+  { id: "provoz", labelKey: "tab.vic", icon: "lucide:menu", provozSub: "recepty" },
 ];
 
 // Lucide ikony dostupné pro taby bez PNG.

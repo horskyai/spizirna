@@ -28,6 +28,7 @@ export const provoz: Record<string, Translation> = {
   // ── Záložky / navigace ──
   "provoz.tab.inventura": { cs: "Inventura", sk: "Inventúra" },
   "provoz.tab.sklad": { cs: "Sklad", sk: "Sklad" },
+  "provoz.tab.recepty": { cs: "Recepty", sk: "Recepty" },
   "provoz.tab.historie": { cs: "Historie", sk: "História" },
   "provoz.tab.odpisy": { cs: "Odpisy", sk: "Odpisy" },
   "provoz.tab.dodavatele": { cs: "Dodavatelé", sk: "Dodávatelia" },

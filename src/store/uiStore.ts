@@ -4,7 +4,7 @@ import { ProductInfo } from "@/types";
 export type Tab = "spizirna" | "skenovat" | "jidlo" | "recepty" | "nakup" | "opakujici" | "provoz";
 // Vnitřní záložka provozního režimu (Kasa/Sklad/…). Spodní lišta v provozu ji
 // nastaví a ProvozView na ni skočí. null = nech výchozí / poslední.
-export type ProvozSubTab = "kasa" | "ucetnictvi" | "inventura" | "sklad" | "historie" | "odpisy" | "dodavatele" | null;
+export type ProvozSubTab = "kasa" | "ucetnictvi" | "inventura" | "sklad" | "recepty" | "historie" | "odpisy" | "dodavatele" | null;
 type Sheet = "product" | "add-to-pantry" | "food-log" | "recipe" | null;
 // Rychlý filtr spížírny z karet „Dnešní přehled" (Brzy expiruje / Dochází).
 export type PantryFilter = "expiring" | "lowStock" | null;

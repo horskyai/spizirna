@@ -5,7 +5,7 @@ import {
   ClipboardList, Plus, X, ChevronRight,
   AlertTriangle, Check, Truck, Package, BarChart3, Trash2, ScanLine, Keyboard,
   FileText, Download, FileSpreadsheet, Pencil, Share2, Mic, MicOff, Loader, Search,
-  Camera, Image as ImageIcon, TrendingDown, ShoppingCart
+  Camera, Image as ImageIcon, TrendingDown, ShoppingCart, ChefHat
 } from "lucide-react";
 import { parseSpokenText } from "@/components/VoiceInput";
 import {
@@ -21,9 +21,10 @@ import { lookupProductByEAN } from "@/lib/productLookup";
 import { Scanner } from "@/components/Scanner";
 import { KasaView } from "@/components/KasaView";
 import { UcetnictviView } from "@/components/UcetnictviView";
+import { RecipesView } from "@/components/RecipesView";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useGamificationStore } from "@/store/gamificationStore";
-import { useUIStore } from "@/store/uiStore";
+import { useUIStore, type ProvozSubTab } from "@/store/uiStore";
 import { useT, useLocale } from "@/lib/i18n";
 import type { Locale } from "@/store/localeStore";
 
@@ -1786,7 +1787,7 @@ function CoDokoupit() {
 }
 
 // ── Hlavní view ───────────────────────────────────────────────────────────────
-type ProvozTab = "kasa" | "ucetnictvi" | "inventura" | "sklad" | "historie" | "odpisy" | "dodavatele";
+type ProvozTab = "kasa" | "ucetnictvi" | "inventura" | "sklad" | "recepty" | "historie" | "odpisy" | "dodavatele";
 
 export function ProvozView() {
   const t = useT();
@@ -1795,13 +1796,18 @@ export function ProvozView() {
   const setProvozSubTab = useUIStore((s) => s.setProvozSubTab);
   const [tab, setTab] = useState<ProvozTab>("kasa");
 
-  // Spodní provozní lišta nastaví provozSubTab → skoč na tu vnitřní záložku
-  // a rovnou ji vynuluj, ať jde na stejnou položku kliknout znovu.
+  // Spodní provozní lišta nastaví provozSubTab → skoč na tu vnitřní záložku.
+  // Řešíme přes refs bez synchronního setState v efektu (jinak kaskáda renderů):
+  // efekt jen porovná poslední zpracovaný signál a případně přepne tab.
+  const lastSubRef = useRef<ProvozSubTab | undefined>(undefined);
   useEffect(() => {
-    if (provozSubTab) {
+    if (provozSubTab && provozSubTab !== lastSubRef.current) {
+      lastSubRef.current = provozSubTab;
       setTab(provozSubTab);
-      setProvozSubTab(null);
+      // Vynulování signálu odložíme mimo tento render (zabrání kaskádě).
+      queueMicrotask(() => setProvozSubTab(null));
     }
+    if (!provozSubTab) lastSubRef.current = undefined;
   }, [provozSubTab, setProvozSubTab]);
   const [showNazevModal, setShowNazevModal] = useState(false);
   const [novyNazev, setNovyNazev] = useState("");
@@ -1824,6 +1830,7 @@ export function ProvozView() {
     { id: "ucetnictvi", labelKey: "provoz.tab.ucetnictvi", icon: <FileSpreadsheet size={15} /> },
     { id: "inventura", labelKey: "provoz.tab.inventura", icon: <ClipboardList size={15} /> },
     { id: "sklad", labelKey: "provoz.tab.sklad", icon: <Package size={15} /> },
+    { id: "recepty", labelKey: "provoz.tab.recepty", icon: <ChefHat size={15} /> },
     { id: "historie", labelKey: "provoz.tab.historie", icon: <BarChart3 size={15} /> },
     { id: "odpisy", labelKey: "provoz.tab.odpisy", icon: <TrendingDown size={15} /> },
     { id: "dodavatele", labelKey: "provoz.tab.dodavatele", icon: <Truck size={15} /> },
@@ -1932,6 +1939,7 @@ export function ProvozView() {
         {tab === "kasa" && <KasaView />}
         {tab === "ucetnictvi" && <UcetnictviView />}
         {tab === "sklad" && <SpravaSkladu />}
+        {tab === "recepty" && <RecipesView />}
         {tab === "historie" && <HistorieInventur />}
         {tab === "odpisy" && <OdpisyView />}
         {tab === "dodavatele" && <DodavateleView />}
