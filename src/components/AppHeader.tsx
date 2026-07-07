@@ -23,7 +23,9 @@ const GUIDES: Record<string, { id: string; title: string; intro: string; steps: 
   recepty: { id: "recipes", title: "guide.recipes.title", intro: "guide.recipes.intro", steps: ["guide.recipes.s1", "guide.recipes.s2", "guide.recipes.s3"] },
   nakup: { id: "shopping", title: "guide.shopping.title", intro: "guide.shopping.intro", steps: ["guide.shopping.s1", "guide.shopping.s2", "guide.shopping.s3"] },
   opakujici: { id: "recurring", title: "guide.recurring.title", intro: "guide.recurring.intro", steps: ["guide.recurring.s1", "guide.recurring.s2"] },
-  provoz: { id: "provoz", title: "guide.provoz.title", intro: "guide.provoz.intro", steps: ["guide.provoz.s1", "guide.provoz.s2", "guide.provoz.s3"] },
+  // id "provoz2" (ne "provoz") → průvodce se po velké aktualizaci ukáže znovu
+  // i těm, kdo viděli starou verzi (dozví se o Kase, Účetnictví, porcích).
+  provoz: { id: "provoz2", title: "guide.provoz.title", intro: "guide.provoz.intro", steps: ["guide.provoz.s1", "guide.provoz.s2", "guide.provoz.s3", "guide.provoz.s4", "guide.provoz.s5"] },
 };
 
 const TITLES: Record<string, string> = {

@@ -114,23 +114,33 @@ export const guide: Record<string, Translation> = {
   // ── Provozovna (inventura) ──
   "guide.provoz.title": { cs: "Provozovna", sk: "Prevádzka" },
   "guide.provoz.intro": {
-    cs: "Sklad a inventura pro restaurace a provozovny — s cenami, minimy a exportem.",
-    sk: "Sklad a inventúra pre reštaurácie a prevádzky — s cenami, minimami a exportom.",
+    cs: "Kasa, sklad, inventura a účetnictví na jednom místě — pro obchod i restauraci. Dole přepínáš Kasa · Sklad · Inventura · Účto · Víc.",
+    sk: "Pokladňa, sklad, inventúra a účtovníctvo na jednom mieste — pre obchod aj reštauráciu. Dole prepínáš Pokladňa · Sklad · Inventúra · Účto · Viac.",
   },
-  "guide.provoz.s1t": { cs: "Nalož sklad", sk: "Nalož sklad" },
+  "guide.provoz.s1t": { cs: "Kasa — prodej", sk: "Pokladňa — predaj" },
   "guide.provoz.s1d": {
-    cs: "Přidej položky — název, jednotku, minimální zásobu i cenu. Ručně, hlasem nebo skenem.",
-    sk: "Pridaj položky — názov, jednotku, minimálnu zásobu aj cenu. Ručne, hlasom alebo skenom.",
+    cs: "Klepni na zboží/jídlo → dole košík → Hotově nebo Kartou. Prodej se automaticky odečte ze skladu. U hotovosti zadáš „přijato\" a spočítá se, kolik vrátit.",
+    sk: "Klepni na tovar/jedlo → dole košík → Hotovo alebo Kartou. Predaj sa automaticky odčíta zo skladu. Pri hotovosti zadáš „prijaté\" a spočíta sa, koľko vrátiť.",
   },
-  "guide.provoz.s2t": { cs: "Udělej inventuru", sk: "Urob inventúru" },
+  "guide.provoz.s2t": { cs: "Sklad & denní porce", sk: "Sklad & denné porcie" },
   "guide.provoz.s2d": {
-    cs: "Založ inventuru a u každé položky zadej skutečný stav. Co je pod minimem, se zvýrazní.",
-    sk: "Založ inventúru a pri každej položke zadaj skutočný stav. Čo je pod minimom, sa zvýrazní.",
+    cs: "Obchod: naskladníš zboží a rovnou ho prodáváš. Restaurace: ráno navaříš porce (guláš 20×) a kasa hlídá, kolik zbývá. Suroviny lze skrýt z prodeje.",
+    sk: "Obchod: naskladníš tovar a rovno ho predávaš. Reštaurácia: ráno navaríš porcie (guláš 20×) a pokladňa stráži, koľko zostáva. Suroviny možno skryť z predaja.",
   },
-  "guide.provoz.s3t": { cs: "Hodnota a export", sk: "Hodnota a export" },
+  "guide.provoz.s3t": { cs: "Inventura", sk: "Inventúra" },
   "guide.provoz.s3d": {
-    cs: "Appka spočítá celkovou hodnotu skladu. Inventuru vyexportuješ do PDF nebo CSV (Excel).",
-    sk: "Appka spočíta celkovú hodnotu skladu. Inventúru vyexportuješ do PDF alebo CSV (Excel).",
+    cs: "Založ inventuru, zadej skutečné stavy — appka porovná s tím, co kasa napočítala, a ukáže manka/přebytky. Export do PDF i Excelu.",
+    sk: "Založ inventúru, zadaj skutočné stavy — appka porovná s tým, čo pokladňa napočítala, a ukáže manká/prebytky. Export do PDF aj Excelu.",
+  },
+  "guide.provoz.s4t": { cs: "Účetnictví", sk: "Účtovníctvo" },
+  "guide.provoz.s4d": {
+    cs: "Uzávěrka za den/týden/měsíc/rok i vlastní období: tržby hotově/kartou, zisk, marže, rozpad DPH a nejprodávanější zboží. Export pro účetní.",
+    sk: "Uzávierka za deň/týždeň/mesiac/rok aj vlastné obdobie: tržby hotovo/kartou, zisk, marža, rozpad DPH a najpredávanejšie. Export pre účtovníka.",
+  },
+  "guide.provoz.s5t": { cs: "Režim zaměstnance", sk: "Režim zamestnanca" },
+  "guide.provoz.s5d": {
+    cs: "V Nastavení zapneš PIN. Zaměstnanec pak vidí jen Kasu, ceny a účetnictví jsou skryté. Majitel odemkne PINem.",
+    sk: "V Nastaveniach zapneš PIN. Zamestnanec potom vidí len Pokladňu, ceny a účtovníctvo sú skryté. Majiteľ odomkne PINom.",
   },
 
   // ── Sklad v provozu (tab Spižírna ukazuje sklad) ──

@@ -78,11 +78,29 @@ const SLIDES: { img: string; title: L10n; text: L10n; plans: Plan[] }[] = [
     plans: ["domacnost"],
   },
   {
-    img: "/onboarding/inventura.png",
-    title: { cs: "Inventura & dodavatelé", sk: "Inventúra & dodávatelia" },
+    img: "/onboarding/provozovna.png",
+    title: { cs: "Kasa (pokladna)", sk: "Pokladňa" },
     text: {
-      cs: "Pro restaurace a jídelny: přesná inventura skladu s minimálními zásobami, správa dodavatelů a export do PDF nebo Excelu.",
-      sk: "Pre reštaurácie a jedálne: presná inventúra skladu s minimálnymi zásobami, správa dodávateľov a export do PDF alebo Excelu.",
+      cs: "Prodáváš na kase a zboží se automaticky odečítá ze skladu. Nemusíš už nic ručně odepisovat — obchod i restaurace.",
+      sk: "Predávaš na pokladni a tovar sa automaticky odčíta zo skladu. Už nemusíš nič ručne odpisovať — obchod aj reštaurácia.",
+    },
+    plans: ["provoz"],
+  },
+  {
+    img: "/onboarding/inventura.png",
+    title: { cs: "Denní porce & sklad", sk: "Denné porcie & sklad" },
+    text: {
+      cs: "Restaurace: ráno navaříš porce a kasa hlídá, kolik zbývá. Obchod: naskladníš zboží a rovnou prodáváš. Inventura pak jen porovná realitu.",
+      sk: "Reštaurácia: ráno navaríš porcie a pokladňa stráži, koľko zostáva. Obchod: naskladníš tovar a rovno predávaš. Inventúra potom len porovná realitu.",
+    },
+    plans: ["provoz"],
+  },
+  {
+    img: "/onboarding/inventura.png",
+    title: { cs: "Účetnictví & tržby", sk: "Účtovníctvo & tržby" },
+    text: {
+      cs: "Denní uzávěrka, tržby hotově i kartou, zisk, marže a DPH. Export pro účetní v PDF nebo Excelu — za den, měsíc i celý rok.",
+      sk: "Denná uzávierka, tržby hotovo aj kartou, zisk, marža a DPH. Export pre účtovníka v PDF alebo Exceli — za deň, mesiac aj celý rok.",
     },
     plans: ["provoz"],
   },
@@ -98,11 +116,11 @@ const DOMACNOST_FEATURES: { icon: React.ReactNode; text: L10n }[] = [
 ];
 
 const PROVOZ_FEATURES: { icon: React.ReactNode; text: L10n }[] = [
-  { icon: <ScanLine size={14} />, text: { cs: "Spižírna & skenování EAN", sk: "Špajza & skenovanie EAN" } },
-  { icon: <BookOpen size={14} />, text: { cs: "Recepty s postupem vaření", sk: "Recepty s postupom varenia" } },
-  { icon: <Package size={14} />, text: { cs: "Inventura skladu", sk: "Inventúra skladu" } },
-  { icon: <Truck size={14} />, text: { cs: "Správa dodavatelů", sk: "Správa dodávateľov" } },
-  { icon: <FileText size={14} />, text: { cs: "Export PDF & Excel", sk: "Export PDF & Excel" } },
+  { icon: <ShoppingCart size={14} />, text: { cs: "Kasa — prodej odečítá sklad", sk: "Pokladňa — predaj odčíta sklad" } },
+  { icon: <FileText size={14} />, text: { cs: "Účetnictví: tržby, zisk, DPH", sk: "Účtovníctvo: tržby, zisk, DPH" } },
+  { icon: <Package size={14} />, text: { cs: "Sklad, inventura, denní porce", sk: "Sklad, inventúra, denné porcie" } },
+  { icon: <ScanLine size={14} />, text: { cs: "Skenování EAN & čárové kódy", sk: "Skenovanie EAN & čiarové kódy" } },
+  { icon: <Truck size={14} />, text: { cs: "Dodavatelé & export PDF/Excel", sk: "Dodávatelia & export PDF/Excel" } },
 ];
 
 // ── Pomocné chipy ─────────────────────────────────────────────────────────────
