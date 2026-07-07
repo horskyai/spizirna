@@ -26,6 +26,7 @@ import { useShoppingStore } from "@/store/shoppingStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { useUIStore, type ProvozSubTab } from "@/store/uiStore";
 import { useBusinessStore } from "@/store/businessStore";
+import { useEmployeeStore } from "@/store/employeeStore";
 import { useT, useLocale } from "@/lib/i18n";
 import type { Locale } from "@/store/localeStore";
 
@@ -1796,6 +1797,10 @@ export function ProvozView() {
   const provozSubTab = useUIStore((s) => s.provozSubTab);
   const setProvozSubTab = useUIStore((s) => s.setProvozSubTab);
   const jeObchod = useBusinessStore((s) => s.typProvozu) === "obchod";
+  // Režim zaměstnance: zapnuto A zamčeno → jen Kasa + tlačítko odemknout.
+  const empEnabled = useEmployeeStore((s) => s.enabled);
+  const empLocked = useEmployeeStore((s) => s.locked);
+  const zamestnanec = empEnabled && empLocked;
   const [tab, setTab] = useState<ProvozTab>("kasa");
 
   // Spodní provozní lišta nastaví provozSubTab → skoč na tu vnitřní záložku.
@@ -1836,6 +1841,17 @@ export function ProvozView() {
     { id: "historie", labelKey: "provoz.tab.historie", icon: <BarChart3 size={15} /> },
   ];
 
+
+  // Režim zaměstnance → jen Kasa a tlačítko odemknout (majitel zadá PIN).
+  if (zamestnanec) {
+    return (
+      <div className="relative flex-1 overflow-y-auto">
+        <div className="px-5 pt-2 pb-24" style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
+          <KasaView />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex-1 overflow-y-auto">

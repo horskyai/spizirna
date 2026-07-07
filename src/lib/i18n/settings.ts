@@ -41,6 +41,24 @@ export const settings: Record<string, Translation> = {
   "settings.typZmenaQ": { cs: "Opravdu změnit typ provozu na „{typ}“? Změní se nabídka, názvy a záložky.", sk: "Naozaj zmeniť typ prevádzky na „{typ}“? Zmení sa ponuka, názvy a záložky." },
   "settings.typHint": { cs: "Typ provozu určuje, jak kasa a sklad fungují. Měň jen když je to opravdu potřeba.", sk: "Typ prevádzky určuje, ako pokladňa a sklad fungujú. Meň len keď je to naozaj potrebné." },
 
+  // Režim zaměstnance (PIN-zámek)
+  "settings.empMode": { cs: "Režim zaměstnance", sk: "Režim zamestnanca" },
+  "settings.empDesc": { cs: "Zaměstnanec uvidí jen Kasu. Sklad, ceny, účetnictví a nastavení odemkne majitel PINem.", sk: "Zamestnanec uvidí len Pokladňu. Sklad, ceny, účtovníctvo a nastavenia odomkne majiteľ PINom." },
+  "settings.empPinPlaceholder": { cs: "PIN (4–6 číslic)", sk: "PIN (4–6 číslic)" },
+  "settings.empEnable": { cs: "Zapnout", sk: "Zapnúť" },
+  "settings.empOn": { cs: "Režim zaměstnance je zapnutý", sk: "Režim zamestnanca je zapnutý" },
+  "settings.empDisable": { cs: "Vypnout ochranu", sk: "Vypnúť ochranu" },
+  "settings.empDisableQ": { cs: "Vypnout režim zaměstnance? Vše bude zase přístupné bez PINu.", sk: "Vypnúť režim zamestnanca? Všetko bude zase prístupné bez PINu." },
+  "settings.empHint": { cs: "Zámek platí jen na tomto zařízení. Zapamatuj si PIN — bez něj se plný přístup neodemkne.", sk: "Zámok platí len na tomto zariadení. Zapamätaj si PIN — bez neho sa plný prístup neodomkne." },
+
+  // Odemykací obrazovka
+  "emp.zamek": { cs: "Režim zaměstnance", sk: "Režim zamestnanca" },
+  "emp.jenKasa": { cs: "Máš přístup jen k pokladně.", sk: "Máš prístup len k pokladni." },
+  "emp.zadejPin": { cs: "Majitel: zadej PIN pro plný přístup", sk: "Majiteľ: zadaj PIN pre plný prístup" },
+  "emp.odemknout": { cs: "Odemknout", sk: "Odomknúť" },
+  "emp.spatnyPin": { cs: "Špatný PIN", sk: "Nesprávny PIN" },
+  "emp.zamknout": { cs: "Zamknout (režim zaměstnance)", sk: "Zamknúť (režim zamestnanca)" },
+
   // ── Denní cíl ──
   "settings.goal": { cs: "Denní cíl", sk: "Denný cieľ" },
   "settings.calorieTracking": { cs: "Sledování kalorií", sk: "Sledovanie kalórií" },

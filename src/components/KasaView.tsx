@@ -12,6 +12,8 @@ import {
 import { useProvozStore, INVENTURA_KATEGORIE } from "@/store/provozStore";
 import { useRecipeStore } from "@/store/recipeStore";
 import { useBusinessStore } from "@/store/businessStore";
+import { useEmployeeStore } from "@/store/employeeStore";
+import { EmployeeUnlockButton } from "@/components/EmployeeLock";
 import { Scanner } from "@/components/Scanner";
 import { lookupProductByEAN } from "@/lib/productLookup";
 import { useT, useLocale } from "@/lib/i18n";
@@ -533,6 +535,7 @@ export function KasaView() {
   const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
   const { menu, prodejky, prodat, stornoProdejka, getTrzbaDne, getPocetProdejekDne, getZbyvaPorci } = useKasaStore();
   const polozky = useProvozStore((s) => s.polozky);
+  const zamestnanec = useEmployeeStore((s) => s.enabled && s.locked);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [volne, setVolne] = useState<{ id: string; nazev: string; cena: number; mnozstvi: number }[]>([]);
   const [showSprava, setShowSprava] = useState(false);
@@ -682,10 +685,16 @@ export function KasaView() {
               style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "white", background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)" }}>
               <ScanLine size={14} /> {t("kasa.skenovat")}
             </button>
-            <button onClick={() => setShowSprava(true)}
-              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "white", background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)" }}>
-              <Settings2 size={14} /> {t("kasa.spravaMenu")}
-            </button>
+            {/* Zaměstnanec: místo Správy nabídky tlačítko Odemknout (majitel zadá PIN).
+                Správa mění ceny → v režimu zaměstnance skrytá. */}
+            {zamestnanec ? (
+              <EmployeeUnlockButton />
+            ) : (
+              <button onClick={() => setShowSprava(true)}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "white", background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)" }}>
+                <Settings2 size={14} /> {t("kasa.spravaMenu")}
+              </button>
+            )}
           </div>
         </div>
       </div>

@@ -1,12 +1,13 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus, Download, BarChart3 } from "lucide-react";
+import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus, Download, BarChart3, Lock } from "lucide-react";
 import { exportHouseholdJSON, exportPantryCSV } from "@/lib/exportData";
 import { StatsModal } from "@/components/StatsModal";
 import { useAuthStore, type DeviceRow } from "@/store/authStore";
 import { useModeStore } from "@/store/modeStore";
 import { useBusinessStore } from "@/store/businessStore";
+import { useEmployeeStore } from "@/store/employeeStore";
 import { useFoodLogStore } from "@/store/foodLogStore";
 import { useFeaturesStore } from "@/store/featuresStore";
 import { useGamificationStore, type BadgeState } from "@/store/gamificationStore";
@@ -38,6 +39,11 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const setBusinessName = useBusinessStore((s) => s.setName);
   const typProvozu = useBusinessStore((s) => s.typProvozu);
   const setTypProvozu = useBusinessStore((s) => s.setTypProvozu);
+  const empEnabled = useEmployeeStore((s) => s.enabled);
+  const enableEmp = useEmployeeStore((s) => s.enable);
+  const disableEmp = useEmployeeStore((s) => s.disable);
+  const lockEmp = useEmployeeStore((s) => s.lock);
+  const [empPin, setEmpPin] = useState("");
   const [showStats, setShowStats] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
@@ -275,6 +281,54 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>
               {t("settings.typHint")}
             </p>
+          </Section>
+          )}
+
+          {/* ── Režim zaměstnance ── jen v provozu: PIN-zámek na jednom zařízení ── */}
+          {mode === "provoz" && (
+          <Section icon={<Lock size={15} />} title={t("settings.empMode")}>
+            {empEnabled ? (
+              <div>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 13, fontWeight: 700, color: "var(--green-dark)" }}>✓ {t("settings.empOn")}</span>
+                </div>
+                <div style={{ display: "flex", gap: 8 }}>
+                  {/* Zamknout hned (majitel předává tablet zaměstnanci) */}
+                  <button
+                    onClick={() => { lockEmp(); onClose(); }}
+                    style={{ fontSize: 13, fontWeight: 700, color: "white", background: "var(--green-primary)", border: "none", borderRadius: 10, padding: "8px 14px", display: "flex", alignItems: "center", gap: 6 }}
+                  >
+                    <Lock size={14} /> {t("emp.zamknout")}
+                  </button>
+                  <button
+                    onClick={() => { if (confirm(t("settings.empDisableQ"))) disableEmp(); }}
+                    style={{ fontSize: 13, fontWeight: 600, color: "#C0392B", background: "#FDE8E8", border: "none", borderRadius: 10, padding: "8px 14px" }}
+                  >
+                    {t("settings.empDisable")}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <p style={{ fontSize: 12, color: "var(--text-secondary)", marginBottom: 8, lineHeight: 1.4 }}>{t("settings.empDesc")}</p>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input
+                    type="number" inputMode="numeric" value={empPin}
+                    onChange={(e) => setEmpPin(e.target.value.slice(0, 6))}
+                    placeholder={t("settings.empPinPlaceholder")}
+                    style={{ flex: 1, background: "var(--bg-primary)", borderRadius: 12, padding: "12px 14px", border: "1.5px solid var(--border)", outline: "none", fontSize: 15, letterSpacing: "0.2em", color: "var(--text-primary)" }}
+                  />
+                  <button
+                    onClick={() => { if (empPin.length >= 4) { enableEmp(empPin); setEmpPin(""); } }}
+                    disabled={empPin.length < 4}
+                    style={{ fontSize: 13, fontWeight: 700, color: "white", background: empPin.length >= 4 ? "var(--green-primary)" : "var(--border)", border: "none", borderRadius: 12, padding: "0 18px" }}
+                  >
+                    {t("settings.empEnable")}
+                  </button>
+                </div>
+                <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.empHint")}</p>
+              </div>
+            )}
           </Section>
           )}
 

@@ -6,6 +6,7 @@ import { useShoppingStore } from "@/store/shoppingStore";
 import { useRecurringStore } from "@/store/recurringStore";
 import { useModeStore } from "@/store/modeStore";
 import { useBusinessStore } from "@/store/businessStore";
+import { useEmployeeStore } from "@/store/employeeStore";
 import { useFeaturesStore } from "@/store/featuresStore";
 import { useT, TranslationKey } from "@/lib/i18n";
 
@@ -55,6 +56,7 @@ export function TabBar() {
   const openProvoz = useUIStore((s) => s.openProvoz);
   const { mode } = useModeStore();
   const jeObchod = useBusinessStore((s) => s.typProvozu) === "obchod";
+  const zamestnanec = useEmployeeStore((s) => s.enabled && s.locked);
   const t = useT();
   const shoppingMode = mode === "provoz" ? "provoz" : "domacnost";
   const shoppingCount = useShoppingStore((s) => s.getItems(shoppingMode).filter((i) => !i.checked).length);
@@ -64,7 +66,7 @@ export function TabBar() {
   // Domácnost: když má uživatel zapnuté sledování kalorií, vlož tab "Jídlo"
   // před poslední (Opakování). V provozu se kalorie nesledují.
   const TABS = mode === "provoz"
-    ? provozTabs(jeObchod)
+    ? (zamestnanec ? provozTabs(jeObchod).filter((tb) => tb.provozSub === "kasa") : provozTabs(jeObchod))
     : calorieTracking
       ? [...TABS_DOMACNOST.slice(0, -1), FOOD_TAB, TABS_DOMACNOST[TABS_DOMACNOST.length - 1]]
       : TABS_DOMACNOST;
