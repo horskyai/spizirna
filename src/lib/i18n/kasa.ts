@@ -17,6 +17,9 @@ export const kasa: Record<string, Translation> = {
   "kasa.zaplatit": { cs: "Zaplatit", sk: "Zaplatiť" },
   "kasa.hotove": { cs: "Hotově", sk: "Hotovo" },
   "kasa.kartou": { cs: "Kartou", sk: "Kartou" },
+  "kasa.prijato": { cs: "Přijato (hotovost)", sk: "Prijaté (hotovosť)" },
+  "kasa.vratit": { cs: "Vrátit", sk: "Vrátiť" },
+  "kasa.chybi": { cs: "Chybí", sk: "Chýba" },
   "kasa.vyprazdnit": { cs: "Vyprázdnit", sk: "Vyprázdniť" },
   "kasa.zaplaceno": { cs: "Zaplaceno · {n} Kč", sk: "Zaplatené · {n} €" },
   "kasa.odectenoZeSkladu": { cs: "Odečteno ze skladu ✓", sk: "Odčítané zo skladu ✓" },
@@ -62,6 +65,16 @@ export const kasa: Record<string, Translation> = {
   "kasa.vazba.receptDesc": { cs: "Prodej odečte ingredience receptu (1 porce)", sk: "Predaj odčíta ingrediencie receptu (1 porcia)" },
   "kasa.vazba.zadna": { cs: "Neodečítat", sk: "Neodčítať" },
   "kasa.vazba.zadnaDesc": { cs: "Jen zaznamená tržbu, sklad nechá být", sk: "Len zaznamená tržbu, sklad nechá byť" },
+  "kasa.vazba.porce": { cs: "Denní porce", sk: "Denné porcie" },
+  "kasa.vazba.porceDesc": { cs: "Kuchař ráno zadá navařeno, číšník vidí zbývá X", sk: "Kuchár ráno zadá navarené, čašník vidí zostáva X" },
+
+  // Denní porce
+  "kasa.navareno": { cs: "Navařeno dnes", sk: "Navarené dnes" },
+  "kasa.navarenoHint": { cs: "Nech prázdné = neomezeno (jen počítá prodej)", sk: "Nechaj prázdne = neobmedzené (len počíta predaj)" },
+  "kasa.zbyva": { cs: "zbývá {n}", sk: "zostáva {n}" },
+  "kasa.prodanoDnes": { cs: "prodáno {n}", sk: "predané {n}" },
+  "kasa.vyprodano": { cs: "Vyprodáno", sk: "Vypredané" },
+  "kasa.porciDnes": { cs: "Porce dnes", sk: "Porcie dnes" },
 
   "kasa.vyberSklad": { cs: "Skladová položka", sk: "Skladová položka" },
   "kasa.vyberSkladPrazdno": { cs: "— vyber ze skladu —", sk: "— vyber zo skladu —" },

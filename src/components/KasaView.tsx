@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import {
   Plus, X, Minus, Trash2, ShoppingCart, Check, Pencil,
   Settings2, Receipt, RotateCcw, Package, Soup, Ban, ScanLine, EyeOff, Eye, Calculator,
-  Banknote, CreditCard,
+  Banknote, CreditCard, UtensilsCrossed,
 } from "lucide-react";
 import {
   useKasaStore, MenuPolozka, MenuVazbaTyp, CartItem, ZpusobPlatby,
@@ -35,6 +35,7 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
   const [polozkaId, setPolozkaId] = useState(edit?.polozkaId ?? "");
   const [odbet, setOdbet] = useState(edit?.odbet != null ? String(edit.odbet) : "1");
   const [receptId, setReceptId] = useState(edit?.receptId ?? "");
+  const [navareno, setNavareno] = useState(edit?.navareno != null ? String(edit.navareno) : "");
   const [dphSazba, setDphSazba] = useState(edit?.dphSazba ?? 21);
   const [plu, setPlu] = useState(edit?.plu ?? "");
   // Přednastavené skupiny jídel (restaurace) — klik místo psaní.
@@ -65,6 +66,10 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
       polozkaId: vazbaTyp === "sklad" ? polozkaId || undefined : undefined,
       odbet: vazbaTyp === "sklad" ? parseFloat(odbet) || 1 : undefined,
       receptId: vazbaTyp === "recept" ? receptId || undefined : undefined,
+      // Denní porce: navařeno (prázdné = neomezeno). Datum/prodáno řeší store při prodeji.
+      navareno: vazbaTyp === "porce" && navareno.trim() !== "" ? parseFloat(navareno) : undefined,
+      navarenoDatum: vazbaTyp === "porce" ? edit?.navarenoDatum : undefined,
+      prodanoDnes: vazbaTyp === "porce" ? edit?.prodanoDnes : undefined,
       dphSazba,
       plu: plu.trim() || undefined,
       fotoUrl: edit?.fotoUrl,
@@ -76,8 +81,9 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
   };
 
   const vazby: { id: MenuVazbaTyp; icon: React.ReactNode; label: string; desc: string }[] = [
-    { id: "sklad", icon: <Package size={16} />, label: t("kasa.vazba.sklad"), desc: t("kasa.vazba.skladDesc") },
+    { id: "porce", icon: <UtensilsCrossed size={16} />, label: t("kasa.vazba.porce"), desc: t("kasa.vazba.porceDesc") },
     { id: "recept", icon: <Soup size={16} />, label: t("kasa.vazba.recept"), desc: t("kasa.vazba.receptDesc") },
+    { id: "sklad", icon: <Package size={16} />, label: t("kasa.vazba.sklad"), desc: t("kasa.vazba.skladDesc") },
     { id: "zadna", icon: <Ban size={16} />, label: t("kasa.vazba.zadna"), desc: t("kasa.vazba.zadnaDesc") },
   ];
 
@@ -218,6 +224,17 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
           </div>
         )}
 
+        {/* Detail vazby: denní porce */}
+        {vazbaTyp === "porce" && (
+          <div className="animate-fade-in">
+            <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("kasa.navareno")}</label>
+            <input type="number" inputMode="numeric" value={navareno} onChange={(e) => setNavareno(e.target.value)} placeholder="—"
+              className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
+              style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
+            <p style={{ fontSize: 11, color: "var(--text-tertiary)", marginTop: 6 }}>{t("kasa.navarenoHint")}</p>
+          </div>
+        )}
+
         <button onClick={save} className="btn-primary" disabled={!nazev.trim() || isNaN(parseFloat(cena))}>
           <Check size={16} /> {edit ? t("kasa.ulozit") : t("kasa.pridat")}
         </button>
@@ -239,6 +256,8 @@ function SpravaMenu({ onClose }: { onClose: () => void }) {
   const locale = useLocale();
   const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
   const menu = useKasaStore((s) => s.menu);
+  const nastavNavareno = useKasaStore((s) => s.nastavNavareno);
+  const getZbyvaPorci = useKasaStore((s) => s.getZbyvaPorci);
   const polozky = useProvozStore((s) => s.polozky);
   const updatePolozka = useProvozStore((s) => s.updatePolozka);
   const [edit, setEdit] = useState<MenuPolozka | null>(null);
@@ -261,22 +280,44 @@ function SpravaMenu({ onClose }: { onClose: () => void }) {
         <>
           <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>{t("kasa.sekce.menu")}</p>
           <div className="card overflow-hidden mb-5">
-            {menu.map((m, idx) => (
-              <button key={m.id} onClick={() => setEdit(m)}
-                style={{ width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: idx < menu.length - 1 ? "1px solid var(--border)" : "none", textAlign: "left", background: "transparent" }}>
-                <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--green-light)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--green-dark)" }}>
-                  {m.vazbaTyp === "recept" ? <Soup size={16} /> : m.vazbaTyp === "sklad" ? <Package size={16} /> : <Ban size={16} />}
+            {menu.map((m, idx) => {
+              const zbyva = m.vazbaTyp === "porce" ? getZbyvaPorci(m.id) : null;
+              return (
+              <div key={m.id}
+                style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 16px", borderBottom: idx < menu.length - 1 ? "1px solid var(--border)" : "none" }}>
+                <div onClick={() => setEdit(m)} style={{ display: "flex", alignItems: "center", gap: 12, flex: 1, minWidth: 0, cursor: "pointer" }}>
+                  <div style={{ width: 34, height: 34, borderRadius: 10, background: "var(--green-light)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, color: "var(--green-dark)" }}>
+                    {m.vazbaTyp === "porce" ? <UtensilsCrossed size={16} /> : m.vazbaTyp === "recept" ? <Soup size={16} /> : m.vazbaTyp === "sklad" ? <Package size={16} /> : <Ban size={16} />}
+                  </div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{m.nazev}</p>
+                    <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                      {m.vazbaTyp === "porce" ? t("kasa.vazba.porce") : m.vazbaTyp === "recept" ? t("kasa.vazba.recept") : m.vazbaTyp === "sklad" ? t("kasa.vazba.sklad") : t("kasa.bezVazby")}
+                    </p>
+                  </div>
                 </div>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{m.nazev}</p>
-                  <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
-                    {m.vazbaTyp === "recept" ? t("kasa.vazba.recept") : m.vazbaTyp === "sklad" ? t("kasa.vazba.sklad") : t("kasa.bezVazby")}
-                  </p>
-                </div>
+                {/* U denních porcí rychlé pole „navařeno" (kuchař ráno) */}
+                {m.vazbaTyp === "porce" && (
+                  <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexShrink: 0 }}>
+                    <input
+                      type="number" inputMode="numeric" defaultValue={m.navareno ?? ""}
+                      onClick={(e) => e.stopPropagation()}
+                      onBlur={(e) => { const v = e.target.value.trim(); nastavNavareno(m.id, v === "" ? undefined : parseFloat(v)); }}
+                      placeholder={t("kasa.porciDnes")}
+                      style={{ width: 62, textAlign: "center", padding: "6px 4px", borderRadius: 10, fontSize: 13, fontWeight: 700, border: "1.5px solid var(--border)", background: "white", outline: "none", color: "var(--text-primary)" }}
+                    />
+                    {zbyva != null && (
+                      <span style={{ fontSize: 10, color: zbyva <= 0 ? "#C0392B" : "var(--text-tertiary)", marginTop: 2 }}>
+                        {zbyva <= 0 ? t("kasa.vyprodano") : t("kasa.zbyva").replace("{n}", String(zbyva))}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", flexShrink: 0 }}>{m.cena} Kč</p>
-                <Pencil size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
-              </button>
-            ))}
+                <Pencil size={15} style={{ color: "var(--text-tertiary)", flexShrink: 0, cursor: "pointer" }} onClick={() => setEdit(m)} />
+              </div>
+              );
+            })}
           </div>
         </>
       )}
@@ -334,7 +375,9 @@ function SpravaMenu({ onClose }: { onClose: () => void }) {
 }
 
 // ── Sekce dlaždic (jedna kategorie) ─────────────────────────────────────────────
-interface Dlazdice { key: string; nazev: string; cena: number; cenaChybi: boolean; foto?: string }
+// zbyva: kolik porcí dnes zbývá (jen u denních porcí; null = neomezeno/neaplikuje se).
+// prodano: kolik se dnes prodalo (u neomezených porcí ukazujeme počítadlo).
+interface Dlazdice { key: string; nazev: string; cena: number; cenaChybi: boolean; foto?: string; zbyva?: number | null; prodano?: number }
 function DlazdiceSekce({
   titulek, show, dlazdice, cart, onPridat, dateLocale, t,
 }: {
@@ -353,21 +396,25 @@ function DlazdiceSekce({
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(105px, 1fr))", gap: 10 }}>
         {dlazdice.map((d) => {
           const q = cart[d.key] ?? 0;
+          const vyprodano = d.zbyva != null && d.zbyva <= 0;
+          const dochazi = d.zbyva != null && d.zbyva > 0 && d.zbyva <= 3;
           return (
-            <button key={d.key} onClick={() => onPridat(d.key)}
+            <button key={d.key} onClick={() => { if (!vyprodano) onPridat(d.key); }}
+              disabled={vyprodano}
               style={{
                 position: "relative", padding: "14px 10px", borderRadius: 16, textAlign: "center",
-                background: q > 0 ? "var(--green-light)" : "white",
-                border: `2px solid ${q > 0 ? "var(--green-primary)" : "var(--border)"}`,
+                background: vyprodano ? "var(--border)" : q > 0 ? "var(--green-light)" : "white",
+                border: `2px solid ${vyprodano ? "var(--border)" : q > 0 ? "var(--green-primary)" : "var(--border)"}`,
                 boxShadow: "0 1px 4px rgba(0,0,0,0.06)", minHeight: 84,
                 display: "flex", flexDirection: "column", justifyContent: "center", gap: 4,
+                opacity: vyprodano ? 0.6 : 1,
               }}>
               {q > 0 && (
                 <span style={{ position: "absolute", top: -8, right: -8, minWidth: 24, height: 24, padding: "0 6px", borderRadius: 12, background: "var(--green-primary)", color: "white", fontSize: 13, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,0.2)" }}>{q}</span>
               )}
               {d.foto && (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={d.foto} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover", margin: "0 auto 2px" }} />
+                <img src={d.foto} alt="" style={{ width: 44, height: 44, borderRadius: 10, objectFit: "cover", margin: "0 auto 2px", opacity: vyprodano ? 0.5 : 1 }} />
               )}
               <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", lineHeight: 1.2 }}>{d.nazev}</span>
               {d.cenaChybi ? (
@@ -375,6 +422,18 @@ function DlazdiceSekce({
               ) : (
                 <span style={{ fontSize: 13, fontWeight: 600, color: "var(--green-dark)" }}>{d.cena.toLocaleString(dateLocale)} Kč</span>
               )}
+              {/* Denní porce — zbývá / vyprodáno / počítadlo */}
+              {vyprodano ? (
+                <span style={{ fontSize: 11, fontWeight: 800, color: "#C0392B", lineHeight: 1.2 }}>{t("kasa.vyprodano")}</span>
+              ) : d.zbyva != null ? (
+                <span style={{ fontSize: 11, fontWeight: 700, color: dochazi ? "#E65100" : "var(--text-secondary)", lineHeight: 1.2 }}>
+                  {t("kasa.zbyva").replace("{n}", String(d.zbyva))}
+                </span>
+              ) : d.prodano != null && d.prodano > 0 ? (
+                <span style={{ fontSize: 10, color: "var(--text-tertiary)", lineHeight: 1.2 }}>
+                  {t("kasa.prodanoDnes").replace("{n}", String(d.prodano))}
+                </span>
+              ) : null}
             </button>
           );
         })}
@@ -466,7 +525,7 @@ export function KasaView() {
   const t = useT();
   const locale = useLocale();
   const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
-  const { menu, prodejky, prodat, stornoProdejka, getTrzbaDne, getPocetProdejekDne } = useKasaStore();
+  const { menu, prodejky, prodat, stornoProdejka, getTrzbaDne, getPocetProdejekDne, getZbyvaPorci } = useKasaStore();
   const polozky = useProvozStore((s) => s.polozky);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [volne, setVolne] = useState<{ id: string; nazev: string; cena: number; mnozstvi: number }[]>([]);
@@ -474,6 +533,7 @@ export function KasaView() {
   const [showScanner, setShowScanner] = useState(false);
   const [showNumpad, setShowNumpad] = useState(false);
   const [nasobic, setNasobic] = useState(1); // množství, které se přidá k dalšímu kliknutému zboží
+  const [prijato, setPrijato] = useState(""); // kolik zákazník dal hotově (volitelné → počítá vrácení)
   const [toast, setToast] = useState<string | null>(null);
 
   const dnes = dnesISO();
@@ -575,6 +635,7 @@ export function KasaView() {
       setCart({});
       setVolne([]);
       setNasobic(1);
+      setPrijato("");
       setToast(t("kasa.zaplaceno").replace("{n}", castka.toLocaleString(dateLocale)));
       setTimeout(() => setToast(null), 2500);
     }
@@ -644,7 +705,14 @@ export function KasaView() {
             <DlazdiceSekce
               titulek={t("kasa.sekce.menu")}
               show={aktivniMenu.length > 0}
-              dlazdice={aktivniMenu.map((m) => ({ key: `menu:${m.id}`, nazev: m.nazev, cena: m.cena, cenaChybi: false, foto: m.fotoUrl }))}
+              dlazdice={aktivniMenu.map((m) => {
+                const prodano = m.vazbaTyp === "porce" && m.navarenoDatum === dnes ? (m.prodanoDnes ?? 0) : 0;
+                return {
+                  key: `menu:${m.id}`, nazev: m.nazev, cena: m.cena, cenaChybi: false, foto: m.fotoUrl,
+                  zbyva: m.vazbaTyp === "porce" ? getZbyvaPorci(m.id) : undefined,
+                  prodano: m.vazbaTyp === "porce" ? prodano : undefined,
+                };
+              })}
               cart={cart}
               onPridat={pridat}
               dateLocale={dateLocale}
@@ -754,6 +822,39 @@ export function KasaView() {
           <div style={{ textAlign: "center", fontSize: 13, fontWeight: 700, color: "var(--text-secondary)", marginBottom: 8 }}>
             {t("kasa.celkem")}: <span style={{ color: "var(--text-primary)", fontSize: 16 }}>{cartCelkem.toLocaleString(dateLocale)} Kč</span>
           </div>
+
+          {/* Volitelné: kolik zákazník dal hotově → spočítej vrácení */}
+          <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+            <span style={{ fontSize: 13, color: "var(--text-secondary)", flexShrink: 0 }}>{t("kasa.prijato")}</span>
+            <input
+              type="number" inputMode="decimal" value={prijato}
+              onChange={(e) => setPrijato(e.target.value)}
+              placeholder="—"
+              style={{ flex: 1, minWidth: 0, textAlign: "right", padding: "8px 12px", borderRadius: 12, fontSize: 15, fontWeight: 700, border: "1.5px solid var(--border)", background: "white", outline: "none", color: "var(--text-primary)" }}
+            />
+            <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Kč</span>
+          </div>
+          {(() => {
+            const p = parseFloat(prijato);
+            if (isNaN(p) || prijato.trim() === "") return null;
+            const rozdil = p - cartCelkem;
+            const vraci = rozdil >= 0;
+            return (
+              <div style={{
+                display: "flex", justifyContent: "space-between", alignItems: "center",
+                padding: "10px 14px", borderRadius: 12, marginBottom: 10,
+                background: vraci ? "var(--green-light)" : "#FDE8E8",
+              }}>
+                <span style={{ fontSize: 14, fontWeight: 700, color: vraci ? "var(--green-dark)" : "#C0392B" }}>
+                  {vraci ? t("kasa.vratit") : t("kasa.chybi")}
+                </span>
+                <span style={{ fontSize: 20, fontWeight: 800, color: vraci ? "var(--green-dark)" : "#C0392B" }}>
+                  {Math.abs(rozdil).toLocaleString(dateLocale)} Kč
+                </span>
+              </div>
+            );
+          })()}
+
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
             <button onClick={() => { setCart({}); setVolne([]); setNasobic(1); }} style={{ width: 46, height: 50, borderRadius: 14, background: "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Trash2 size={18} style={{ color: "var(--text-secondary)" }} />

@@ -9,12 +9,15 @@ import { useRecipeStore } from "@/store/recipeStore";
 // (v provozStore) jen porovná realitu s tím, co systém napočítal.
 //
 // MenuPolozka = to, co si zákazník objedná / koupí (guláš, bramboračka, Pepsi).
-// Do skladu se promítne dvěma způsoby:
+// Do skladu se promítne třemi způsoby:
 //   • sklad   → přímá vazba na 1 skladovou položku (Pepsi = −1 ks Pepsi)
 //   • recept  → rozpustí ingredience receptu na daný počet porcí (guláš →
 //               −maso, −cibule … podle receptu, přepočteno na 1 porci)
+//   • porce   → denně navařený počet porcí (restaurace): kuchař ráno zadá
+//               navařeno, číšník vidí „zbývá X", prodej ubírá, po dni reset.
+//               Sklad surovin se u této vazby NEDOTÝKÁ.
 
-export type MenuVazbaTyp = "sklad" | "recept" | "zadna";
+export type MenuVazbaTyp = "sklad" | "recept" | "porce" | "zadna";
 
 export interface MenuPolozka {
   id: string;
@@ -30,6 +33,10 @@ export interface MenuPolozka {
   odbet?: number;          // kolik jednotek skladu ubere 1 prodej (default 1)
   // vazba "recept": rozpustí ingredience receptu na 1 porci
   receptId?: string;
+  // vazba "porce": denní počítadlo navařených porcí
+  navareno?: number;       // kolik porcí je dnes navařeno (undefined = neomezeno, jen počítá)
+  navarenoDatum?: string;  // YYYY-MM-DD dne, ke kterému navareno/prodano platí
+  prodanoDnes?: number;    // kolik porcí se dnes prodalo (reset po dni)
   aktivni?: boolean;       // false = dočasně skryté z pultu (default true)
 }
 
@@ -95,6 +102,10 @@ interface KasaStore {
   addMenuPolozka: (p: Omit<MenuPolozka, "id">) => void;
   updateMenuPolozka: (id: string, changes: Partial<MenuPolozka>) => void;
   removeMenuPolozka: (id: string) => void;
+  // Denní porce (restaurace): kuchař nastaví kolik je dnes navařeno; reset prodáno.
+  nastavNavareno: (id: string, navareno: number | undefined) => void;
+  // Kolik porcí dnes zbývá (navareno − prodanoDnes). null = neomezeno / není vazba porce.
+  getZbyvaPorci: (id: string) => number | null;
 
   // Prodej — zapíše účtenku a AUTOMATICKY odečte ze skladu (provozStore).
   // Vrací id nové prodejky, nebo null když je košík prázdný.
@@ -106,6 +117,12 @@ interface KasaStore {
   getPocetProdejekDne: (isoDate: string) => number;
   // Účetní souhrn za období [od, do] včetně (YYYY-MM-DD).
   getSouhrn: (odISO: string, doISO: string) => UcetniSouhrn;
+}
+
+// Dnešní datum jako YYYY-MM-DD (lokální).
+function dnesLocal(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
 // Odečte/vrátí danou skladovou položku (podle id). znamenko −1 = prodej (úbytek),
@@ -178,6 +195,24 @@ export const useKasaStore = create<KasaStore>()(
           menu: s.menu.map((m) => (m.id === id ? { ...m, ...changes } : m)),
         })),
 
+      nastavNavareno: (id, navareno) =>
+        set((s) => ({
+          menu: s.menu.map((m) =>
+            m.id === id
+              ? { ...m, navareno, navarenoDatum: dnesLocal(), prodanoDnes: 0 }
+              : m,
+          ),
+        })),
+
+      getZbyvaPorci: (id) => {
+        const m = get().menu.find((x) => x.id === id);
+        if (!m || m.vazbaTyp !== "porce") return null;
+        // Nový den → počítadlo prodáno je neplatné (bere se 0).
+        const prodano = m.navarenoDatum === dnesLocal() ? (m.prodanoDnes ?? 0) : 0;
+        if (m.navareno == null) return null; // neomezeno → jen počítá, nehlídá zbytek
+        return Math.max(0, m.navareno - prodano);
+      },
+
       removeMenuPolozka: (id) =>
         set((s) => ({ menu: s.menu.filter((m) => m.id !== id) })),
 
@@ -223,11 +258,22 @@ export const useKasaStore = create<KasaStore>()(
         if (radky.length === 0) return null;
         const celkem = radky.reduce((sum, r) => sum + r.cena * r.mnozstvi, 0);
         const id = crypto.randomUUID();
+        const dnes = dnesLocal();
+        // Kolik porcí se prodalo za každou menu položku (pro denní počítadlo).
+        const prodanoPorci: Record<string, number> = {};
+        radky.forEach((r) => { if (r.menuId) prodanoPorci[r.menuId] = (prodanoPorci[r.menuId] ?? 0) + r.mnozstvi; });
         set((s) => ({
           prodejky: [
             { id, datum: new Date().toISOString(), radky, celkem, platba },
             ...s.prodejky,
           ],
+          // Navýš denní počítadlo prodaných porcí (reset, když je nový den).
+          menu: s.menu.map((m) => {
+            const pr = prodanoPorci[m.id];
+            if (!pr || m.vazbaTyp !== "porce") return m;
+            const zaklad = m.navarenoDatum === dnes ? (m.prodanoDnes ?? 0) : 0;
+            return { ...m, navarenoDatum: dnes, prodanoDnes: zaklad + pr };
+          }),
         }));
         // Automatický odečet ze skladu — jádro celé funkce.
         radky.forEach((r) => promitniDoSkladu(r, r.mnozstvi, -1));
@@ -239,7 +285,18 @@ export const useKasaStore = create<KasaStore>()(
         if (!prodejka) return;
         // Vrať prodané zboží zpět na sklad, pak smaž účtenku.
         prodejka.radky.forEach((r) => promitniDoSkladu(r, r.mnozstvi, 1));
-        set((s) => ({ prodejky: s.prodejky.filter((p) => p.id !== id) }));
+        // Vrať i denní porce zpět (jen pokud se storno děje ve stejný den).
+        const dnes = dnesLocal();
+        const vratPorci: Record<string, number> = {};
+        prodejka.radky.forEach((r) => { if (r.menuId) vratPorci[r.menuId] = (vratPorci[r.menuId] ?? 0) + r.mnozstvi; });
+        set((s) => ({
+          prodejky: s.prodejky.filter((p) => p.id !== id),
+          menu: s.menu.map((m) => {
+            const vr = vratPorci[m.id];
+            if (!vr || m.vazbaTyp !== "porce" || m.navarenoDatum !== dnes) return m;
+            return { ...m, prodanoDnes: Math.max(0, (m.prodanoDnes ?? 0) - vr) };
+          }),
+        }));
       },
 
       getTrzbaDne: (isoDate) =>

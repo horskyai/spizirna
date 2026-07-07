@@ -5,7 +5,7 @@ import {
   ClipboardList, Plus, X, ChevronRight,
   AlertTriangle, Check, Truck, Package, BarChart3, Trash2, ScanLine, Keyboard,
   FileText, Download, FileSpreadsheet, Pencil, Share2, Mic, MicOff, Loader, Search,
-  Camera, Image as ImageIcon, TrendingDown, ShoppingCart, ChefHat
+  Camera, Image as ImageIcon, TrendingDown, ChefHat
 } from "lucide-react";
 import { parseSpokenText } from "@/components/VoiceInput";
 import {
@@ -1825,37 +1825,42 @@ export function ProvozView() {
     setTab("inventura");
   };
 
-  const TABS: { id: ProvozTab; labelKey: string; icon: React.ReactNode }[] = [
-    { id: "kasa", labelKey: "provoz.tab.kasa", icon: <ShoppingCart size={15} /> },
-    { id: "ucetnictvi", labelKey: "provoz.tab.ucetnictvi", icon: <FileSpreadsheet size={15} /> },
-    { id: "inventura", labelKey: "provoz.tab.inventura", icon: <ClipboardList size={15} /> },
-    { id: "sklad", labelKey: "provoz.tab.sklad", icon: <Package size={15} /> },
+  // Sekce pod tlačítkem „Víc" (spodní lišta). Hlavní 4 (Kasa/Sklad/Inventura/
+  // Účto) jsou přímo ve spodní liště, tady nejsou.
+  const VIC_TABS: { id: ProvozTab; labelKey: string; icon: React.ReactNode }[] = [
     { id: "recepty", labelKey: "provoz.tab.recepty", icon: <ChefHat size={15} /> },
-    { id: "historie", labelKey: "provoz.tab.historie", icon: <BarChart3 size={15} /> },
-    { id: "odpisy", labelKey: "provoz.tab.odpisy", icon: <TrendingDown size={15} /> },
     { id: "dodavatele", labelKey: "provoz.tab.dodavatele", icon: <Truck size={15} /> },
+    { id: "odpisy", labelKey: "provoz.tab.odpisy", icon: <TrendingDown size={15} /> },
+    { id: "historie", labelKey: "provoz.tab.historie", icon: <BarChart3 size={15} /> },
   ];
+
 
   return (
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-2 pb-24" style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
 
-        {/* Interní navigace */}
-        <div style={{ display: "flex", gap: 6, marginBottom: 16, overflowX: "auto", scrollbarWidth: "none" }}>
-          {TABS.map(tb => (
-            <button key={tb.id} onClick={() => setTab(tb.id)}
-              style={{
-                flexShrink: 0, display: "flex", alignItems: "center", gap: 6,
-                padding: "8px 14px", borderRadius: 20, fontSize: 13, fontWeight: tab === tb.id ? 700 : 500,
-                background: tab === tb.id ? "var(--green-primary)" : "white",
-                color: tab === tb.id ? "white" : "var(--text-secondary)",
-                boxShadow: "0 1px 4px rgba(0,0,0,0.08)", border: "none",
-                whiteSpace: "nowrap",
-              }}>
-              {tb.icon} {t(tb.labelKey)}
-            </button>
-          ))}
-        </div>
+        {/* Hlavní 4 záložky (Kasa/Sklad/Inventura/Účto) se ovládají spodní lištou,
+            takže tady horní navigaci NEukazujeme. „Víc" sekce (Recepty/Dodavatelé/
+            Odpisy/Historie) dostane vlastní podmenu s tlačítkem zpět na dlaždice. */}
+        {VIC_TABS.some(v => v.id === tab) && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ display: "flex", gap: 6, overflowX: "auto", scrollbarWidth: "none" }}>
+              {VIC_TABS.map(tb => (
+                <button key={tb.id} onClick={() => setTab(tb.id)}
+                  style={{
+                    flexShrink: 0, display: "flex", alignItems: "center", gap: 6,
+                    padding: "8px 14px", borderRadius: 20, fontSize: 13, fontWeight: tab === tb.id ? 700 : 500,
+                    background: tab === tb.id ? "var(--green-primary)" : "white",
+                    color: tab === tb.id ? "white" : "var(--text-secondary)",
+                    boxShadow: "0 1px 4px rgba(0,0,0,0.08)", border: "none",
+                    whiteSpace: "nowrap",
+                  }}>
+                  {tb.icon} {t(tb.labelKey)}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* INVENTURA TAB */}
         {tab === "inventura" && (
