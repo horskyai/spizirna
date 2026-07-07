@@ -41,6 +41,8 @@ interface AuthStore {
   // potvrzování e-mailem, vznikne rovnou session a needsConfirmation = false.
   signUp: (email: string, password: string, name: string, mode: "domacnost" | "provoz") => Promise<{ error: string | null; needsConfirmation: boolean }>;
   signIn: (email: string, password: string) => Promise<string | null>;
+  // Přihlášení/registrace přes Google (OAuth). Přesměruje na Google a zpět.
+  signInWithGoogle: () => Promise<string | null>;
   // Pošle e-mail s odkazem na obnovu hesla (text e-mailu řídí Supabase šablona).
   resetPassword: (email: string) => Promise<string | null>;
   // Nastaví nové heslo přihlášenému uživateli (po kliknutí na odkaz z e-mailu).
@@ -160,6 +162,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
   signIn: async (email, password) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
+    return error?.message ?? null;
+  },
+
+  signInWithGoogle: async () => {
+    // Přesměruje na Google a po přihlášení zpět na appku (stejný origin).
+    // Session pak zachytí onAuthStateChange v init(). Mód (domácnost/provoz)
+    // si uživatel dovybere jako u kohokoli, kdo ho ještě nemá v profilu.
+    const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo },
+    });
     return error?.message ?? null;
   },
 

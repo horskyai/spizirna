@@ -13,6 +13,8 @@ export const auth: Record<string, Translation> = {
   // ── Přepínač login / registrace ──
   "auth.login": { cs: "Přihlásit se", sk: "Prihlásiť sa" },
   "auth.signup": { cs: "Registrace", sk: "Registrácia" },
+  "auth.or": { cs: "nebo", sk: "alebo" },
+  "auth.google": { cs: "Pokračovat přes Google", sk: "Pokračovať cez Google" },
 
   // ── Formulář ──
   "auth.namePlaceholder": { cs: "Jméno", sk: "Meno" },
