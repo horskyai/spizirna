@@ -39,6 +39,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const setBusinessName = useBusinessStore((s) => s.setName);
   const typProvozu = useBusinessStore((s) => s.typProvozu);
   const setTypProvozu = useBusinessStore((s) => s.setTypProvozu);
+  const firma = useBusinessStore((s) => s.firma);
+  const setFirma = useBusinessStore((s) => s.setFirma);
   const empEnabled = useEmployeeStore((s) => s.enabled);
   const enableEmp = useEmployeeStore((s) => s.enable);
   const disableEmp = useEmployeeStore((s) => s.disable);
@@ -255,6 +257,58 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               placeholder={t("settings.businessNamePlaceholder")}
               style={{ width: "100%", background: "var(--bg-primary)", borderRadius: 12, padding: "12px 14px", border: "1.5px solid var(--border)", outline: "none", fontSize: 15, color: "var(--text-primary)" }}
             />
+          </Section>
+          )}
+
+          {/* ── Údaje firmy pro účtenku / doklady ── jen v provozu ── */}
+          {mode === "provoz" && (
+          <Section icon={<FileText size={15} />} title={t("settings.firma")}>
+            <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "0 0 10px", lineHeight: 1.4 }}>{t("settings.firmaHint")}</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {/* Logo */}
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                {firma.logoUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={firma.logoUrl} alt="" style={{ width: 52, height: 52, borderRadius: 12, objectFit: "cover", border: "1.5px solid var(--border)" }} />
+                ) : (
+                  <div style={{ width: 52, height: 52, borderRadius: 12, background: "var(--bg-primary)", border: "1.5px dashed var(--border)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--text-tertiary)", fontSize: 10, textAlign: "center" }}>{t("settings.firmaLogo")}</div>
+                )}
+                <label style={{ fontSize: 13, fontWeight: 600, color: "var(--green-primary)", cursor: "pointer" }}>
+                  {firma.logoUrl ? t("settings.firmaLogoZmenit") : t("settings.firmaLogoNahrat")}
+                  <input type="file" accept="image/*" style={{ display: "none" }}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => setFirma({ logoUrl: reader.result as string });
+                      reader.readAsDataURL(file);
+                    }} />
+                </label>
+                {firma.logoUrl && (
+                  <button onClick={() => setFirma({ logoUrl: undefined })} style={{ fontSize: 12, color: "#C0392B", background: "transparent", border: "none" }}>{t("settings.firmaLogoOdebrat")}</button>
+                )}
+              </div>
+              {/* Textová pole */}
+              {([
+                { key: "ico", label: t("settings.firmaIco"), ph: "např. 12345678" },
+                { key: "dic", label: t("settings.firmaDic"), ph: "např. CZ12345678" },
+                { key: "adresa", label: t("settings.firmaAdresa"), ph: t("settings.firmaAdresaPh") },
+                { key: "telefon", label: t("settings.firmaTelefon"), ph: "+420 …" },
+                { key: "email", label: t("settings.firmaEmail"), ph: "info@…" },
+                { key: "patickaUctenky", label: t("settings.firmaPaticka"), ph: t("settings.firmaPatickaPh") },
+              ] as const).map((f) => (
+                <div key={f.key}>
+                  <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", display: "block", marginBottom: 3 }}>{f.label}</label>
+                  <input
+                    type="text"
+                    value={firma[f.key] ?? ""}
+                    onChange={(e) => setFirma({ [f.key]: e.target.value })}
+                    placeholder={f.ph}
+                    style={{ width: "100%", background: "var(--bg-primary)", borderRadius: 12, padding: "10px 14px", border: "1.5px solid var(--border)", outline: "none", fontSize: 14, color: "var(--text-primary)" }}
+                  />
+                </div>
+              ))}
+            </div>
           </Section>
           )}
 

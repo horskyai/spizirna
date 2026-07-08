@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { TrendingUp, Wallet, CreditCard, Banknote, Percent, FileText, FileSpreadsheet, Trophy } from "lucide-react";
 import { useKasaStore, UcetniSouhrn, Prodejka } from "@/store/kasaStore";
+import { useBusinessStore, FirmaUdaje } from "@/store/businessStore";
 import { useT, useLocale } from "@/lib/i18n";
 import type { Locale } from "@/store/localeStore";
 
@@ -56,7 +57,7 @@ function exportCSV(prodejky: Prodejka[], odISO: string, doISO: string) {
 }
 
 // ── Export PDF — přehled/uzávěrka za období ─────────────────────────────────────
-async function exportPDF(s: UcetniSouhrn, odISO: string, doISO: string, t: TFn, locale: Locale) {
+async function exportPDF(s: UcetniSouhrn, odISO: string, doISO: string, t: TFn, locale: Locale, nazevFirmy: string, firma: FirmaUdaje) {
   const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
   const [{ jsPDF }, html2canvas] = await Promise.all([
     import("jspdf"),
@@ -79,12 +80,29 @@ async function exportPDF(s: UcetniSouhrn, odISO: string, doISO: string, t: TFn, 
     <td style="padding:5px 8px;border-bottom:1px solid #f0f0f0;text-align:right;font-weight:600">${fmt(p.trzba, dateLocale)} Kč</td>
   </tr>`).join("");
 
+  // Řádek s identifikací firmy (jen co je vyplněno).
+  const idRadek = [
+    firma.ico ? `IČO: ${firma.ico}` : "",
+    firma.dic ? `DIČ: ${firma.dic}` : "",
+    firma.telefon ? `tel: ${firma.telefon}` : "",
+  ].filter(Boolean).join(" · ");
+  const esc = (x: string) => x.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
   container.innerHTML = `
     <div style="background:#006d40;color:#fff;padding:14px 18px;border-radius:10px;display:flex;justify-content:space-between;align-items:center">
       <span style="font-size:14px;font-weight:800;letter-spacing:.04em">${t("ucto.exportHlavicka")}</span>
       <span style="font-size:11px;opacity:.85">Spižírna</span>
     </div>
-    <p style="margin:14px 4px 18px;font-size:12px;color:#888">${t("ucto.datumOd")} ${odISO} ${t("ucto.datumDo")} ${doISO}</p>
+    ${(nazevFirmy || idRadek || firma.adresa || firma.logoUrl) ? `
+    <div style="display:flex;align-items:center;gap:14px;margin:14px 4px 4px">
+      ${firma.logoUrl ? `<img src="${firma.logoUrl}" alt="" style="width:48px;height:48px;object-fit:contain;border-radius:8px"/>` : ""}
+      <div>
+        ${nazevFirmy ? `<div style="font-size:15px;font-weight:800;color:#1a1a1a">${esc(nazevFirmy)}</div>` : ""}
+        ${firma.adresa ? `<div style="font-size:11px;color:#666">${esc(firma.adresa)}</div>` : ""}
+        ${idRadek ? `<div style="font-size:11px;color:#666">${esc(idRadek)}</div>` : ""}
+      </div>
+    </div>` : ""}
+    <p style="margin:10px 4px 18px;font-size:12px;color:#888">${t("ucto.datumOd")} ${odISO} ${t("ucto.datumDo")} ${doISO}</p>
 
     <div style="display:flex;gap:12px;margin-bottom:20px">
       <div style="flex:1;background:#F1FAF5;border:1px solid #cfe9db;border-radius:10px;padding:12px 14px">
@@ -158,6 +176,8 @@ export function UcetnictviView() {
   const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
   const getSouhrn = useKasaStore((s) => s.getSouhrn);
   const prodejky = useKasaStore((s) => s.prodejky);
+  const nazevFirmy = useBusinessStore((s) => s.name);
+  const firma = useBusinessStore((s) => s.firma);
 
   const dnes = useMemo(() => new Date(), []);
   const [obdobi, setObdobi] = useState<ObdobiKey>("dnes");
@@ -290,7 +310,7 @@ export function UcetnictviView() {
           {/* Export */}
           <p className="text-xs font-semibold uppercase mb-2 px-1" style={{ color: "var(--text-tertiary)", letterSpacing: "0.06em" }}>{t("ucto.export")}</p>
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <button onClick={() => exportPDF(s, odISO, doISO, t, locale)}
+            <button onClick={() => exportPDF(s, odISO, doISO, t, locale, nazevFirmy, firma)}
               style={{ flex: "1 1 140px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 0", borderRadius: 14, fontSize: 14, fontWeight: 700, background: "var(--green-primary)", color: "white", border: "none" }}>
               <FileText size={16} /> {t("ucto.exportPdf")}
             </button>

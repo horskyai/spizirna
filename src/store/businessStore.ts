@@ -7,6 +7,18 @@ import { persist } from "zustand/middleware";
 // null = uživatel ještě nevybral → zobrazí se výběrová obrazovka.
 export type TypProvozu = "obchod" | "restaurace";
 
+// Fakturační / identifikační údaje firmy — pro hlavičku účtenky a PDF dokladů.
+// Vše volitelné; co uživatel vyplní, to se na doklad vytiskne.
+export interface FirmaUdaje {
+  ico?: string;
+  dic?: string;
+  adresa?: string;   // ulice, město, PSČ (volný víceřádkový text)
+  telefon?: string;
+  email?: string;
+  logoUrl?: string;  // data URL loga (z galerie)
+  patickaUctenky?: string; // volitelný text dole na účtence (např. „Děkujeme za návštěvu")
+}
+
 // Název provozovny — používá se v provozním režimu pro oslovení v hlavičce
 // a upozorněních (místo křestního jména jako u domácnosti).
 interface BusinessStore {
@@ -15,6 +27,9 @@ interface BusinessStore {
   // Typ provozu (obchod/restaurace). null dokud uživatel nevybere.
   typProvozu: TypProvozu | null;
   setTypProvozu: (typ: TypProvozu) => void;
+  // Fakturační údaje firmy (pro účtenku / PDF doklady).
+  firma: FirmaUdaje;
+  setFirma: (changes: Partial<FirmaUdaje>) => void;
 }
 
 export const useBusinessStore = create<BusinessStore>()(
@@ -24,6 +39,8 @@ export const useBusinessStore = create<BusinessStore>()(
       setName: (name) => set({ name }),
       typProvozu: null,
       setTypProvozu: (typ) => set({ typProvozu: typ }),
+      firma: {},
+      setFirma: (changes) => set((s) => ({ firma: { ...s.firma, ...changes } })),
     }),
     {
       name: "business-name",
