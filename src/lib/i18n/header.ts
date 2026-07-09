@@ -10,7 +10,7 @@ export const header: Record<string, Translation> = {
   "header.title.recepty": { cs: "Recepty", sk: "Recepty" },
   "header.title.nakup": { cs: "Nákupní seznam", sk: "Nákupný zoznam" },
   "header.title.opakujici": { cs: "Zásoby & připomínky", sk: "Zásoby & pripomienky" },
-  "header.title.provoz": { cs: "Provoz & inventura", sk: "Prevádzka & inventúra" },
+  "header.title.provoz": { cs: "Provozovna", sk: "Prevádzka" },
 
   // ── Hero hlavička ──
   // Pozdrav podle denní doby (vybírá se v AppHeaderu podle hodiny).

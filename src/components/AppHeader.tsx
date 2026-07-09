@@ -73,7 +73,11 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const [showExpiry, setShowExpiry] = useState(false);
   const [remindedIds, setRemindedIds] = useState<string[]>([]);
   const addRecurring = useRecurringStore((s) => s.addItem);
-  const title = t(TITLES[activeTab] ?? "header.title.spizirna");
+  // V provozu ukaž název provozovny (když je vyplněný), jinak „Provozovna".
+  const title =
+    activeTab === "provoz" && businessName.trim()
+      ? businessName.trim()
+      : t(TITLES[activeTab] ?? "header.title.spizirna");
 
   // „Co uvařit" z expirujících potravin → přepnout na Recepty.
   const handleCookFromExpiring = () => {
