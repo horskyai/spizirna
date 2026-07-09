@@ -7,6 +7,7 @@ import { guessVoiceCategory } from "@/lib/guessCategory";
 import { useT, TranslationKey } from "@/lib/i18n";
 import { daysUntil } from "@/lib/dateUtils";
 import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG } from "@/components/LocationIcons";
+import { useFeaturesStore } from "@/store/featuresStore";
 import type { StorageLocation } from "@/types";
 
 const UNITS = ["ks", "g", "kg", "ml", "l", "dkg", "balení", "lžíce", "lžička", "hrnek"];
@@ -75,6 +76,7 @@ function ItemCard({ item, onChange, onRemove }: {
   onRemove: () => void;
 }) {
   const t = useT();
+  const calorieTracking = useFeaturesStore((s) => s.calorieTracking);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const [showDetails, setShowDetails] = useState(false);
@@ -294,7 +296,8 @@ function ItemCard({ item, onChange, onRemove }: {
             </div>
           </div>
 
-          {/* Nutriční hodnoty (na 100 g/ml) */}
+          {/* Nutriční hodnoty (na 100 g/ml) — jen když uživatel sleduje kalorie */}
+          {calorieTracking && (
           <div>
             <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", margin: "0 0 6px" }}>{t("addproduct.stepNutrition")}</p>
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
@@ -312,6 +315,7 @@ function ItemCard({ item, onChange, onRemove }: {
               ))}
             </div>
           </div>
+          )}
         </div>
       )}
     </div>
