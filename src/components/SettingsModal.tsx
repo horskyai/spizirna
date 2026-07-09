@@ -41,6 +41,8 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const setTypProvozu = useBusinessStore((s) => s.setTypProvozu);
   const firma = useBusinessStore((s) => s.firma);
   const setFirma = useBusinessStore((s) => s.setFirma);
+  const formatDokladu = useBusinessStore((s) => s.formatDokladu);
+  const setFormatDokladu = useBusinessStore((s) => s.setFormatDokladu);
   const empEnabled = useEmployeeStore((s) => s.enabled);
   const enableEmp = useEmployeeStore((s) => s.enable);
   const disableEmp = useEmployeeStore((s) => s.disable);
@@ -264,6 +266,26 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           {mode === "provoz" && (
           <Section icon={<FileText size={15} />} title={t("settings.firma")}>
             <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "0 0 10px", lineHeight: 1.4 }}>{t("settings.firmaHint")}</p>
+
+            {/* Formát dokladu — úzká účtenka / A4 faktura */}
+            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", display: "block", marginBottom: 6 }}>{t("settings.dokladFormat")}</label>
+            <div style={{ display: "flex", gap: 8, marginBottom: 14 }}>
+              {([
+                { id: "uctenka", label: t("settings.dokladUctenka"), desc: t("settings.dokladUctenkaDesc") },
+                { id: "faktura", label: t("settings.dokladFaktura"), desc: t("settings.dokladFakturaDesc") },
+              ] as const).map((f) => {
+                const aktivni = formatDokladu === f.id;
+                return (
+                  <button key={f.id} onClick={() => setFormatDokladu(f.id)}
+                    style={{ flex: 1, textAlign: "left", padding: "10px 12px", borderRadius: 12, background: aktivni ? "var(--green-light)" : "white", border: `1.5px solid ${aktivni ? "var(--green-primary)" : "var(--border)"}` }}>
+                    <span style={{ display: "block", fontSize: 13, fontWeight: 700, color: aktivni ? "var(--green-dark)" : "var(--text-primary)" }}>{f.label}</span>
+                    <span style={{ display: "block", fontSize: 11, color: "var(--text-secondary)", lineHeight: 1.3, marginTop: 2 }}>{f.desc}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "0 0 14px", lineHeight: 1.4 }}>{t("settings.dokladHint")}</p>
+
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               {/* Logo */}
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>

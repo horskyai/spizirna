@@ -7,6 +7,13 @@ import { persist } from "zustand/middleware";
 // null = uživatel ještě nevybral → zobrazí se výběrová obrazovka.
 export type TypProvozu = "obchod" | "restaurace";
 
+// Formát tištěného dokladu pro zákazníka:
+//   • uctenka → úzká účtenka 58/80 mm (Bluetooth ESC/POS tiskárna)
+//   • faktura → doklad na A4 (PDF, běžná tiskárna / e-mail)
+// Volí se v Nastavení, platí natrvalo, jde kdykoli změnit. Samotný tisk až
+// v Capacitor/Play fázi — teď se jen ukládá volba.
+export type FormatDokladu = "uctenka" | "faktura";
+
 // Fakturační / identifikační údaje firmy — pro hlavičku účtenky a PDF dokladů.
 // Vše volitelné; co uživatel vyplní, to se na doklad vytiskne.
 export interface FirmaUdaje {
@@ -30,6 +37,9 @@ interface BusinessStore {
   // Fakturační údaje firmy (pro účtenku / PDF doklady).
   firma: FirmaUdaje;
   setFirma: (changes: Partial<FirmaUdaje>) => void;
+  // Formát dokladu pro zákazníka (úzká účtenka / A4 faktura). Default účtenka.
+  formatDokladu: FormatDokladu;
+  setFormatDokladu: (f: FormatDokladu) => void;
 }
 
 export const useBusinessStore = create<BusinessStore>()(
@@ -41,6 +51,8 @@ export const useBusinessStore = create<BusinessStore>()(
       setTypProvozu: (typ) => set({ typProvozu: typ }),
       firma: {},
       setFirma: (changes) => set((s) => ({ firma: { ...s.firma, ...changes } })),
+      formatDokladu: "uctenka",
+      setFormatDokladu: (f) => set({ formatDokladu: f }),
     }),
     {
       name: "business-name",
