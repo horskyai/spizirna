@@ -9,6 +9,7 @@ export const voice: Record<string, Translation> = {
   "voice.review.allRemoved": { cs: "Všechny položky byly odebrány", sk: "Všetky položky boli odobraté" },
   "voice.review.gallery": { cs: "Galerie", sk: "Galéria" },
   "voice.review.photo": { cs: "Fotit", sk: "Fotiť" },
+  "voice.review.moreDetails": { cs: "Další detaily (umístění, cena, expirace…)", sk: "Ďalšie detaily (umiestnenie, cena, expirácia…)" },
   "voice.review.addToPantry": { cs: "Přidat {label} do spižírny", sk: "Pridať {label} do špajze" },
 
   // pluralizace počtu položek (1 / 2–4 / 5+)
@@ -32,6 +33,7 @@ export const voice: Record<string, Translation> = {
   "voice.cat.Nápoje": { cs: "Nápoje", sk: "Nápoje" },
   "voice.cat.Omáčky a koření": { cs: "Omáčky a koření", sk: "Omáčky a korenie" },
   "voice.cat.Sladkosti": { cs: "Sladkosti", sk: "Sladkosti" },
+  "voice.cat.Oleje a tuky": { cs: "Oleje a tuky", sk: "Oleje a tuky" },
   "voice.cat.Mražené": { cs: "Mražené", sk: "Mrazené" },
   "voice.cat.Konzervy": { cs: "Konzervy", sk: "Konzervy" },
   "voice.cat.Jiné": { cs: "Jiné", sk: "Iné" },

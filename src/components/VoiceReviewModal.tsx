@@ -1,12 +1,32 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { X, Plus, Minus, Check, Trash2, Camera, Image } from "lucide-react";
+import { X, Plus, Minus, Check, Trash2, Camera, Image, ChevronDown } from "lucide-react";
 import { ParsedItem } from "@/components/VoiceInput";
 import { guessVoiceCategory } from "@/lib/guessCategory";
 import { useT, TranslationKey } from "@/lib/i18n";
+import { daysUntil } from "@/lib/dateUtils";
+import { LedniceSVG, MrazakSVG, SpizSVG, SkrinskaSVG } from "@/components/LocationIcons";
+import type { StorageLocation } from "@/types";
 
 const UNITS = ["ks", "g", "kg", "ml", "l", "dkg", "balení", "lžíce", "lžička", "hrnek"];
+const LOCATIONS: { id: StorageLocation; labelKey: string; Icon: React.FC<{ size?: number }> }[] = [
+  { id: "lednice", labelKey: "addproduct.locLednice", Icon: LedniceSVG },
+  { id: "mrazak", labelKey: "addproduct.locMrazak", Icon: MrazakSVG },
+  { id: "spiz", labelKey: "addproduct.locSpiz", Icon: SpizSVG },
+  { id: "linka", labelKey: "addproduct.locSkrinka", Icon: SkrinskaSVG },
+];
+const STORES = ["Lidl", "Albert", "Billa", "Kaufland", "Tesco", "Penny", "Rohlik", "Košík", "Jiný"];
+const SUGGESTED_TAGS = ["Bio", "Bez lepku", "Laktóza free", "Vegán", "Oblíbené", "Doma", "Práce", "Akce"];
+// Nutriční pole (na 100 g/ml) — klíč do ReviewItem + i18n label z addproduct.*
+const NUTRI_FIELDS: { key: "kcal" | "protein" | "carbs" | "fat" | "fiber" | "salt"; labelKey: string; accent?: boolean }[] = [
+  { key: "kcal", labelKey: "addproduct.calories", accent: true },
+  { key: "protein", labelKey: "addproduct.proteinG" },
+  { key: "carbs", labelKey: "addproduct.carbsG" },
+  { key: "fat", labelKey: "addproduct.fatG" },
+  { key: "fiber", labelKey: "addproduct.fiberG" },
+  { key: "salt", labelKey: "addproduct.saltG" },
+];
 
 // Vrátí správný tvar slova "položka" podle počtu (1 / 2–4 / 5+).
 // `acc` = akuzativ ("Přidat 3 položky"), jinak nominativ ("3 položky").
@@ -27,6 +47,20 @@ interface ReviewItem extends ParsedItem {
   id: string;
   category: string;
   photoUrl?: string;
+  // Detaily jako u ručního přidání (volitelné — hlas je rychlý, detaily jsou pod „Další detaily")
+  location: StorageLocation;
+  brand?: string;
+  expiresAt?: string;   // YYYY-MM-DD
+  price?: string;       // string kvůli inputu; do addItem se parsuje
+  store?: string;
+  tags?: string[];
+  // Nutriční hodnoty (na 100 g/ml) — stringy kvůli inputu
+  kcal?: string;
+  protein?: string;
+  carbs?: string;
+  fat?: string;
+  fiber?: string;
+  salt?: string;
 }
 
 interface Props {
@@ -43,6 +77,7 @@ function ItemCard({ item, onChange, onRemove }: {
   const t = useT();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const cameraInputRef = useRef<HTMLInputElement>(null);
+  const [showDetails, setShowDetails] = useState(false);
 
   const handlePhotoFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -149,6 +184,136 @@ function ItemCard({ item, onChange, onRemove }: {
           </button>
         ))}
       </div>
+
+      {/* Rozbalovací „Další detaily" — umístění, značka, expirace, cena, obchod */}
+      <button
+        onClick={() => setShowDetails(v => !v)}
+        style={{ display: "flex", alignItems: "center", gap: 5, marginTop: 12, fontSize: 12, fontWeight: 600, color: "var(--green-primary)", background: "none", border: "none", padding: 0 }}
+      >
+        <ChevronDown size={14} style={{ transform: showDetails ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+        {t("voice.review.moreDetails")}
+      </button>
+
+      {showDetails && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 12, marginTop: 12 }}>
+          {/* Umístění */}
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", margin: "0 0 6px" }}>{t("addproduct.location")}</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+              {LOCATIONS.map(loc => (
+                <button
+                  key={loc.id}
+                  onClick={() => onChange({ location: loc.id })}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6, padding: "7px 10px", borderRadius: 10,
+                    background: item.location === loc.id ? "var(--green-light)" : "var(--bg-primary)",
+                    border: `1.5px solid ${item.location === loc.id ? "var(--green-primary)" : "var(--border)"}`,
+                  }}
+                >
+                  <loc.Icon size={18} />
+                  <span style={{ fontSize: 12, fontWeight: 600, color: item.location === loc.id ? "var(--green-dark)" : "var(--text-primary)" }}>{t(loc.labelKey)}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Značka */}
+          <input
+            value={item.brand ?? ""}
+            onChange={e => onChange({ brand: e.target.value })}
+            placeholder={t("addproduct.brandPlaceholder")}
+            style={{ width: "100%", padding: "8px 12px", borderRadius: 10, fontSize: 13, border: "1.5px solid var(--border)", background: "var(--bg-primary)", outline: "none", color: "var(--text-primary)" }}
+          />
+
+          {/* Datum spotřeby */}
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", margin: "0 0 6px" }}>{t("addproduct.expiryOptional")}</p>
+            <input
+              type="date"
+              value={item.expiresAt ?? ""}
+              onChange={e => onChange({ expiresAt: e.target.value })}
+              style={{ width: "100%", padding: "8px 12px", borderRadius: 10, fontSize: 13, border: "1.5px solid var(--border)", background: "var(--bg-primary)", outline: "none", color: item.expiresAt ? "var(--text-primary)" : "var(--text-tertiary)" }}
+            />
+            {item.expiresAt && (() => {
+              const d = daysUntil(item.expiresAt);
+              const cls = d < 0 ? "badge-danger" : d <= 1 ? "badge-warn" : "badge-ok";
+              const txt = d < 0 ? t("addproduct.dateExpired") : d === 0 ? t("addproduct.consumeToday") : d === 1 ? t("addproduct.consumeTomorrow") : t("addproduct.lastsDays").replace("{n}", String(d));
+              return <span className={`text-xs font-semibold ${cls}`} style={{ display: "inline-block", marginTop: 6, padding: "3px 9px", borderRadius: 9 }}>{txt}</span>;
+            })()}
+          </div>
+
+          {/* Cena + obchod */}
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", margin: "0 0 6px" }}>{t("addproduct.priceOptional")}</p>
+            <input
+              type="number"
+              value={item.price ?? ""}
+              onChange={e => onChange({ price: e.target.value })}
+              placeholder="0.00 CZK"
+              style={{ width: "100%", padding: "8px 12px", borderRadius: 10, fontSize: 13, border: "1.5px solid var(--border)", background: "var(--bg-primary)", outline: "none", color: "var(--text-primary)", marginBottom: 8 }}
+            />
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {STORES.map(s => (
+                <button
+                  key={s}
+                  onClick={() => onChange({ store: s })}
+                  style={{
+                    padding: "4px 10px", borderRadius: 99, fontSize: 11, fontWeight: 600,
+                    background: item.store === s ? "var(--green-primary)" : "var(--bg-primary)",
+                    color: item.store === s ? "white" : "var(--text-secondary)",
+                    border: `1px solid ${item.store === s ? "var(--green-primary)" : "var(--border)"}`,
+                  }}
+                >
+                  {s === "Jiný" ? t("addproduct.store.Jiný") : s}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Štítky (tagy) */}
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", margin: "0 0 6px" }}>{t("addproduct.tagsLabel")}</p>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {SUGGESTED_TAGS.map(tag => {
+                const on = (item.tags ?? []).includes(tag);
+                return (
+                  <button
+                    key={tag}
+                    onClick={() => onChange({ tags: on ? (item.tags ?? []).filter(x => x !== tag) : [...(item.tags ?? []), tag] })}
+                    style={{
+                      padding: "4px 10px", borderRadius: 99, fontSize: 11, fontWeight: 600,
+                      background: on ? "var(--green-primary)" : "var(--bg-primary)",
+                      color: on ? "white" : "var(--text-secondary)",
+                      border: `1px solid ${on ? "var(--green-primary)" : "var(--border)"}`,
+                    }}
+                  >
+                    {on ? "✓ " : ""}{t(`addproduct.tag.${tag}`)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Nutriční hodnoty (na 100 g/ml) */}
+          <div>
+            <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-tertiary)", margin: "0 0 6px" }}>{t("addproduct.stepNutrition")}</p>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {NUTRI_FIELDS.map(f => (
+                <div key={f.key}>
+                  <p style={{ fontSize: 10, color: "var(--text-secondary)", margin: "0 0 3px" }}>{t(f.labelKey)}</p>
+                  <input
+                    type="number"
+                    value={(item[f.key] as string) ?? ""}
+                    onChange={e => onChange({ [f.key]: e.target.value } as Partial<ReviewItem>)}
+                    placeholder="0"
+                    style={{ width: "100%", padding: "7px 10px", borderRadius: 10, fontSize: 13, border: `1.5px solid ${f.accent ? "var(--green-primary)" : "var(--border)"}`, background: "var(--bg-primary)", outline: "none", color: "var(--text-primary)" }}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -160,6 +325,7 @@ export function VoiceReviewModal({ items: initialItems, onConfirm, onClose }: Pr
       ...item,
       id: `voice-${i}-${Date.now()}`,
       category: guessVoiceCategory(item.name),
+      location: "spiz" as StorageLocation,
     }))
   );
 

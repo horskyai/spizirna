@@ -128,19 +128,39 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
       // nezahodí a stejné potraviny v různých jednotkách jdou sečíst
       // (1 kg + 300 g = 1300 g = 1,3 kg). Produkt zná jen g/ml/ks.
       const { quantity, unit } = toBaseUnit(item.quantity, item.unit);
+      // Nutriční hodnoty (volitelné) — prázdné pole nechá undefined.
+      const num = (v?: string) => { const n = v ? parseFloat(v) : NaN; return Number.isFinite(n) ? n : undefined; };
       const product: ProductInfo = {
         ean_code: `manual-${Date.now()}-${Math.random()}`,
         product_name: item.name,
-        brand: "",
+        brand: item.brand?.trim() ?? "",
         category: item.category,
         subcategory: "",
         image_url: item.photoUrl ?? "",
         unit,
+        calories_kcal: num(item.kcal),
+        protein_g: num(item.protein),
+        carbs_g: num(item.carbs),
+        fat_g: num(item.fat),
+        fiber_g: num(item.fiber),
+        salt_g: num(item.salt),
         allergens: [],
         source: "user_added",
         verified: false,
       };
-      addItem(product, quantity, location, undefined, undefined, undefined, item.photoUrl ?? undefined);
+      // Detaily z hlasového přehledu (umístění, cena, obchod, expirace, štítky) —
+      // když je uživatel v „Další detaily" nevyplnil, zůstanou výchozí (spíž, bez ceny).
+      const cena = item.price ? parseFloat(item.price) : undefined;
+      addItem(
+        product,
+        quantity,
+        item.location ?? location,
+        Number.isFinite(cena) ? cena : undefined,
+        item.store,
+        item.tags && item.tags.length ? item.tags : undefined,
+        item.photoUrl ?? undefined,
+        item.expiresAt || undefined,
+      );
       recordAdded();
     });
     setVoiceReviewItems(null);
