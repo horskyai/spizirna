@@ -42,6 +42,9 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
 
   const [step, setStep] = useState<"basic" | "nutrition" | "pantry">("basic");
   const [added, setAdded] = useState(false);
+  // Výživové hodnoty rovnou v základním kroku (rozbalovací) — ať se k nim
+  // nemusí přes samostatný krok. Stejná logika jako u hlasového přidání.
+  const [showNutrition, setShowNutrition] = useState(false);
   // Pojistka proti dvojímu uložení (dotykový dvojklik než se sheet zavře).
   const savingRef = useRef(false);
 
@@ -465,6 +468,43 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                 />
               </div>
 
+              {/* Výživové hodnoty — rovnou tady (rozbalovací), ať se k nim nemusí
+                  přes samostatný krok. Stejná pole jako u hlasového přidání. */}
+              <div className="card p-4">
+                <button
+                  onClick={() => setShowNutrition(v => !v)}
+                  className="w-full flex items-center justify-between"
+                  style={{ background: "none", border: "none", padding: 0 }}
+                >
+                  <span className="text-xs font-semibold" style={{ color: "var(--text-secondary)" }}>{t("addproduct.stepNutrition")}</span>
+                  <ChevronDown size={16} style={{ color: "var(--text-tertiary)", transform: showNutrition ? "rotate(180deg)" : "none", transition: "transform 0.15s" }} />
+                </button>
+                {showNutrition && (
+                  <div className="grid grid-cols-2 gap-3 mt-3">
+                    {[
+                      { label: t("addproduct.calories"), val: kcal, set: setKcal, accent: true },
+                      { label: t("addproduct.proteinG"), val: protein, set: setProtein },
+                      { label: t("addproduct.carbsG"), val: carbs, set: setCarbs },
+                      { label: t("addproduct.fatG"), val: fat, set: setFat },
+                      { label: t("addproduct.fiberG"), val: fiber, set: setFiber },
+                      { label: t("addproduct.saltG"), val: salt, set: setSalt },
+                    ].map(({ label, val, set, accent }) => (
+                      <div key={label}>
+                        <p className="text-xs font-medium mb-1" style={{ color: "var(--text-secondary)" }}>{label}</p>
+                        <input
+                          type="number"
+                          value={val}
+                          onChange={(e) => set(e.target.value)}
+                          placeholder="0"
+                          className="w-full px-3 py-2.5 rounded-xl text-sm outline-none"
+                          style={{ background: "var(--bg-primary)", border: `1.5px solid ${accent ? "var(--green-primary)" : "var(--border)"}`, color: "var(--text-primary)" }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <button
                 onClick={() => setStep("pantry")}
                 className="btn-primary"
@@ -472,14 +512,6 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
                 style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}
               >
                 <Plus size={17} /> {t("addproduct.addToPantry")}
-              </button>
-              <button
-                onClick={() => setStep("nutrition")}
-                className="btn-secondary"
-                style={{ marginTop: 8 }}
-                disabled={!canProceedBasic}
-              >
-                {t("addproduct.addNutritionToo")}
               </button>
             </div>
           )}
