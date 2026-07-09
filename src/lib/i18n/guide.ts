@@ -146,8 +146,8 @@ export const guide: Record<string, Translation> = {
   },
   "guide.provoz.s1t": { cs: "Kasa — prodej", sk: "Pokladňa — predaj" },
   "guide.provoz.s1d": {
-    cs: "Klepni na zboží/jídlo → dole košík → Hotově nebo Kartou. Prodej se automaticky odečte ze skladu. U hotovosti zadáš „přijato\" a spočítá se, kolik vrátit.",
-    sk: "Klepni na tovar/jedlo → dole košík → Hotovo alebo Kartou. Predaj sa automaticky odčíta zo skladu. Pri hotovosti zadáš „prijaté\" a spočíta sa, koľko vrátiť.",
+    cs: "Klepni na zboží/jídlo → dole košík → Hotově nebo Kartou. U hotovosti zadáš „přijato\" a spočítá se, kolik vrátit. Důležité: u KAŽDÉ položky v nabídce (jídla i nápoje) nastav „Jak odečíst ze skladu\" — jídlo z receptu ubere suroviny, nápoj jako kusové zboží ubere láhev. Bez toho se sklad neodečítá.",
+    sk: "Klepni na tovar/jedlo → dole košík → Hotovo alebo Kartou. Pri hotovosti zadáš „prijaté\" a spočíta sa, koľko vrátiť. Dôležité: pri KAŽDEJ položke v ponuke (jedlá aj nápoje) nastav „Ako odčítať zo skladu\" — jedlo z receptu ubere suroviny, nápoj ako kusový tovar ubere fľašu. Bez toho sa sklad neodčíta.",
   },
   "guide.provoz.s2t": { cs: "Sklad & denní porce", sk: "Sklad & denné porcie" },
   "guide.provoz.s2d": {

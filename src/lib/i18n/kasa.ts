@@ -59,6 +59,10 @@ export const kasa: Record<string, Translation> = {
 
   // Vazba na sklad
   "kasa.jakOdecist": { cs: "Jak odečítat ze skladu?", sk: "Ako odčítať zo skladu?" },
+  "kasa.jakOdecistHint": {
+    cs: "Nastav u KAŽDÉ položky — jídla, nápoje i vše ostatní. Určuje, co se při prodeji stane se skladem. Bez správné volby se sklad neodečítá.",
+    sk: "Nastav pri KAŽDEJ položke — jedlá, nápoje aj všetko ostatné. Určuje, čo sa pri predaji stane so skladom. Bez správnej voľby sa sklad neodčíta.",
+  },
   "kasa.vazba.sklad": { cs: "Kusové zboží", sk: "Kusový tovar" },
   "kasa.vazba.skladDesc": { cs: "Prodej odečte kusy jedné skladové položky (Pepsi → −1 ks)", sk: "Predaj odčíta kusy jednej skladovej položky (Pepsi → −1 ks)" },
   "kasa.vazba.recept": { cs: "Jídlo z receptu", sk: "Jedlo z receptu" },

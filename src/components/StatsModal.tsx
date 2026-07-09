@@ -24,8 +24,14 @@ export function StatsModal({ onClose }: { onClose: () => void }) {
   const savedValue = useGamificationStore((s) => s.savedValue);
   const wastedValue = useGamificationStore((s) => s.wastedValue);
   const streak = useGamificationStore((s) => s.streak);
-  const score = useGamificationStore((s) => s.getScore());
-  const level = useGamificationStore((s) => s.getLevel());
+  // POZOR: getScore()/getLevel() vracejí při každém volání NOVOU hodnotu/objekt.
+  // Volat je přímo jako Zustand selektor → nová reference každý render →
+  // „getSnapshot should be cached" → nekonečná smyčka (Maximum update depth).
+  // Proto bereme jen stabilní reference funkcí a voláme je až v useMemo níže.
+  const getScore = useGamificationStore((s) => s.getScore);
+  const getLevel = useGamificationStore((s) => s.getLevel);
+  const score = useMemo(() => getScore(), [getScore, totalSaved, totalWasted, streak]);
+  const level = useMemo(() => getLevel(), [getLevel, totalSaved, totalWasted, streak]);
 
   const stats = useMemo(() => {
     // Hodnota spižírny = součet ceny × množství tam, kde známe cenu.

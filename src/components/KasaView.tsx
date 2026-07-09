@@ -169,6 +169,11 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
         {/* Jak odečítat ze skladu */}
         <div>
           <label className="text-xs font-medium mb-2 block" style={{ color: "var(--text-tertiary)" }}>{t("kasa.jakOdecist")}</label>
+          {/* Zdůraznění: volbu má KAŽDÁ položka (jídla i nápoje), jinak se sklad neodečítá. */}
+          <div style={{ display: "flex", gap: 8, alignItems: "flex-start", padding: "9px 11px", borderRadius: 12, background: "#FFF7ED", border: "1px solid #FCD9A8", marginBottom: 10 }}>
+            <span style={{ fontSize: 14, lineHeight: 1.3, flexShrink: 0 }}>💡</span>
+            <span style={{ fontSize: 11.5, lineHeight: 1.4, color: "#8A5A17" }}>{t("kasa.jakOdecistHint")}</span>
+          </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {vazby.map((v) => (
               <button key={v.id} onClick={() => setVazbaTyp(v.id)}
@@ -535,6 +540,7 @@ export function KasaView() {
   const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
   const { menu, prodejky, prodat, stornoProdejka, getTrzbaDne, getPocetProdejekDne, getZbyvaPorci } = useKasaStore();
   const polozky = useProvozStore((s) => s.polozky);
+  const jeObchod = useBusinessStore((s) => s.typProvozu) === "obchod";
   const zamestnanec = useEmployeeStore((s) => s.enabled && s.locked);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [volne, setVolne] = useState<{ id: string; nazev: string; cena: number; mnozstvi: number }[]>([]);
@@ -553,7 +559,15 @@ export function KasaView() {
   // ── Dlaždice ze DVOU zdrojů ───────────────────────────────────────────────
   // Klíč košíku i dlaždice: "sklad:<polozkaId>" nebo "menu:<menuId>".
   // Cena skladové dlaždice = prodejniCena, fallback nákupní cenaJednotka.
-  const skladProdej = polozky.filter((p) => !p.skrytoZKasy);
+  //
+  // Obchod: sklad = zboží k prodeji → na kase ukážeme VŠECHNO (kromě ručně skrytého).
+  // Restaurace: sklad = SUROVINY (mouka, cibule, maso) — ty se neprodávají přímo,
+  // slouží jen k odečtu přes recept. Na kase proto ukážeme jen skladové položky,
+  // které mají nastavenou PRODEJNÍ cenu (typicky nápoje, které chce majitel
+  // markovat kusově). Surovina bez prodejní ceny se do kasy necpe.
+  const skladProdej = polozky.filter((p) =>
+    !p.skrytoZKasy && (jeObchod || (p.prodejniCena != null && p.prodejniCena > 0))
+  );
   const skrytychPocet = polozky.filter((p) => p.skrytoZKasy).length;
   const aktivniMenu = menu.filter((m) => m.aktivni !== false);
   const nicKProdeji = skladProdej.length === 0 && aktivniMenu.length === 0;

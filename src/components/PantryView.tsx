@@ -171,9 +171,15 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
 
   return (
     <div className="card overflow-hidden mb-2">
-      <button
-        className="w-full flex items-center gap-3 p-3.5 text-left"
+      {/* Rozklikávací řádek. Musí být <div> (ne <button>), protože uvnitř je
+          další tlačítko (rychlá spotřeba) — <button> ve <button> je nevalidní
+          HTML a hlásí hydration error. */}
+      <div
+        role="button"
+        tabIndex={0}
+        className="w-full flex items-center gap-3 p-3.5 text-left cursor-pointer"
         onClick={() => setExpanded(e => !e)}
+        onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setExpanded(x => !x); } }}
       >
         {/* Icon */}
         <div
@@ -223,7 +229,7 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
             <ChevronRight size={14} className={cn("transition-transform", expanded && "rotate-90")} style={{ color: "var(--text-tertiary)" }} />
           </div>
         </div>
-      </button>
+      </div>
 
       {expanded && (
         <div className="border-t px-3.5 pb-3.5 pt-3 space-y-2 animate-fade-in" style={{ borderColor: "var(--border)" }}>

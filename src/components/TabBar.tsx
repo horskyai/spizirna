@@ -23,7 +23,7 @@ const TABS_DOMACNOST: readonly TabDef[] = [
 
 // Tab "Jídlo" (deník kalorií) — přidá se do domácnosti jen když má uživatel
 // zapnuté sledování kalorií. Vloží se před poslední tab (Opakování).
-const FOOD_TAB: TabDef = { id: "jidlo", labelKey: "tab.jidlo", icon: "lucide:utensils" };
+const FOOD_TAB: TabDef = { id: "jidlo", labelKey: "tab.jidlo", icon: "/tabs/jidlo.png" };
 
 // Provozní lišta — nejdůležitější pro provozovnu hned po ruce. Všechny míří na
 // tab "provoz", ale skočí na svou vnitřní záložku (provozSub). "Víc" otevře
@@ -32,10 +32,10 @@ const FOOD_TAB: TabDef = { id: "jidlo", labelKey: "tab.jidlo", icon: "lucide:ute
 //   • „Víc" míří na první vedlejší sekci — obchod nemá Recepty → Dodavatelé.
 function provozTabs(jeObchod: boolean): readonly TabDef[] {
   return [
-    { id: "provoz", labelKey: "tab.kasa", icon: "lucide:cart", provozSub: "kasa" },
-    { id: "provoz", labelKey: jeObchod ? "tab.skladZbozi" : "tab.skladSurovin", icon: "lucide:box", provozSub: "sklad" },
-    { id: "provoz", labelKey: "tab.inventura", icon: "lucide:clipboard", provozSub: "inventura" },
-    { id: "provoz", labelKey: "tab.ucto", icon: "lucide:sheet", provozSub: "ucetnictvi" },
+    { id: "provoz", labelKey: "tab.kasa", icon: "/tabs/kasa.png", provozSub: "kasa" },
+    { id: "provoz", labelKey: jeObchod ? "tab.skladZbozi" : "tab.skladSurovin", icon: "/tabs/sklad.png", provozSub: "sklad" },
+    { id: "provoz", labelKey: "tab.inventura", icon: "/tabs/inventura.png", provozSub: "inventura" },
+    { id: "provoz", labelKey: "tab.ucto", icon: "/tabs/ucto.png", provozSub: "ucetnictvi" },
     { id: "provoz", labelKey: "tab.vic", icon: "lucide:menu", provozSub: jeObchod ? "dodavatele" : "recepty" },
   ];
 }
@@ -131,9 +131,12 @@ export function TabBar() {
                   draggable={false}
                   style={{
                     borderRadius: "24%",
-                    filter: active || isCenter ? "none" : "grayscale(1) opacity(0.5)",
-                    boxShadow: active || isCenter ? "0 5px 14px rgba(76,175,130,0.45)" : "none",
-                    transform: active ? "translateY(-3px) scale(1.05)" : "none",
+                    // Jen AKTIVNÍ tab "svítí" (plná barva, stín, povytažený a zvětšený).
+                    // Neaktivní (i střední Skenovat) jsou ztlumené, aby bylo vždy
+                    // jednoznačné, na které záložce uživatel je.
+                    filter: active ? "none" : "grayscale(0.85) opacity(0.45)",
+                    boxShadow: active ? "0 6px 16px rgba(76,175,130,0.55)" : "none",
+                    transform: active ? "translateY(-4px) scale(1.12)" : "none",
                     transition: "filter 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease",
                   }}
                 />
