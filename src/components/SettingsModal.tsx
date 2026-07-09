@@ -188,15 +188,12 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                 </span>
               )}
             </div>
-            {/* TODO: napojit na platby (Stripe / App Store / Google Play) */}
-            <button onClick={() => { /* TODO: zmenit plan */ }} style={rowBtn("var(--green-light)", "var(--green-dark)")}>
-              <Crown size={15} /> {t("settings.changePlan")}
-            </button>
-            {mode === "provoz" && (
-              <button onClick={() => { /* TODO: zrusit predplatne */ }} style={{ ...rowBtn("transparent", "var(--text-secondary)"), marginTop: 8 }}>
-                {t("settings.cancelPlan")}
-              </button>
-            )}
+            {/* Změna plánu / zrušení předplatného = platby → až Google Play fáze
+                (Play Billing). Do té doby tlačítka skrytá, ať nematou (byly to
+                prázdné TODO handlery). Zobrazujeme jen informaci o plánu. */}
+            <p style={{ fontSize: 12, color: "var(--text-tertiary)", lineHeight: 1.4, margin: "2px 2px 0" }}>
+              {t("settings.planInfo")}
+            </p>
           </Section>
 
           {/* ── Sledování kalorií ── volitelná funkce, jen v domácnosti.
