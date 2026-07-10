@@ -16,13 +16,19 @@ interface UIStore {
   // Filtr spížírny nastavený z přehledu; PantryView ho přečte a odfiltruje.
   pantryFilter: PantryFilter;
   // Která vnitřní záložka Provozu se má otevřít (řídí spodní provozní lišta).
+  // Je to jednorázový „signál" — ProvozView na něj skočí a hned ho vynuluje.
   provozSubTab: ProvozSubTab;
+  // Skutečná aktivní vnitřní záložka Provozu (trvalá) — podle ní se rozsvěcí
+  // spodní lišta. Na rozdíl od provozSubTab se NEnuluje, takže lišta ví, kde jsme.
+  provozActiveTab: NonNullable<ProvozSubTab>;
   // Otevření Nastavení odkudkoli (banner limitu, …) bez prop-drillingu.
   settingsOpen: boolean;
   setTab: (tab: Tab) => void;
   // Přepne na provoz a rovnou na danou vnitřní záložku (spodní lišta).
   openProvoz: (sub: ProvozSubTab) => void;
   setProvozSubTab: (sub: ProvozSubTab) => void;
+  // Nastaví trvalou aktivní záložku (volá ProvozView i při vnitřním přepnutí).
+  setProvozActiveTab: (sub: NonNullable<ProvozSubTab>) => void;
   // Přepne na spížírnu a rovnou zapne daný filtr (z karet přehledu).
   openPantryWithFilter: (filter: PantryFilter) => void;
   setPantryFilter: (filter: PantryFilter) => void;
@@ -38,11 +44,14 @@ export const useUIStore = create<UIStore>((set) => ({
   scannedProduct: null,
   pantryFilter: null,
   provozSubTab: null,
+  provozActiveTab: "kasa",
   settingsOpen: false,
   // Odchod ze spížírny rychlý filtr zruší, ať se nedrží „skrytě" na pozadí.
   setTab: (tab) => set((s) => ({ activeTab: tab, pantryFilter: tab === "spizirna" ? s.pantryFilter : null })),
-  openProvoz: (sub) => set({ activeTab: "provoz", provozSubTab: sub }),
-  setProvozSubTab: (sub) => set({ provozSubTab: sub }),
+  // Přepni na provoz: nastav jednorázový signál i trvalou aktivní záložku (kvůli liště).
+  openProvoz: (sub) => set(sub ? { activeTab: "provoz", provozSubTab: sub, provozActiveTab: sub } : { activeTab: "provoz", provozSubTab: sub }),
+  setProvozSubTab: (sub) => set(sub ? { provozSubTab: sub, provozActiveTab: sub } : { provozSubTab: sub }),
+  setProvozActiveTab: (sub) => set({ provozActiveTab: sub }),
   openPantryWithFilter: (filter) => set({ activeTab: "spizirna", pantryFilter: filter }),
   setPantryFilter: (filter) => set({ pantryFilter: filter }),
   openSheet: (sheet, product) => set({ activeSheet: sheet, scannedProduct: product ?? null }),

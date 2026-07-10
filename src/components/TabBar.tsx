@@ -52,7 +52,9 @@ const LUCIDE_ICONS: Record<string, React.ComponentType<{ size?: number; color?: 
 
 export function TabBar() {
   const { activeTab, setTab } = useUIStore();
-  const provozSubTab = useUIStore((s) => s.provozSubTab);
+  // Svícení lišty řídíme trvalou aktivní záložkou (provozSubTab je jen pomíjivý
+  // signál, který ProvozView hned vynuluje → lišta by pak nesvítila správně).
+  const provozActiveTab = useUIStore((s) => s.provozActiveTab);
   const openProvoz = useUIStore((s) => s.openProvoz);
   const { mode } = useModeStore();
   const jeObchod = useBusinessStore((s) => s.typProvozu) === "obchod";
@@ -90,8 +92,8 @@ export function TabBar() {
           const active = provozSub
             ? activeTab === "provoz" && (
                 provozSub === "dodavatele"
-                  ? !HLAVNI.includes(provozSubTab)
-                  : provozSubTab === provozSub
+                  ? !HLAVNI.includes(provozActiveTab)
+                  : provozActiveTab === provozSub
               )
             : activeTab === id;
           const isCenter = id === "skenovat";

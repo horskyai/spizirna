@@ -1796,12 +1796,21 @@ export function ProvozView() {
   const { polozky, inventury, vytvorInventuru, aktivniInventuraId, setAktivniInventura } = useProvozStore();
   const provozSubTab = useUIStore((s) => s.provozSubTab);
   const setProvozSubTab = useUIStore((s) => s.setProvozSubTab);
+  const setProvozActiveTab = useUIStore((s) => s.setProvozActiveTab);
   const jeObchod = useBusinessStore((s) => s.typProvozu) === "obchod";
   // Režim zaměstnance: zapnuto A zamčeno → jen Kasa + tlačítko odemknout.
   const empEnabled = useEmployeeStore((s) => s.enabled);
   const empLocked = useEmployeeStore((s) => s.locked);
   const zamestnanec = empEnabled && empLocked;
-  const [tab, setTab] = useState<ProvozTab>("kasa");
+  const [tab, setTabRaw] = useState<ProvozTab>("kasa");
+
+  // Přepnutí vnitřní záložky vždy propiš i do trvalého stavu v uiStore, aby
+  // spodní lišta věděla, kde jsme, a rozsvítila správnou ikonu. (provozSubTab
+  // je jen pomíjivý signál, který se hned nuluje — na svícení nestačí.)
+  const setTab = useCallback((next: ProvozTab) => {
+    setTabRaw(next);
+    setProvozActiveTab(next);
+  }, [setProvozActiveTab]);
 
   // Spodní provozní lišta nastaví provozSubTab → skoč na tu vnitřní záložku.
   // Řešíme přes refs bez synchronního setState v efektu (jinak kaskáda renderů):
@@ -1815,7 +1824,7 @@ export function ProvozView() {
       queueMicrotask(() => setProvozSubTab(null));
     }
     if (!provozSubTab) lastSubRef.current = undefined;
-  }, [provozSubTab, setProvozSubTab]);
+  }, [provozSubTab, setProvozSubTab, setTab]);
   const [showNazevModal, setShowNazevModal] = useState(false);
   const [novyNazev, setNovyNazev] = useState("");
   const [slepa, setSlepa] = useState(false);
