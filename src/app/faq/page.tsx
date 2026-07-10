@@ -18,7 +18,7 @@ const FAQ_CS: QA[] = [
   { q: "Zapomněl jsem heslo, co teď?", a: "Na přihlašovací obrazovce klepni na „Zapomněli jste heslo?“, zadej e-mail a přijde ti odkaz pro nastavení nového hesla." },
   { q: "Jak smažu všechna data?", a: "V Nastavení → Vymazat všechna data. Tím se smažou lokální data v tomto zařízení." },
   { q: "Jak trvale smažu účet?", a: "V Nastavení → Smazat účet. Tím se nevratně odstraní tvůj účet i všechna data ze serveru. Tuto akci nelze vrátit." },
-  { q: "Mám další dotaz.", a: "Napiš nám na spizirnacz@seznam.cz — rádi pomůžeme." },
+  { q: "Mám další dotaz.", a: "Napiš nám na spizirnacz@gmail.com — rádi pomůžeme." },
 ];
 
 const FAQ_SK: QA[] = [
@@ -33,7 +33,7 @@ const FAQ_SK: QA[] = [
   { q: "Zabudol som heslo, čo teraz?", a: "Na prihlasovacej obrazovke klepni na „Zabudli ste heslo?“, zadaj e-mail a príde ti odkaz na nastavenie nového hesla." },
   { q: "Ako zmažem všetky dáta?", a: "V Nastaveniach → Vymazať všetky dáta. Tým sa zmažú lokálne dáta v tomto zariadení." },
   { q: "Ako trvalo zmažem účet?", a: "V Nastaveniach → Zmazať účet. Tým sa nenávratne odstráni tvoj účet aj všetky dáta zo servera. Túto akciu nie je možné vrátiť." },
-  { q: "Mám ďalšiu otázku.", a: "Napíš nám na spizirnacz@seznam.cz — radi pomôžeme." },
+  { q: "Mám ďalšiu otázku.", a: "Napíš nám na spizirnacz@gmail.com — radi pomôžeme." },
 ];
 
 export default function FaqPage() {
@@ -42,7 +42,7 @@ export default function FaqPage() {
   const items = cs ? FAQ_CS : FAQ_SK;
 
   return (
-    <LegalPage title={cs ? "Časté dotazy" : "Časté otázky"} updated={cs ? "Nenašli jste odpověď? Napište na spizirnacz@seznam.cz" : "Nenašli ste odpoveď? Napíšte na spizirnacz@seznam.cz"}>
+    <LegalPage title={cs ? "Časté dotazy" : "Časté otázky"} updated={cs ? "Nenašli jste odpověď? Napište na spizirnacz@gmail.com" : "Nenašli ste odpoveď? Napíšte na spizirnacz@gmail.com"}>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
         {items.map((item, i) => (
           <details key={i} style={{ background: "white", borderRadius: 14, border: "1.5px solid var(--border)", padding: "12px 16px" }}>

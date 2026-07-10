@@ -15,7 +15,7 @@ import { useT, useLocale } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/dateUtils";
 
 // Kontaktní e-mail podpory (appkový Gmail).
-const SUPPORT_EMAIL = "spizirnacz@seznam.cz";
+const SUPPORT_EMAIL = "spizirnacz@gmail.com";
 
 const APP_VERSION = "1.0.0";
 const EXPIRY_NOTIF_KEY = "expiry-notifications";

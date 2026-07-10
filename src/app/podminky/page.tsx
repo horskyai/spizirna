@@ -15,7 +15,7 @@ export default function TermsPage() {
         <>
           <p>
             Vítejte v aplikaci <b>Spižírna</b>. Používáním aplikace souhlasíte s těmito podmínkami.
-            Provozovatelem je <b>Jiří Horský</b>. Kontakt: <b>spizirnacz@seznam.cz</b>.
+            Provozovatelem je <b>Jiří Horský</b>. Kontakt: <b>spizirnacz@gmail.com</b>.
           </p>
 
           <h2>1. Popis služby</h2>
@@ -58,7 +58,7 @@ export default function TermsPage() {
         <>
           <p>
             Vitajte v aplikácii <b>Špajza</b>. Používaním aplikácie súhlasíte s týmito podmienkami.
-            Prevádzkovateľom je <b>Jiří Horský</b>. Kontakt: <b>spizirnacz@seznam.cz</b>.
+            Prevádzkovateľom je <b>Jiří Horský</b>. Kontakt: <b>spizirnacz@gmail.com</b>.
           </p>
 
           <h2>1. Popis služby</h2>
