@@ -16,7 +16,7 @@ export default function PrivacyPage() {
           <p>
             Tyto zásady popisují, jak aplikace <b>Spižírna</b> nakládá s vašimi údaji.
             Provozovatelem a správcem osobních údajů je <b>Jiří Horský</b> (dále „provozovatel").
-            Kontakt: <b>spizirnacz@gmail.com</b>.
+            Kontakt: <b>spizirnacz@seznam.cz</b>.
           </p>
 
           <h2>1. Jaké údaje zpracováváme</h2>
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
 
           <h2>6. Vaše práva</h2>
           <p>Máte právo na přístup k údajům, jejich opravu, výmaz a přenositelnost. Pro uplatnění
-            práv nás kontaktujte na <b>spizirnacz@gmail.com</b>.</p>
+            práv nás kontaktujte na <b>spizirnacz@seznam.cz</b>.</p>
 
           <h2>7. Smazání dat</h2>
           <p>Lokální data smažete v aplikaci v Nastavení → Vymazat všechna data. Pro smazání účtu
@@ -70,7 +70,7 @@ export default function PrivacyPage() {
           <p>
             Tieto zásady popisujú, ako aplikácia <b>Špajza</b> nakladá s vašimi údajmi.
             Prevádzkovateľom a správcom osobných údajov je <b>Jiří Horský</b> (ďalej „prevádzkovateľ").
-            Kontakt: <b>spizirnacz@gmail.com</b>.
+            Kontakt: <b>spizirnacz@seznam.cz</b>.
           </p>
 
           <h2>1. Aké údaje spracúvame</h2>
@@ -109,7 +109,7 @@ export default function PrivacyPage() {
 
           <h2>6. Vaše práva</h2>
           <p>Máte právo na prístup k údajom, ich opravu, výmaz a prenositeľnosť. Na uplatnenie
-            práv nás kontaktujte na <b>spizirnacz@gmail.com</b>.</p>
+            práv nás kontaktujte na <b>spizirnacz@seznam.cz</b>.</p>
 
           <h2>7. Zmazanie dát</h2>
           <p>Lokálne dáta zmažete v aplikácii v Nastaveniach → Vymazať všetky dáta. Na zmazanie účtu
