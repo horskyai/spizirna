@@ -280,6 +280,7 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
         muted
         playsInline
         autoPlay
+        controls={false}
       />
       <canvas ref={canvasRef} className="hidden" />
 
