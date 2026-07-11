@@ -27,7 +27,6 @@ interface ScannerProps {
 export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
   const t = useT();
   const videoRef = useRef<HTMLVideoElement>(null);
-  const bgVideoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const animFrameRef = useRef<number | null>(null);
@@ -124,11 +123,6 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
         if (videoRef.current) {
           videoRef.current.srcObject = stream;
           await videoRef.current.play();
-        }
-        // Rozmazané pozadí sdílí tentýž stream (vyplní černé okraje).
-        if (bgVideoRef.current) {
-          bgVideoRef.current.srcObject = stream;
-          bgVideoRef.current.play().catch(() => {});
         }
       } catch (err: any) {
         if (err?.name === "NotAllowedError" || err?.name === "PermissionDeniedError") {
@@ -283,32 +277,20 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
       className="relative overflow-hidden"
       style={{ background: "#000", width: "100%", height: "100%", ...(isEmbedded ? {} : { flex: 1 }) }}
     >
-      {/* Rozmazané pozadí ze stejného streamu — vyplní případné černé okraje
-          (když poměr kamery nesedí na obrazovku), takže žádná černá čára. */}
-      <video
-        ref={bgVideoRef}
-        className="absolute inset-0 w-full h-full object-cover"
-        muted
-        playsInline
-        autoPlay
-        controls={false}
-        style={{
-          pointerEvents: "none",
-          filter: "blur(24px) brightness(0.6)",
-          transform: "scale(1.15)",
-          opacity: videoReady ? 1 : 0,
-          transition: "opacity 0.2s",
-        }}
-      />
       <video
         ref={videoRef}
-        className="absolute inset-0 w-full h-full object-contain"
+        className="absolute w-full h-full object-cover"
         muted
         playsInline
         autoPlay
         controls={false}
         onPlaying={() => setVideoReady(true)}
         style={{
+          // Roztáhni video PŘES celou plochu i mírně přes okraje (scale), ať
+          // nezůstane žádný černý pruh — object-cover ořízne jen nepatrně z boků.
+          top: -1, left: -1, right: -1, bottom: -1,
+          width: "calc(100% + 2px)", height: "calc(100% + 2px)",
+          transform: "scale(1.02)",
           // Bez interakce — ať WebView video nebere jako přehrávač (žádné „play").
           pointerEvents: "none",
           // Skryté dokud reálně nehraje → žádné bliknutí play tlačítka.
