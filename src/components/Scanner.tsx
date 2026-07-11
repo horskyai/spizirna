@@ -42,6 +42,9 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
   const [showManualInput, setShowManualInput] = useState(false);
   const [manualEAN, setManualEAN] = useState("");
   const [zxingReady, setZxingReady] = useState(false);
+  // Video zviditelníme až když reálně hraje — jinak Android WebView ukáže
+  // na prázdném <video> výchozí „play" tlačítko (bliknutí při načítání).
+  const [videoReady, setVideoReady] = useState(false);
   const zxingRef = useRef<any>(null);
   const [notFoundEAN, setNotFoundEAN] = useState<string | null>(null);
   const [showNotFoundPanel, setShowNotFoundPanel] = useState(false);
@@ -281,14 +284,24 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
         playsInline
         autoPlay
         controls={false}
+        onPlaying={() => setVideoReady(true)}
+        style={{
+          background: "#000",
+          // Bez interakce — ať WebView video nebere jako přehrávač (žádné „play").
+          pointerEvents: "none",
+          // Skryté dokud reálně nehraje → žádné bliknutí play tlačítka.
+          opacity: videoReady ? 1 : 0,
+          transition: "opacity 0.2s",
+        }}
       />
       <canvas ref={canvasRef} className="hidden" />
 
-      {/* Vignette */}
+      {/* Vignette — jemný ztmavený okraj nahoře/dole pro čitelnost textu.
+          Plynulejší přechod (žádná ostrá „černá čára" dole). */}
       <div
         className="absolute inset-0"
         style={{
-          background: "linear-gradient(to bottom, rgba(0,0,0,0.55) 0%, transparent 28%, transparent 68%, rgba(0,0,0,0.55) 100%)",
+          background: "linear-gradient(to bottom, rgba(0,0,0,0.5) 0%, transparent 22%, transparent 60%, rgba(0,0,0,0.45) 100%)",
           pointerEvents: "none",
         }}
       />
@@ -355,8 +368,12 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
         </div>
       </div>
 
-      {/* Status text */}
-      <div className="absolute left-0 right-0 flex justify-center" style={{ bottom: 132 }}>
+      {/* Status text — nad zaměřovacím rámečkem, ať nekoliduje se spodním
+          ovládáním (foto tlačítko / Zadat ručně). */}
+      <div
+        className="absolute left-0 right-0 flex justify-center"
+        style={{ top: "calc(50% - 150px)" }}
+      >
         <p
           className="text-white text-center"
           style={{ fontSize: 18, fontWeight: 700, textShadow: "0 2px 10px rgba(0,0,0,0.7)", padding: "0 24px" }}
@@ -431,8 +448,11 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
         </button>
       </div>
 
-      {/* Top controls */}
-      <div className="absolute top-4 right-4 flex flex-col gap-2">
+      {/* Top controls — odsazeno pod stavový řádek telefonu (hodiny/baterka) */}
+      <div
+        className="absolute right-4 flex flex-col gap-2"
+        style={{ top: "calc(16px + env(safe-area-inset-top, 0px))" }}
+      >
         <button
           onClick={toggleTorch}
           className="flex items-center justify-center transition-all"
