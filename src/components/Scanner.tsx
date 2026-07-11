@@ -296,6 +296,18 @@ export function Scanner({ onScanned, onClose }: ScannerProps = {}) {
       />
       <canvas ref={canvasRef} className="hidden" />
 
+      {/* Než kamera naskočí (getUserMedia + rozehrání videa ~1 s), ukaž
+          spinner s hláškou místo černé plochy. */}
+      {!videoReady && !error && (
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-3" style={{ pointerEvents: "none" }}>
+          <div
+            className="w-9 h-9 border-2 border-t-transparent rounded-full animate-spin"
+            style={{ borderColor: "rgba(255,255,255,0.85) transparent transparent transparent" }}
+          />
+          <p className="text-white/80 text-sm font-medium">{t("scanner.stateInit")}</p>
+        </div>
+      )}
+
       {/* Vignette — jemný ztmavený okraj nahoře/dole pro čitelnost textu.
           Plynulejší přechod (žádná ostrá „černá čára" dole). */}
       <div
