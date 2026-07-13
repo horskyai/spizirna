@@ -26,7 +26,7 @@ import { useShoppingStore } from "@/store/shoppingStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { useUIStore, type ProvozSubTab } from "@/store/uiStore";
 import { useBusinessStore } from "@/store/businessStore";
-import { useEmployeeStore } from "@/store/employeeStore";
+import { useJeZamestnanec } from "@/store/employeeStore";
 import { useT, useLocale } from "@/lib/i18n";
 import type { Locale } from "@/store/localeStore";
 
@@ -1798,10 +1798,8 @@ export function ProvozView() {
   const setProvozSubTab = useUIStore((s) => s.setProvozSubTab);
   const setProvozActiveTab = useUIStore((s) => s.setProvozActiveTab);
   const jeObchod = useBusinessStore((s) => s.typProvozu) === "obchod";
-  // Režim zaměstnance: zapnuto A zamčeno → jen Kasa + tlačítko odemknout.
-  const empEnabled = useEmployeeStore((s) => s.enabled);
-  const empLocked = useEmployeeStore((s) => s.locked);
-  const zamestnanec = empEnabled && empLocked;
+  // Režim zaměstnance: lokální PIN-zámek NEBO cloud role "employee" → jen Kasa.
+  const zamestnanec = useJeZamestnanec();
   const [tab, setTabRaw] = useState<ProvozTab>("kasa");
 
   // Přepnutí vnitřní záložky vždy propiš i do trvalého stavu v uiStore, aby

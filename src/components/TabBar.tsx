@@ -6,7 +6,7 @@ import { useShoppingStore } from "@/store/shoppingStore";
 import { useRecurringStore } from "@/store/recurringStore";
 import { useModeStore } from "@/store/modeStore";
 import { useBusinessStore } from "@/store/businessStore";
-import { useEmployeeStore } from "@/store/employeeStore";
+import { useJeZamestnanec } from "@/store/employeeStore";
 import { useFeaturesStore } from "@/store/featuresStore";
 import { useT, TranslationKey } from "@/lib/i18n";
 
@@ -58,7 +58,7 @@ export function TabBar() {
   const openProvoz = useUIStore((s) => s.openProvoz);
   const { mode } = useModeStore();
   const jeObchod = useBusinessStore((s) => s.typProvozu) === "obchod";
-  const zamestnanec = useEmployeeStore((s) => s.enabled && s.locked);
+  const zamestnanec = useJeZamestnanec();
   const t = useT();
   const shoppingMode = mode === "provoz" ? "provoz" : "domacnost";
   const shoppingCount = useShoppingStore((s) => s.getItems(shoppingMode).filter((i) => !i.checked).length);

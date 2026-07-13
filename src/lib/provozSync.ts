@@ -7,7 +7,7 @@ import { useProvozShareStore } from "@/store/provozShareStore";
 import { useProvozStore } from "@/store/provozStore";
 import { useKasaStore } from "@/store/kasaStore";
 
-type Tabulka = "shared_provoz_polozky" | "shared_provoz_menu";
+type Tabulka = "shared_provoz_polozky" | "shared_provoz_menu" | "shared_provoz_prodejky";
 
 let realtimeCanal: ReturnType<typeof supabase.channel> | null = null;
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
@@ -55,14 +55,35 @@ async function pullMenu(provozId: string) {
   useKasaStore.setState({ menu: [...cloud, ...jenLokalni] });
 }
 
+// Prodejky: sdílíme jako EVIDENCI tržby. Sklad se NEodečítá podruhé —
+// odečet řeší ten, kdo prodává (lokálně), tady jen sloučíme seznam účtenek,
+// ať majitel vidí, co zaměstnanec prodal.
+async function pullProdejky(provozId: string) {
+  const { data } = await supabase
+    .from("shared_provoz_prodejky")
+    .select("client_id, payload, deleted")
+    .eq("provozovna_id", provozId);
+  if (!data) return;
+  const cloud = data.filter((r) => !r.deleted).map((r) => r.payload as any);
+  const cloudDeleted = new Set(data.filter((r) => r.deleted).map((r) => r.client_id));
+  const local = useKasaStore.getState().prodejky;
+  const cloudIds = new Set(cloud.map((i: any) => i.id));
+  const jenLokalni = local.filter((i) => !cloudIds.has(i.id) && !cloudDeleted.has(i.id));
+  // seřaď podle data (nejnovější nahoře), ať účtenky nepřeskakují
+  const vse = [...cloud, ...jenLokalni].sort((a, b) => (b.datum || "").localeCompare(a.datum || ""));
+  useKasaStore.setState({ prodejky: vse });
+}
+
 export async function provozSyncNow() {
   const pid = useProvozShareStore.getState().provozovnaId;
   if (!pid) return;
   try {
     await pushItems("shared_provoz_polozky", pid, useProvozStore.getState().polozky);
     await pushItems("shared_provoz_menu", pid, useKasaStore.getState().menu);
+    await pushItems("shared_provoz_prodejky", pid, useKasaStore.getState().prodejky);
     await pullSklad(pid);
     await pullMenu(pid);
+    await pullProdejky(pid);
   } catch { /* sync není kritický, appka jede lokálně */ }
 }
 
@@ -73,6 +94,7 @@ export function provozSchedulePush() {
   pushTimer = setTimeout(() => {
     pushItems("shared_provoz_polozky", pid, useProvozStore.getState().polozky).catch(() => {});
     pushItems("shared_provoz_menu", pid, useKasaStore.getState().menu).catch(() => {});
+    pushItems("shared_provoz_prodejky", pid, useKasaStore.getState().prodejky).catch(() => {});
   }, 1200);
 }
 
@@ -87,6 +109,9 @@ export function provozStartRealtime() {
     .on("postgres_changes",
       { event: "*", schema: "public", table: "shared_provoz_menu", filter: `provozovna_id=eq.${pid}` },
       () => { pullMenu(pid).catch(() => {}); })
+    .on("postgres_changes",
+      { event: "*", schema: "public", table: "shared_provoz_prodejky", filter: `provozovna_id=eq.${pid}` },
+      () => { pullProdejky(pid).catch(() => {}); })
     .subscribe();
 }
 

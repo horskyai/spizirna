@@ -39,7 +39,28 @@ export const useEmployeeStore = create<EmployeeStore>()(
 );
 
 // Pomocník: je právě aktivní omezený režim zaměstnance? (zapnuto A zamčeno)
+// POZOR: bere v potaz jen LOKÁLNÍ PIN-zámek. Cloud roli přidává
+// jeZamestnanecVcetneCloud() / hook useJeZamestnanec() níže.
 export function jeZamestnanecRezim(): boolean {
   const s = useEmployeeStore.getState();
   return s.enabled && s.locked;
+}
+
+// Zaměstnanec = lokální PIN-zámek NEBO cloud role "employee" (připojil se
+// k provozovně kódem od majitele). Import provozShareStore je uvnitř funkce,
+// ať se předejde cyklickým importům při inicializaci.
+import { useProvozShareStore } from "@/store/provozShareStore";
+
+export function jeZamestnanecVcetneCloud(): boolean {
+  const emp = useEmployeeStore.getState();
+  const lokalni = emp.enabled && emp.locked;
+  const cloudRole = useProvozShareStore.getState().role;
+  return lokalni || cloudRole === "employee";
+}
+
+// React hook — reaktivně sleduje lokální zámek i cloud roli.
+export function useJeZamestnanec(): boolean {
+  const lokalni = useEmployeeStore((s) => s.enabled && s.locked);
+  const cloudRole = useProvozShareStore((s) => s.role);
+  return lokalni || cloudRole === "employee";
 }
