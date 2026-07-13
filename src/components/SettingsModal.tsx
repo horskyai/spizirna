@@ -188,10 +188,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             )}
           </Section>
 
-          {/* ── Moje zařízení ── seznam + odebrat + přidat slot */}
-          <Section icon={<Smartphone size={15} />} title={t("device.settingsTitle")}>
-            <DevicesSection t={t} />
-          </Section>
+          {/* ══ 2. SDÍLENÍ ══ nejdůležitější nová funkce, hned pod účtem ══ */}
 
           {/* ── Rodina / sdílení domácnosti ── jen v domácnosti */}
           {mode !== "provoz" && (
@@ -200,23 +197,14 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             </Section>
           )}
 
-          {/* ── Plán ── tlačítka zatím ŠABLONA, bez napojení na platby */}
-          <Section icon={<Crown size={15} />} title={t("settings.plan")}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 2px 10px" }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{planLabel}</span>
-              {isTrialActive() && profile?.trial_ends_at && (
-                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green-dark)", background: "var(--green-light)", padding: "4px 10px", borderRadius: 99 }}>
-                  {t("settings.trialEnds").replace("{date}", formatDateShort(profile.trial_ends_at))}
-                </span>
-              )}
-            </div>
-            {/* Změna plánu / zrušení předplatného = platby → až Google Play fáze
-                (Play Billing). Do té doby tlačítka skrytá, ať nematou (byly to
-                prázdné TODO handlery). Zobrazujeme jen informaci o plánu. */}
-            <p style={{ fontSize: 12, color: "var(--text-tertiary)", lineHeight: 1.4, margin: "2px 2px 0" }}>
-              {t("settings.planInfo")}
-            </p>
-          </Section>
+          {/* ── Sdílení provozovny (majitel ↔ zaměstnanec) ── jen v provozu ── */}
+          {mode === "provoz" && (
+            <Section icon={<Users size={15} />} title={t("provshare.title")}>
+              <ProvozShareSection t={t} />
+            </Section>
+          )}
+
+          {/* ══ 3. NASTAVENÍ REŽIMU ══ co se často ladí ══ */}
 
           {/* ── Sledování kalorií ── volitelná funkce, jen v domácnosti.
               Zapnutím se zobrazí tab "Jídlo", kalorie u produktů a denní cíl. */}
@@ -281,12 +269,33 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           </Section>
           )}
 
-          {/* ── Sdílení provozovny (majitel ↔ zaměstnanec) ── jen v provozu ── */}
-          {mode === "provoz" && (
-            <Section icon={<Users size={15} />} title={t("provshare.title")}>
-              <ProvozShareSection t={t} />
-            </Section>
+          {/* ── Typ provozu ── jen v provozu; změna je zamčená přes potvrzení ── */}
+          {mode === "provoz" && typProvozu && (
+          <Section icon={<Store size={15} />} title={t("settings.typProvozu")}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
+                {typProvozu === "obchod" ? t("settings.typObchod") : t("settings.typRestaurace")}
+              </span>
+              <button
+                onClick={() => {
+                  const cil = typProvozu === "obchod" ? "restaurace" : "obchod";
+                  const cilLabel = cil === "obchod" ? t("settings.typObchod") : t("settings.typRestaurace");
+                  if (confirm(t("settings.typZmenaQ").replace("{typ}", cilLabel))) {
+                    setTypProvozu(cil);
+                  }
+                }}
+                style={{ fontSize: 13, fontWeight: 600, color: "var(--green-primary)", background: "var(--green-light)", border: "none", borderRadius: 10, padding: "8px 14px" }}
+              >
+                {t("settings.typZmenit")}
+              </button>
+            </div>
+            <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>
+              {t("settings.typHint")}
+            </p>
+          </Section>
           )}
+
+          {/* ══ 4. FIRMA + ZAMĚSTNANEC ══ občasné provozní nastavení ══ */}
 
           {/* ── Údaje firmy pro účtenku / doklady ── jen v provozu ── */}
           {mode === "provoz" && (
@@ -357,32 +366,6 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                 </div>
               ))}
             </div>
-          </Section>
-          )}
-
-          {/* ── Typ provozu ── jen v provozu; změna je zamčená přes potvrzení ── */}
-          {mode === "provoz" && typProvozu && (
-          <Section icon={<Store size={15} />} title={t("settings.typProvozu")}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
-                {typProvozu === "obchod" ? t("settings.typObchod") : t("settings.typRestaurace")}
-              </span>
-              <button
-                onClick={() => {
-                  const cil = typProvozu === "obchod" ? "restaurace" : "obchod";
-                  const cilLabel = cil === "obchod" ? t("settings.typObchod") : t("settings.typRestaurace");
-                  if (confirm(t("settings.typZmenaQ").replace("{typ}", cilLabel))) {
-                    setTypProvozu(cil);
-                  }
-                }}
-                style={{ fontSize: 13, fontWeight: 600, color: "var(--green-primary)", background: "var(--green-light)", border: "none", borderRadius: 10, padding: "8px 14px" }}
-              >
-                {t("settings.typZmenit")}
-              </button>
-            </div>
-            <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>
-              {t("settings.typHint")}
-            </p>
           </Section>
           )}
 
@@ -516,6 +499,31 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.exportHint")}</p>
             </Section>
           )}
+
+          {/* ══ ÚČET & PLÁN ══ méně časté ══ */}
+
+          {/* ── Moje zařízení ── jen v PROVOZU (víc zaměstnaneckých zařízení).
+              V domácnosti sdílení řeší Rodina. */}
+          {mode === "provoz" && (
+            <Section icon={<Smartphone size={15} />} title={t("device.settingsTitle")}>
+              <DevicesSection t={t} />
+            </Section>
+          )}
+
+          {/* ── Plán ── info o plánu; platby (změna/zrušení) až s Play Billing. */}
+          <Section icon={<Crown size={15} />} title={t("settings.plan")}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 2px 10px" }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{planLabel}</span>
+              {isTrialActive() && profile?.trial_ends_at && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green-dark)", background: "var(--green-light)", padding: "4px 10px", borderRadius: 99 }}>
+                  {t("settings.trialEnds").replace("{date}", formatDateShort(profile.trial_ends_at))}
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: 12, color: "var(--text-tertiary)", lineHeight: 1.4, margin: "2px 2px 0" }}>
+              {t("settings.planInfo")}
+            </p>
+          </Section>
 
           {/* ── Správa dat ── */}
           <Section icon={<Trash2 size={15} />} title={t("settings.data")}>
@@ -741,7 +749,7 @@ function ProvozShareSection({ t }: { t: ReturnType<typeof useT> }) {
 
 // Rodinné sdílení domácnosti — vytvořit rodinu / připojit se kódem / členové.
 function FamilySection({ t }: { t: ReturnType<typeof useT> }) {
-  const { familyId, joinCode, members, loading, error, createFamily, joinFamily, leaveFamily, refreshFamily } = useFamilyStore();
+  const { familyId, joinCode, role, members, loading, error, createFamily, joinFamily, leaveFamily, refreshFamily } = useFamilyStore();
   const [kod, setKod] = useState("");
   const [zkopirovano, setZkopirovano] = useState(false);
 
@@ -798,9 +806,11 @@ function FamilySection({ t }: { t: ReturnType<typeof useT> }) {
   return (
     <>
       <p style={{ fontSize: 12, color: "var(--text-tertiary)", lineHeight: 1.4, margin: "0 2px 10px" }}>
-        {t("family.shared")}
+        {role === "owner" ? t("family.shared") : t("family.sharedMember")}
       </p>
-      {joinCode && (
+      {/* Kód vidí a rozdává JEN zakladatel (owner). Připojený člen ho nepotřebuje
+          a nesmí zvát další (limit 2 lidi). */}
+      {role === "owner" && joinCode && members.length < 2 && (
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--green-light)", borderRadius: 12, padding: "10px 14px", marginBottom: 10 }}>
           <div>
             <p style={{ fontSize: 10, fontWeight: 700, color: "var(--green-dark)", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>{t("family.yourCode")}</p>
@@ -812,7 +822,7 @@ function FamilySection({ t }: { t: ReturnType<typeof useT> }) {
         </div>
       )}
       <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: "0 2px 8px" }}>
-        {t("family.members").replace("{n}", String(members.length))}
+        {t("family.members").replace("{n}", String(members.length))} / 2
       </p>
       <button onClick={handleLeave} disabled={loading} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", justifyContent: "center", padding: "10px", borderRadius: 12, background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--red)", fontSize: 13, fontWeight: 700 }}>
         <LogOut size={14} /> {t("family.leave")}

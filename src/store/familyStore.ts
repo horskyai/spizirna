@@ -17,6 +17,7 @@ export interface FamilyMember {
 interface FamilyStore {
   familyId: string | null;
   joinCode: string | null;
+  role: "owner" | "member" | null;  // owner = zakladatel (vidí kód, zve), member = připojený
   members: FamilyMember[];
   loading: boolean;
   error: string | null;
@@ -38,6 +39,7 @@ export const useFamilyStore = create<FamilyStore>()(
     (set, get) => ({
       familyId: null,
       joinCode: null,
+      role: null,
       members: [],
       loading: false,
       error: null,
@@ -49,7 +51,7 @@ export const useFamilyStore = create<FamilyStore>()(
         if (error) { set({ error: error.message }); return null; }
         const row = Array.isArray(data) ? data[0] : data;
         if (!row?.family_id) { set({ error: "Nepodařilo se vytvořit rodinu" }); return null; }
-        set({ familyId: row.family_id, joinCode: row.join_code });
+        set({ familyId: row.family_id, joinCode: row.join_code, role: "owner" });
         get().refreshMembers();
         return row.join_code as string;
       },
@@ -61,7 +63,7 @@ export const useFamilyStore = create<FamilyStore>()(
         if (error) { set({ error: error.message }); return false; }
         const fid = typeof data === "string" ? data : (data as any)?.[0] ?? null;
         if (!fid) { set({ error: "Neplatný kód" }); return false; }
-        set({ familyId: fid });
+        set({ familyId: fid, role: "member" });
         // dotáhni kód (kvůli zobrazení) + členy
         get().refreshFamily();
         get().refreshMembers();
@@ -76,27 +78,31 @@ export const useFamilyStore = create<FamilyStore>()(
         if (uid) {
           await supabase.from("family_members").delete().eq("family_id", fid).eq("user_id", uid);
         }
-        set({ familyId: null, joinCode: null, members: [] });
+        set({ familyId: null, joinCode: null, role: null, members: [] });
       },
 
       refreshFamily: async () => {
         const { data: userData } = await supabase.auth.getUser();
         const uid = userData?.user?.id;
-        if (!uid) { set({ familyId: null, joinCode: null }); return; }
-        // najdi členství → rodinu
+        if (!uid) { set({ familyId: null, joinCode: null, role: null }); return; }
+        // najdi členství → rodinu (i s rolí)
         const { data: mem } = await supabase
           .from("family_members")
-          .select("family_id")
+          .select("family_id, role")
           .eq("user_id", uid)
           .limit(1)
           .maybeSingle();
-        if (!mem?.family_id) { set({ familyId: null, joinCode: null, members: [] }); return; }
+        if (!mem?.family_id) { set({ familyId: null, joinCode: null, role: null, members: [] }); return; }
         const { data: fam } = await supabase
           .from("families")
           .select("id, join_code")
           .eq("id", mem.family_id)
           .maybeSingle();
-        set({ familyId: mem.family_id, joinCode: fam?.join_code ?? null });
+        set({
+          familyId: mem.family_id,
+          joinCode: fam?.join_code ?? null,
+          role: (mem.role as "owner" | "member") ?? "member",
+        });
         get().refreshMembers();
       },
 

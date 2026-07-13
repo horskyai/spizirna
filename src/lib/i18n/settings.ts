@@ -182,7 +182,8 @@ export const settings: Record<string, Translation> = {
 
   // Rodinné sdílení domácnosti
   "family.title": { cs: "Rodina", sk: "Rodina" },
-  "family.hint": { cs: "Sdílej spížírnu a nákupní seznam s rodinou. Vytvoř rodinu a pošli kód, nebo se připoj kódem od někoho jiného.", sk: "Zdieľaj špajzu a nákupný zoznam s rodinou. Vytvor rodinu a pošli kód, alebo sa pripoj kódom od niekoho iného." },
+  "family.hint": { cs: "Sdílej spížírnu a nákupní seznam s druhou osobou (např. partnerem) — přidáš ji jedním kódem a máte vše společné. Teď zdarma; později prémiová funkce za předplatné.", sk: "Zdieľaj špajzu a nákupný zoznam s druhou osobou (napr. partnerom) — pridáš ju jedným kódom a máte všetko spoločné. Teraz zadarmo; neskôr prémiová funkcia za predplatné." },
+  "family.sharedMember": { cs: "Jsi připojen(a) ke sdílené domácnosti. Spížírna a nákupní seznam se sdílí — změny vidí oba.", sk: "Si pripojený(á) k zdieľanej domácnosti. Špajza a nákupný zoznam sa zdieľajú — zmeny vidia obaja." },
   "family.create": { cs: "Vytvořit rodinu", sk: "Vytvoriť rodinu" },
   "family.join": { cs: "Připojit", sk: "Pripojiť" },
   "family.codePlaceholder": { cs: "Zadej kód (SPIZ-XXXX)", sk: "Zadaj kód (SPIZ-XXXX)" },
