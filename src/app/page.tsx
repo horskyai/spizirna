@@ -27,6 +27,8 @@ import { useDiscountStore, WHEEL_AFTER_DAYS } from "@/store/discountStore";
 import { scheduleDailyNudges } from "@/lib/notifications";
 import { usePantryStore } from "@/store/pantryStore";
 import { useShoppingStore } from "@/store/shoppingStore";
+import { useFamilyStore } from "@/store/familyStore";
+import { syncNow, startRealtime, stopRealtime, schedulePush } from "@/lib/familySync";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   constructor(props: { children: ReactNode }) {
@@ -83,6 +85,31 @@ export default function Home() {
   useEffect(() => {
     if (user) markFirstSeen(Date.now());
   }, [user, markFirstSeen]);
+
+  // Rodinné sdílení — po přihlášení zjisti, jestli je uživatel v rodině;
+  // pokud ano, stáhni sdílenou spížírnu/nákup a zapni realtime (živé změny).
+  useEffect(() => {
+    if (!user) return;
+    let zapnuto = true;
+    (async () => {
+      await useFamilyStore.getState().refreshFamily();
+      if (!zapnuto) return;
+      if (useFamilyStore.getState().familyId) {
+        await syncNow();
+        startRealtime();
+      }
+    })();
+    return () => { zapnuto = false; stopRealtime(); };
+  }, [user]);
+
+  // Když se změní spížírna nebo nákup a uživatel je v rodině, pošli změny do
+  // cloudu (debounced). Odběr se nastaví jednou; schedulePush si sám ověří,
+  // jestli je v rodině (jinak nedělá nic).
+  useEffect(() => {
+    const unsubP = usePantryStore.subscribe(() => schedulePush());
+    const unsubS = useShoppingStore.subscribe(() => schedulePush());
+    return () => { unsubP(); unsubS(); };
+  }, []);
 
   // Přátelské lokální notifikace (jen v appce) — při každém otevření přeplánuj
   // denní pošťouchnutí na příští dny v 9:00. Spočítá, co brzy končí, kolik je

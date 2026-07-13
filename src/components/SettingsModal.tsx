@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus, Download, BarChart3, Lock } from "lucide-react";
+import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus, Download, BarChart3, Lock, Users, Copy, Check } from "lucide-react";
 import { exportHouseholdJSON, exportPantryCSV } from "@/lib/exportData";
 import { StatsModal } from "@/components/StatsModal";
 import { useAuthStore, type DeviceRow } from "@/store/authStore";
@@ -16,6 +16,8 @@ import { formatDateShort } from "@/lib/dateUtils";
 import { scheduleDailyNudges, cancelDailyNudges } from "@/lib/notifications";
 import { usePantryStore } from "@/store/pantryStore";
 import { useShoppingStore } from "@/store/shoppingStore";
+import { useFamilyStore } from "@/store/familyStore";
+import { syncNow, startRealtime, stopRealtime } from "@/lib/familySync";
 
 // Kontaktní e-mail podpory (appkový Gmail).
 const SUPPORT_EMAIL = "spizirnacz@gmail.com";
@@ -188,6 +190,13 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           <Section icon={<Smartphone size={15} />} title={t("device.settingsTitle")}>
             <DevicesSection t={t} />
           </Section>
+
+          {/* ── Rodina / sdílení domácnosti ── jen v domácnosti */}
+          {mode !== "provoz" && (
+            <Section icon={<Users size={15} />} title={t("family.title")}>
+              <FamilySection t={t} />
+            </Section>
+          )}
 
           {/* ── Plán ── tlačítka zatím ŠABLONA, bez napojení na platby */}
           <Section icon={<Crown size={15} />} title={t("settings.plan")}>
@@ -644,6 +653,88 @@ function BadgesSection({ badges, t }: { badges: BadgeState[]; t: ReturnType<type
           );
         })}
       </div>
+    </>
+  );
+}
+
+// Rodinné sdílení domácnosti — vytvořit rodinu / připojit se kódem / členové.
+function FamilySection({ t }: { t: ReturnType<typeof useT> }) {
+  const { familyId, joinCode, members, loading, error, createFamily, joinFamily, leaveFamily, refreshFamily } = useFamilyStore();
+  const [kod, setKod] = useState("");
+  const [zkopirovano, setZkopirovano] = useState(false);
+
+  useEffect(() => { refreshFamily(); }, [refreshFamily]);
+
+  const handleCreate = async () => {
+    const code = await createFamily();
+    if (code) { startRealtime(); syncNow(); }
+  };
+  const handleJoin = async () => {
+    if (!kod.trim()) return;
+    const ok = await joinFamily(kod.trim());
+    if (ok) { setKod(""); startRealtime(); syncNow(); }
+  };
+  const handleLeave = async () => {
+    stopRealtime();
+    await leaveFamily();
+  };
+  const kopirovat = () => {
+    if (joinCode) {
+      navigator.clipboard?.writeText(joinCode).catch(() => {});
+      setZkopirovano(true);
+      setTimeout(() => setZkopirovano(false), 1500);
+    }
+  };
+
+  // Není v rodině → nabídni vytvořit / připojit
+  if (!familyId) {
+    return (
+      <>
+        <p style={{ fontSize: 12, color: "var(--text-tertiary)", lineHeight: 1.4, margin: "0 2px 12px" }}>
+          {t("family.hint")}
+        </p>
+        <button onClick={handleCreate} disabled={loading} className="btn-primary" style={{ width: "100%", marginBottom: 10 }}>
+          <Users size={16} /> {t("family.create")}
+        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input
+            value={kod}
+            onChange={(e) => setKod(e.target.value.toUpperCase())}
+            placeholder={t("family.codePlaceholder")}
+            style={{ flex: 1, padding: "10px 12px", borderRadius: 12, fontSize: 14, border: "1.5px solid var(--border)", background: "white", outline: "none", color: "var(--text-primary)", letterSpacing: "0.05em" }}
+          />
+          <button onClick={handleJoin} disabled={loading || !kod.trim()} style={{ padding: "10px 16px", borderRadius: 12, background: "var(--green-primary)", color: "white", fontSize: 13, fontWeight: 700, opacity: !kod.trim() ? 0.5 : 1 }}>
+            {t("family.join")}
+          </button>
+        </div>
+        {error && <p style={{ fontSize: 12, color: "var(--red)", margin: "8px 2px 0" }}>{error}</p>}
+      </>
+    );
+  }
+
+  // V rodině → ukaž kód + členy + odejít
+  return (
+    <>
+      <p style={{ fontSize: 12, color: "var(--text-tertiary)", lineHeight: 1.4, margin: "0 2px 10px" }}>
+        {t("family.shared")}
+      </p>
+      {joinCode && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--green-light)", borderRadius: 12, padding: "10px 14px", marginBottom: 10 }}>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "var(--green-dark)", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>{t("family.yourCode")}</p>
+            <p style={{ fontSize: 18, fontWeight: 800, color: "var(--green-dark)", letterSpacing: "0.08em", margin: "2px 0 0" }}>{joinCode}</p>
+          </div>
+          <button onClick={kopirovat} style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 12px", borderRadius: 10, background: "white", border: "1.5px solid var(--green-primary)", color: "var(--green-dark)", fontSize: 12, fontWeight: 700 }}>
+            {zkopirovano ? <><Check size={13} /> {t("family.copied")}</> : <><Copy size={13} /> {t("family.copy")}</>}
+          </button>
+        </div>
+      )}
+      <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: "0 2px 8px" }}>
+        {t("family.members").replace("{n}", String(members.length))}
+      </p>
+      <button onClick={handleLeave} disabled={loading} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", justifyContent: "center", padding: "10px", borderRadius: 12, background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--red)", fontSize: 13, fontWeight: 700 }}>
+        <LogOut size={14} /> {t("family.leave")}
+      </button>
     </>
   );
 }

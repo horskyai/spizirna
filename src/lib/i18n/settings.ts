@@ -179,4 +179,17 @@ export const settings: Record<string, Translation> = {
   "stats.level": { cs: "Úroveň", sk: "Úroveň" },
   "stats.score": { cs: "Skóre", sk: "Skóre" },
   "stats.streak": { cs: "Série dní", sk: "Séria dní" },
+
+  // Rodinné sdílení domácnosti
+  "family.title": { cs: "Rodina", sk: "Rodina" },
+  "family.hint": { cs: "Sdílej spížírnu a nákupní seznam s rodinou. Vytvoř rodinu a pošli kód, nebo se připoj kódem od někoho jiného.", sk: "Zdieľaj špajzu a nákupný zoznam s rodinou. Vytvor rodinu a pošli kód, alebo sa pripoj kódom od niekoho iného." },
+  "family.create": { cs: "Vytvořit rodinu", sk: "Vytvoriť rodinu" },
+  "family.join": { cs: "Připojit", sk: "Pripojiť" },
+  "family.codePlaceholder": { cs: "Zadej kód (SPIZ-XXXX)", sk: "Zadaj kód (SPIZ-XXXX)" },
+  "family.shared": { cs: "Spížírna a nákupní seznam se sdílí se členy rodiny. Změny se projeví u všech.", sk: "Špajza a nákupný zoznam sa zdieľajú s členmi rodiny. Zmeny sa prejavia u všetkých." },
+  "family.yourCode": { cs: "Kód rodiny", sk: "Kód rodiny" },
+  "family.copy": { cs: "Kopírovat", sk: "Kopírovať" },
+  "family.copied": { cs: "Zkopírováno", sk: "Skopírované" },
+  "family.members": { cs: "Členů v rodině: {n}", sk: "Členov v rodine: {n}" },
+  "family.leave": { cs: "Opustit rodinu", sk: "Opustiť rodinu" },
 };
