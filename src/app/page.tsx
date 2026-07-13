@@ -24,6 +24,9 @@ import { useBusinessStore } from "@/store/businessStore";
 import { SettingsModal } from "@/components/SettingsModal";
 import { DiscountWheel } from "@/components/DiscountWheel";
 import { useDiscountStore, WHEEL_AFTER_DAYS } from "@/store/discountStore";
+import { scheduleDailyNudges } from "@/lib/notifications";
+import { usePantryStore } from "@/store/pantryStore";
+import { useShoppingStore } from "@/store/shoppingStore";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   constructor(props: { children: ReactNode }) {
@@ -80,6 +83,24 @@ export default function Home() {
   useEffect(() => {
     if (user) markFirstSeen(Date.now());
   }, [user, markFirstSeen]);
+
+  // Přátelské lokální notifikace (jen v appce) — při každém otevření přeplánuj
+  // denní pošťouchnutí na příští dny v 9:00. Spočítá, co brzy končí, kolik je
+  // na nákupu a jak dlouho appku neotevřel (kvůli výběru vhodné zprávy).
+  useEffect(() => {
+    if (!user) return;
+    try {
+      const LAST_OPEN_KEY = "last-opened-at";
+      const prev = Number(localStorage.getItem(LAST_OPEN_KEY) || 0);
+      const daysAgo = prev ? Math.floor((Date.now() - prev) / 86_400_000) : 0;
+      localStorage.setItem(LAST_OPEN_KEY, String(Date.now()));
+
+      const expiringCount = usePantryStore.getState().getExpiringItems(3).length;
+      const shoppingCount = useShoppingStore.getState().getItems("domacnost").filter((i) => !i.checked).length;
+
+      scheduleDailyNudges({ expiringCount, shoppingCount, lastOpenedDaysAgo: daysAgo });
+    } catch { /* notifikace nejsou kritické */ }
+  }, [user]);
 
   // Úplný reset aplikace: otevřením /?reset se smažou všechna lokální data
   // a appka začne od splash screenu a onboardingu jako při první instalaci

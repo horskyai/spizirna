@@ -13,6 +13,9 @@ import { useFeaturesStore } from "@/store/featuresStore";
 import { useGamificationStore, type BadgeState } from "@/store/gamificationStore";
 import { useT, useLocale } from "@/lib/i18n";
 import { formatDateShort } from "@/lib/dateUtils";
+import { scheduleDailyNudges, cancelDailyNudges } from "@/lib/notifications";
+import { usePantryStore } from "@/store/pantryStore";
+import { useShoppingStore } from "@/store/shoppingStore";
 
 // Kontaktní e-mail podpory (appkový Gmail).
 const SUPPORT_EMAIL = "spizirnacz@gmail.com";
@@ -85,6 +88,14 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
     const next = !notif;
     setNotif(next);
     localStorage.setItem(EXPIRY_NOTIF_KEY, next ? "on" : "off");
+    // Zapnutí → naplánuj přátelské notifikace; vypnutí → zruš je (jen v appce).
+    if (next) {
+      const expiringCount = usePantryStore.getState().getExpiringItems(3).length;
+      const shoppingCount = useShoppingStore.getState().getItems("domacnost").filter((i) => !i.checked).length;
+      scheduleDailyNudges({ expiringCount, shoppingCount, lastOpenedDaysAgo: 0 });
+    } else {
+      cancelDailyNudges();
+    }
   };
 
   const resetAllData = () => {
