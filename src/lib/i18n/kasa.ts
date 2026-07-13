@@ -131,4 +131,15 @@ export const kasa: Record<string, Translation> = {
   "kasa.storno": { cs: "Storno", sk: "Storno" },
   "kasa.stornoQ": { cs: "Stornovat účtenku a vrátit zboží na sklad?", sk: "Stornovať účtenku a vrátiť tovar na sklad?" },
   "kasa.polozek": { cs: "{n} položek", sk: "{n} položiek" },
+
+  // Tisk účtenky (BETA — Bluetooth termotiskárna)
+  "kasa.tiskTitul": { cs: "Vytisknout účtenku", sk: "Vytlačiť účtenku" },
+  "kasa.tiskBetaHint": { cs: "Tisk na Bluetooth účtenkovou tiskárnu. Funkce je ve zkušebním provozu — nemusí fungovat na všech tiskárnách.", sk: "Tlač na Bluetooth účtenkovú tlačiareň. Funkcia je v skúšobnej prevádzke — nemusí fungovať na všetkých tlačiarňach." },
+  "kasa.tiskNajdi": { cs: "Najít tiskárnu (Bluetooth)", sk: "Nájsť tlačiareň (Bluetooth)" },
+  "kasa.tiskHledam": { cs: "Hledám tiskárny…", sk: "Hľadám tlačiarne…" },
+  "kasa.tiskHledejZnovu": { cs: "Hledat znovu", sk: "Hľadať znova" },
+  "kasa.tiskTisknu": { cs: "Tisknu účtenku…", sk: "Tlačím účtenku…" },
+  "kasa.tiskHotovo": { cs: "Účtenka vytištěna ✓", sk: "Účtenka vytlačená ✓" },
+  "kasa.tiskChyba": { cs: "Tisk se nezdařil. Zkontroluj tiskárnu.", sk: "Tlač sa nepodarila. Skontroluj tlačiareň." },
+  "kasa.tiskZavrit": { cs: "Zavřít", sk: "Zavrieť" },
 };

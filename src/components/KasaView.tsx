@@ -17,6 +17,8 @@ import { EmployeeUnlockButton } from "@/components/EmployeeLock";
 import { Scanner } from "@/components/Scanner";
 import { lookupProductByEAN } from "@/lib/productLookup";
 import { useT, useLocale } from "@/lib/i18n";
+import { Capacitor } from "@capacitor/core";
+import { najdiTiskarny, tiskUctenky } from "@/lib/tiskUctenky";
 
 // Dnešní datum jako YYYY-MM-DD (lokální, ne UTC — ať tržba sedí na den obsluhy).
 function dnesISO(): string {
@@ -550,6 +552,13 @@ export function KasaView() {
   const [nasobic, setNasobic] = useState(1); // množství, které se přidá k dalšímu kliknutému zboží
   const [prijato, setPrijato] = useState(""); // kolik zákazník dal hotově (volitelné → počítá vrácení)
   const [toast, setToast] = useState<string | null>(null);
+  // Tisk účtenky (BETA, jen v appce) — po prodeji nabídneme vytisknout.
+  const firma = useBusinessStore((s) => s.firma);
+  const nazevFirmy = useBusinessStore((s) => s.name);
+  const jeNativni = Capacitor.isNativePlatform();
+  const [tiskProdejkaId, setTiskProdejkaId] = useState<string | null>(null);
+  const [tiskStav, setTiskStav] = useState<"idle" | "hledam" | "tisknu">("idle");
+  const [tiskarny, setTiskarny] = useState<{ name: string; address: string }[]>([]);
 
   const dnes = dnesISO();
   const trzba = getTrzbaDne(dnes);
@@ -661,7 +670,41 @@ export function KasaView() {
       setPrijato("");
       setToast(t("kasa.zaplaceno").replace("{n}", castka.toLocaleString(dateLocale)));
       setTimeout(() => setToast(null), 2500);
+      // V appce nabídni tisk účtenky (BETA). Na webu tisk není.
+      if (jeNativni) setTiskProdejkaId(id);
     }
+  };
+
+  // Tisk účtenky (BETA): najdi BT tiskárny → vyber → vytiskni.
+  const spustitHledaniTiskaren = async () => {
+    setTiskStav("hledam");
+    const found = await najdiTiskarny();
+    setTiskarny(found);
+    setTiskStav("idle");
+  };
+  const vytisknout = async (address: string) => {
+    const prodejka = prodejky.find((p) => p.id === tiskProdejkaId);
+    if (!prodejka) return;
+    setTiskStav("tisknu");
+    const res = await tiskUctenky(
+      {
+        nazevFirmy: nazevFirmy || "",
+        firma: { ico: firma.ico, dic: firma.dic, adresa: firma.adresa, telefon: firma.telefon, patickaUctenky: firma.patickaUctenky },
+        radky: prodejka.radky.map((r) => ({ nazev: r.nazev, mnozstvi: r.mnozstvi, cena: r.cena })),
+        celkem: prodejka.celkem,
+        platba: prodejka.platba,
+        datum: prodejka.datum,
+      },
+      address,
+    );
+    setTiskStav("idle");
+    if (res.ok) {
+      setToast(t("kasa.tiskHotovo"));
+      setTiskProdejkaId(null);
+    } else {
+      setToast(t("kasa.tiskChyba"));
+    }
+    setTimeout(() => setToast(null), 2500);
   };
 
   if (showSprava) return <SpravaMenu onClose={() => setShowSprava(false)} />;
@@ -912,6 +955,51 @@ export function KasaView() {
           t={t}
           dateLocale={dateLocale}
         />
+      )}
+
+      {/* Tisk účtenky (BETA) — po zaplacení, jen v appce */}
+      {tiskProdejkaId && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 320, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+          <div onClick={() => setTiskProdejkaId(null)} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} />
+          <div className="relative rounded-t-3xl px-5 pt-5 pb-10 animate-slide-up" style={{ background: "var(--bg-primary)", paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+              <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("kasa.tiskTitul")}</h3>
+              <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#E8862E", padding: "2px 7px", borderRadius: 99, letterSpacing: "0.04em" }}>BETA</span>
+            </div>
+            <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: "0 0 16px", lineHeight: 1.4 }}>{t("kasa.tiskBetaHint")}</p>
+
+            {tiskStav === "hledam" && (
+              <p style={{ fontSize: 14, color: "var(--text-secondary)", textAlign: "center", padding: "16px 0" }}>{t("kasa.tiskHledam")}</p>
+            )}
+            {tiskStav === "tisknu" && (
+              <p style={{ fontSize: 14, color: "var(--text-secondary)", textAlign: "center", padding: "16px 0" }}>{t("kasa.tiskTisknu")}</p>
+            )}
+
+            {tiskStav === "idle" && tiskarny.length === 0 && (
+              <button onClick={spustitHledaniTiskaren} className="btn-primary" style={{ width: "100%" }}>
+                {t("kasa.tiskNajdi")}
+              </button>
+            )}
+            {tiskStav === "idle" && tiskarny.length > 0 && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {tiskarny.map((tp) => (
+                  <button key={tp.address} onClick={() => vytisknout(tp.address)}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, background: "white", border: "1.5px solid var(--border)", textAlign: "left" }}>
+                    <span style={{ fontSize: 18 }}>🖨️</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{tp.name}</span>
+                  </button>
+                ))}
+                <button onClick={spustitHledaniTiskaren} style={{ fontSize: 13, color: "var(--green-dark)", fontWeight: 600, padding: "8px 0" }}>
+                  {t("kasa.tiskHledejZnovu")}
+                </button>
+              </div>
+            )}
+
+            <button onClick={() => setTiskProdejkaId(null)} className="btn-secondary" style={{ width: "100%", marginTop: 10 }}>
+              {t("kasa.tiskZavrit")}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* Toast po zaplacení */}
