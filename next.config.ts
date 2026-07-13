@@ -2,11 +2,9 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   turbopack: {},
-  // ESLint chyby nesmí blokovat produkční build (Vercel deploy). ESLint
-  // zůstává jako lokální varování při vývoji, ale nezhatí nasazení appky.
-  eslint: { ignoreDuringBuilds: true },
-  // Totéž pro typové chyby — build appky nesmí spadnout kvůli typu (tsc
-  // kontrolujeme zvlášť). Bezpečnostní pojistka proti výpadku deploye.
+  // Typové chyby nesmí shodit produkční build (tsc kontrolujeme zvlášť).
+  // Pojistka proti výpadku deploye. (ESLint v Next 16 build neblokuje;
+  // skutečná příčina padání deploye byl peer konflikt v npm → .npmrc.)
   typescript: { ignoreBuildErrors: true },
   async headers() {
     return [
