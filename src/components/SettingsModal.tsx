@@ -18,6 +18,8 @@ import { usePantryStore } from "@/store/pantryStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useFamilyStore } from "@/store/familyStore";
 import { syncNow, startRealtime, stopRealtime } from "@/lib/familySync";
+import { useProvozShareStore } from "@/store/provozShareStore";
+import { provozSyncNow, provozStartRealtime, provozStopRealtime } from "@/lib/provozSync";
 
 // Kontaktní e-mail podpory (appkový Gmail).
 const SUPPORT_EMAIL = "spizirnacz@gmail.com";
@@ -277,6 +279,13 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               style={{ width: "100%", background: "var(--bg-primary)", borderRadius: 12, padding: "12px 14px", border: "1.5px solid var(--border)", outline: "none", fontSize: 15, color: "var(--text-primary)" }}
             />
           </Section>
+          )}
+
+          {/* ── Sdílení provozovny (majitel ↔ zaměstnanec) ── jen v provozu ── */}
+          {mode === "provoz" && (
+            <Section icon={<Users size={15} />} title={t("provshare.title")}>
+              <ProvozShareSection t={t} />
+            </Section>
           )}
 
           {/* ── Údaje firmy pro účtenku / doklady ── jen v provozu ── */}
@@ -653,6 +662,79 @@ function BadgesSection({ badges, t }: { badges: BadgeState[]; t: ReturnType<type
           );
         })}
       </div>
+    </>
+  );
+}
+
+// Sdílení provozovny — majitel vytvoří provoz + pošle kód, zaměstnanec se připojí.
+function ProvozShareSection({ t }: { t: ReturnType<typeof useT> }) {
+  const { provozovnaId, joinCode, role, members, loading, error, createProvozovna, joinProvozovna, leaveProvozovna, refreshProvozovna } = useProvozShareStore();
+  const [kod, setKod] = useState("");
+  const [zkopirovano, setZkopirovano] = useState(false);
+
+  useEffect(() => { refreshProvozovna(); }, [refreshProvozovna]);
+
+  const handleCreate = async () => {
+    const code = await createProvozovna();
+    if (code) { provozStartRealtime(); provozSyncNow(); }
+  };
+  const handleJoin = async () => {
+    if (!kod.trim()) return;
+    const ok = await joinProvozovna(kod.trim());
+    if (ok) { setKod(""); provozStartRealtime(); provozSyncNow(); }
+  };
+  const handleLeave = async () => { provozStopRealtime(); await leaveProvozovna(); };
+  const kopirovat = () => {
+    if (joinCode) {
+      navigator.clipboard?.writeText(joinCode).catch(() => {});
+      setZkopirovano(true); setTimeout(() => setZkopirovano(false), 1500);
+    }
+  };
+
+  if (!provozovnaId) {
+    return (
+      <>
+        <p style={{ fontSize: 12, color: "var(--text-tertiary)", lineHeight: 1.4, margin: "0 2px 12px" }}>
+          {t("provshare.hint")}
+        </p>
+        <button onClick={handleCreate} disabled={loading} className="btn-primary" style={{ width: "100%", marginBottom: 10 }}>
+          <Users size={16} /> {t("provshare.create")}
+        </button>
+        <div style={{ display: "flex", gap: 8 }}>
+          <input value={kod} onChange={(e) => setKod(e.target.value.toUpperCase())} placeholder={t("provshare.codePlaceholder")}
+            style={{ flex: 1, padding: "10px 12px", borderRadius: 12, fontSize: 14, border: "1.5px solid var(--border)", background: "white", outline: "none", color: "var(--text-primary)", letterSpacing: "0.05em" }} />
+          <button onClick={handleJoin} disabled={loading || !kod.trim()} style={{ padding: "10px 16px", borderRadius: 12, background: "var(--green-primary)", color: "white", fontSize: 13, fontWeight: 700, opacity: !kod.trim() ? 0.5 : 1 }}>
+            {t("provshare.join")}
+          </button>
+        </div>
+        {error && <p style={{ fontSize: 12, color: "var(--red)", margin: "8px 2px 0" }}>{error}</p>}
+      </>
+    );
+  }
+
+  return (
+    <>
+      <p style={{ fontSize: 12, color: "var(--text-tertiary)", lineHeight: 1.4, margin: "0 2px 10px" }}>
+        {role === "owner" ? t("provshare.sharedOwner") : t("provshare.sharedEmployee")}
+      </p>
+      {/* Kód ukazujeme jen majiteli — ten ho rozdává zaměstnancům */}
+      {role === "owner" && joinCode && (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", background: "var(--green-light)", borderRadius: 12, padding: "10px 14px", marginBottom: 10 }}>
+          <div>
+            <p style={{ fontSize: 10, fontWeight: 700, color: "var(--green-dark)", textTransform: "uppercase", letterSpacing: "0.05em", margin: 0 }}>{t("provshare.yourCode")}</p>
+            <p style={{ fontSize: 18, fontWeight: 800, color: "var(--green-dark)", letterSpacing: "0.08em", margin: "2px 0 0" }}>{joinCode}</p>
+          </div>
+          <button onClick={kopirovat} style={{ display: "flex", alignItems: "center", gap: 5, padding: "8px 12px", borderRadius: 10, background: "white", border: "1.5px solid var(--green-primary)", color: "var(--green-dark)", fontSize: 12, fontWeight: 700 }}>
+            {zkopirovano ? <><Check size={13} /> {t("family.copied")}</> : <><Copy size={13} /> {t("family.copy")}</>}
+          </button>
+        </div>
+      )}
+      <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: "0 2px 8px" }}>
+        {t("provshare.role")}: <b>{role === "owner" ? t("provshare.owner") : t("provshare.employee")}</b> · {t("provshare.members").replace("{n}", String(members.length))}
+      </p>
+      <button onClick={handleLeave} disabled={loading} style={{ display: "flex", alignItems: "center", gap: 6, width: "100%", justifyContent: "center", padding: "10px", borderRadius: 12, background: "var(--bg-primary)", border: "1.5px solid var(--border)", color: "var(--red)", fontSize: 13, fontWeight: 700 }}>
+        <LogOut size={14} /> {t("provshare.leave")}
+      </button>
     </>
   );
 }

@@ -192,4 +192,19 @@ export const settings: Record<string, Translation> = {
   "family.copied": { cs: "Zkopírováno", sk: "Skopírované" },
   "family.members": { cs: "Členů v rodině: {n}", sk: "Členov v rodine: {n}" },
   "family.leave": { cs: "Opustit rodinu", sk: "Opustiť rodinu" },
+
+  // Sdílení provozovny (majitel ↔ zaměstnanec)
+  "provshare.title": { cs: "Sdílení provozovny", sk: "Zdieľanie prevádzky" },
+  "provshare.hint": { cs: "Sdílej sklad a nabídku kasy mezi telefony. Jako majitel vytvoř provozovnu a pošli kód zaměstnanci — ráno bude mít vše připravené na kase.", sk: "Zdieľaj sklad a ponuku pokladne medzi telefónmi. Ako majiteľ vytvor prevádzku a pošli kód zamestnancovi — ráno bude mať všetko pripravené na pokladni." },
+  "provshare.create": { cs: "Vytvořit provozovnu (jsem majitel)", sk: "Vytvoriť prevádzku (som majiteľ)" },
+  "provshare.join": { cs: "Připojit", sk: "Pripojiť" },
+  "provshare.codePlaceholder": { cs: "Kód od majitele (PROV-XXXX)", sk: "Kód od majiteľa (PROV-XXXX)" },
+  "provshare.sharedOwner": { cs: "Sklad a nabídka kasy se sdílí se zaměstnanci. Změny se u nich projeví.", sk: "Sklad a ponuka pokladne sa zdieľajú so zamestnancami. Zmeny sa u nich prejavia." },
+  "provshare.sharedEmployee": { cs: "Připojeno k provozovně. Sklad a nabídku spravuje majitel — u tebe se změny projeví automaticky.", sk: "Pripojené k prevádzke. Sklad a ponuku spravuje majiteľ — u teba sa zmeny prejavia automaticky." },
+  "provshare.yourCode": { cs: "Kód provozovny", sk: "Kód prevádzky" },
+  "provshare.role": { cs: "Role", sk: "Rola" },
+  "provshare.owner": { cs: "Majitel", sk: "Majiteľ" },
+  "provshare.employee": { cs: "Zaměstnanec", sk: "Zamestnanec" },
+  "provshare.members": { cs: "členů: {n}", sk: "členov: {n}" },
+  "provshare.leave": { cs: "Opustit provozovnu", sk: "Opustiť prevádzku" },
 };

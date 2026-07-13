@@ -29,6 +29,10 @@ import { usePantryStore } from "@/store/pantryStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useFamilyStore } from "@/store/familyStore";
 import { syncNow, startRealtime, stopRealtime, schedulePush } from "@/lib/familySync";
+import { useProvozShareStore } from "@/store/provozShareStore";
+import { provozSyncNow, provozStartRealtime, provozStopRealtime, provozSchedulePush } from "@/lib/provozSync";
+import { useProvozStore } from "@/store/provozStore";
+import { useKasaStore } from "@/store/kasaStore";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   constructor(props: { children: ReactNode }) {
@@ -102,13 +106,30 @@ export default function Home() {
     return () => { zapnuto = false; stopRealtime(); };
   }, [user]);
 
-  // Když se změní spížírna nebo nákup a uživatel je v rodině, pošli změny do
-  // cloudu (debounced). Odběr se nastaví jednou; schedulePush si sám ověří,
-  // jestli je v rodině (jinak nedělá nic).
+  // Sdílení provozu — po přihlášení zjisti provozovnu; pokud je v ní, stáhni
+  // sdílený sklad + menu a zapni realtime.
+  useEffect(() => {
+    if (!user) return;
+    let zapnuto = true;
+    (async () => {
+      await useProvozShareStore.getState().refreshProvozovna();
+      if (!zapnuto) return;
+      if (useProvozShareStore.getState().provozovnaId) {
+        await provozSyncNow();
+        provozStartRealtime();
+      }
+    })();
+    return () => { zapnuto = false; provozStopRealtime(); };
+  }, [user]);
+
+  // Push změn do cloudu (debounced). schedulePush/provozSchedulePush si samy
+  // ověří, jestli je uživatel v rodině/provozovně (jinak nedělají nic).
   useEffect(() => {
     const unsubP = usePantryStore.subscribe(() => schedulePush());
     const unsubS = useShoppingStore.subscribe(() => schedulePush());
-    return () => { unsubP(); unsubS(); };
+    const unsubProvoz = useProvozStore.subscribe(() => provozSchedulePush());
+    const unsubKasa = useKasaStore.subscribe(() => provozSchedulePush());
+    return () => { unsubP(); unsubS(); unsubProvoz(); unsubKasa(); };
   }, []);
 
   // Přátelské lokální notifikace (jen v appce) — při každém otevření přeplánuj
