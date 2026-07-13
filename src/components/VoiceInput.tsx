@@ -3,6 +3,7 @@
 import { useState, useRef, useCallback } from "react";
 import { Mic, MicOff, Loader, HelpCircle, ChevronDown } from "lucide-react";
 import { useT, useLocale } from "@/lib/i18n";
+import { Capacitor } from "@capacitor/core";
 
 export interface ParsedItem {
   name: string;
@@ -340,7 +341,74 @@ export function VoiceInput({ onResult, label }: Props) {
   const [showGuide, setShowGuide] = useState(false);
   const recognitionRef = useRef<any>(null);
 
+  // Nativní rozpoznávání řeči (jen v appce přes Capacitor plugin). Web tohle
+  // nepoužije — tam běží webkitSpeechRecognition níže. WebView totiž webový
+  // SpeechRecognition nemá, proto v appce voláme nativní Android rozpoznávání.
+  const startNative = useCallback(async () => {
+    setError(null);
+    setTranscript("");
+    try {
+      const { SpeechRecognition } = await import("@capacitor-community/speech-recognition");
+
+      // Oprávnění mikrofonu (nativně)
+      const perm = await SpeechRecognition.checkPermissions();
+      if (perm.speechRecognition !== "granted") {
+        const req = await SpeechRecognition.requestPermissions();
+        if (req.speechRecognition !== "granted") {
+          setError(t("voice.input.notAllowed"));
+          return;
+        }
+      }
+
+      setState("listening");
+      // partialResults = průběžný přepis; jazyk dle locale.
+      await SpeechRecognition.removeAllListeners();
+      await SpeechRecognition.addListener("partialResults", (data: { matches: string[] }) => {
+        if (data?.matches?.length) setTranscript(data.matches[0]);
+      });
+
+      const result = await SpeechRecognition.start({
+        language: locale === "sk" ? "sk-SK" : "cs-CZ",
+        maxResults: 1,
+        partialResults: true,
+        popup: false,
+      });
+
+      // Po dokončení: vezmi finální text a naparsuj položky.
+      const text = (result?.matches && result.matches[0]) || "";
+      await SpeechRecognition.removeAllListeners();
+      if (text) {
+        setTranscript(text);
+        setState("processing");
+        const items = parseSpokenText(text);
+        setTimeout(() => {
+          onResult(items);
+          setState("idle");
+          setTranscript("");
+        }, 300);
+      } else {
+        setState("idle");
+      }
+    } catch (e: any) {
+      // Uživatel přerušil / žádná řeč / jiná chyba
+      const msg = String(e?.message || e || "");
+      if (/no match|no speech|didn.?t understand/i.test(msg)) setError(t("voice.input.noSpeech"));
+      else if (/denied|not allowed|permission/i.test(msg)) setError(t("voice.input.notAllowed"));
+      setState("idle");
+      try {
+        const { SpeechRecognition } = await import("@capacitor-community/speech-recognition");
+        await SpeechRecognition.removeAllListeners();
+      } catch {}
+    }
+  }, [onResult, t, locale]);
+
   const startListening = useCallback(() => {
+    // V nativní appce použij nativní rozpoznávání (WebView web API nemá).
+    if (Capacitor.isNativePlatform()) {
+      startNative();
+      return;
+    }
+
     setError(null);
     setTranscript("");
 
@@ -396,6 +464,13 @@ export function VoiceInput({ onResult, label }: Props) {
   }, [onResult, state, t, locale]);
 
   const stopListening = useCallback(() => {
+    if (Capacitor.isNativePlatform()) {
+      import("@capacitor-community/speech-recognition")
+        .then(({ SpeechRecognition }) => SpeechRecognition.stop())
+        .catch(() => {});
+      setState("idle");
+      return;
+    }
     recognitionRef.current?.stop();
     setState("idle");
   }, []);
