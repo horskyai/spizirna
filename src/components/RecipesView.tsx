@@ -812,19 +812,20 @@ function TodaySuggestionWidget() {
           {percent === 100 ? (
             <button
               onClick={handleCookNow}
-              className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
-              style={{ background: cookDone ? "rgba(255,255,255,0.3)" : "white", color: cookDone ? "white" : "var(--green-dark)" }}
+              className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2"
+              style={{ background: cookDone ? "rgba(255,255,255,0.3)" : "white", color: cookDone ? "white" : "var(--green-dark)", lineHeight: 1.2 }}
             >
-              {cookDone ? t("recipes.today.greatDone") : <><ChefHat size={15} /> {t("recipes.cookNow")}</>}
+              {cookDone ? t("recipes.today.greatDone") : <><ChefHat size={16} style={{ flexShrink: 0 }} /> <span>{t("recipes.cookNow")}</span></>}
             </button>
           ) : (
             <>
               <button
                 onClick={handleCookNow}
-                className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-1.5"
-                style={{ background: "rgba(255,255,255,0.2)", color: "white", border: "1px solid rgba(255,255,255,0.3)" }}
+                className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2"
+                style={{ background: "rgba(255,255,255,0.2)", color: "white", border: "1px solid rgba(255,255,255,0.3)", lineHeight: 1.2 }}
               >
-                <ChefHat size={15} /> {t("recipes.today.cookFromWhatIHave")}
+                <ChefHat size={16} style={{ flexShrink: 0 }} />
+                <span style={{ textAlign: "center" }}>{t("recipes.today.cookFromWhatIHave")}</span>
               </button>
               {missing.length > 0 && (
                 <button
