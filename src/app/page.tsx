@@ -33,6 +33,7 @@ import { useProvozShareStore } from "@/store/provozShareStore";
 import { provozSyncNow, provozStartRealtime, provozStopRealtime, provozSchedulePush } from "@/lib/provozSync";
 import { useProvozStore } from "@/store/provozStore";
 import { useKasaStore } from "@/store/kasaStore";
+import { useRecurringStore } from "@/store/recurringStore";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   constructor(props: { children: ReactNode }) {
@@ -145,8 +146,10 @@ export default function Home() {
 
       const expiringCount = usePantryStore.getState().getExpiringItems(3).length;
       const shoppingCount = useShoppingStore.getState().getItems("domacnost").filter((i) => !i.checked).length;
+      // Zásoby a připomínky, kterým právě nadešel čas koupit → jmenovitá notifikace.
+      const dueReminders = useRecurringStore.getState().getDueItems().map((i) => i.name);
 
-      scheduleDailyNudges({ expiringCount, shoppingCount, lastOpenedDaysAgo: daysAgo });
+      scheduleDailyNudges({ expiringCount, shoppingCount, lastOpenedDaysAgo: daysAgo, dueReminders });
     } catch { /* notifikace nejsou kritické */ }
   }, [user]);
 

@@ -67,6 +67,9 @@ export async function scheduleDailyNudges(opts: {
   expiringCount: number;
   shoppingCount: number;
   lastOpenedDaysAgo: number;
+  // Názvy položek ze "Zásoby a připomínky", kterým právě nadešel čas koupit
+  // (due) — notifikace je jmenovitě připomene. Nejvyšší přednost.
+  dueReminders?: string[];
 }): Promise<void> {
   // Jen v nativní appce — web notifikace neplánuje.
   if (!Capacitor.isNativePlatform()) return;
@@ -111,32 +114,44 @@ export async function scheduleDailyNudges(opts: {
 
     const daySeed = Math.floor(at.getTime() / 86_400_000);
 
-    // Výběr sady: expirace má přednost (obden), pak comeback (jen 1. den po pauze),
-    // jinak střídá general/shopping.
-    let pool: Msg[];
-    if (opts.expiringCount > 0 && d % 2 === 0) {
-      pool = EXPIRING;
-    } else if (d === 0 && opts.lastOpenedDaysAgo >= 3) {
-      pool = COMEBACK;
-    } else if (opts.shoppingCount > 0 && d % 3 === 2) {
-      pool = SHOPPING;
-    } else {
-      pool = GENERAL;
-    }
+    const due = opts.dueReminders ?? [];
+    let title: string;
+    let body: string;
 
-    const msg = pool[pickIndex(daySeed, pool.length)];
-    let body = msg.body[locale];
-    // do "končí" zprávy doplň počet, pokud ho známe
-    if (pool === EXPIRING && opts.expiringCount > 0) {
+    // NEJVYŠŠÍ PŘEDNOST: pokud je něco "na řadě koupit" (Zásoby a připomínky),
+    // první den pošli konkrétní jmenovitou připomínku.
+    if (d === 0 && due.length > 0) {
+      const seznam = due.slice(0, 3).join(", ") + (due.length > 3 ? "…" : "");
+      title = locale === "sk" ? "Čas doplniť zásoby 🛒" : "Čas doplnit zásoby 🛒";
       body = locale === "sk"
-        ? `${opts.expiringCount} potravinám čoskoro končí trvanlivosť. ${body}`
-        : `${opts.expiringCount} potravinám brzy končí trvanlivost. ${body}`;
+        ? `Dnes je čas kúpiť: ${seznam}. Hoď to do nákupného zoznamu.`
+        : `Dnes je čas koupit: ${seznam}. Hoď to do nákupního seznamu.`;
+    } else {
+      // Jinak přátelské střídání (expirace / comeback / nákup / obecné).
+      let pool: Msg[];
+      if (opts.expiringCount > 0 && d % 2 === 0) {
+        pool = EXPIRING;
+      } else if (d === 0 && opts.lastOpenedDaysAgo >= 3) {
+        pool = COMEBACK;
+      } else if (opts.shoppingCount > 0 && d % 3 === 2) {
+        pool = SHOPPING;
+      } else {
+        pool = GENERAL;
+      }
+      const msg = pool[pickIndex(daySeed, pool.length)];
+      title = msg.title[locale];
+      body = msg.body[locale];
+      if (pool === EXPIRING && opts.expiringCount > 0) {
+        body = locale === "sk"
+          ? `${opts.expiringCount} potravinám čoskoro končí trvanlivosť. ${body}`
+          : `${opts.expiringCount} potravinám brzy končí trvanlivost. ${body}`;
+      }
     }
 
     toSchedule.push({
       id: NOTIF_ID_BASE + d,
       channelId: CHANNEL_ID,
-      title: msg.title[locale],
+      title,
       body,
       schedule: { at, allowWhileIdle: true },
       smallIcon: "ic_launcher_foreground",
