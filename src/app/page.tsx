@@ -33,6 +33,7 @@ import { useProvozShareStore } from "@/store/provozShareStore";
 import { provozSyncNow, provozStartRealtime, provozStopRealtime, provozSchedulePush } from "@/lib/provozSync";
 import { useProvozStore } from "@/store/provozStore";
 import { useKasaStore } from "@/store/kasaStore";
+import { initPush } from "@/lib/pushNotifications";
 import { useRecurringStore } from "@/store/recurringStore";
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
@@ -90,6 +91,12 @@ export default function Home() {
   useEffect(() => {
     if (user) markFirstSeen(Date.now());
   }, [user, markFirstSeen]);
+
+  // Push notifikace — po přihlášení zaregistruj zařízení u FCM a ulož token
+  // (jen v appce). Server pak pošle push, když druhý člen změní sdílená data.
+  useEffect(() => {
+    if (user) initPush();
+  }, [user]);
 
   // Rodinné sdílení — po přihlášení zjisti, jestli je uživatel v rodině;
   // pokud ano, stáhni sdílenou spížírnu/nákup a zapni realtime (živé změny).

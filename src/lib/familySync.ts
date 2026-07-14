@@ -91,14 +91,42 @@ export async function syncNow() {
   }
 }
 
+// Pošle push ostatním členům rodiny (přes Edge Function). Volá se, když
+// reálně přibude položka — ne při každém sync.
+async function notifyFamily(title: string, body: string) {
+  const familyId = useFamilyStore.getState().familyId;
+  if (!familyId) return;
+  try {
+    await supabase.functions.invoke("send-share-push", {
+      body: { scope: "family", groupId: familyId, title, body },
+    });
+  } catch { /* push není kritický */ }
+}
+
+// Sledujeme počet položek, ať push pošleme jen při PŘIBYTÍ (ne při úpravě/mazání).
+let lastPantryCount = usePantryStore.getState().items.length;
+let lastShoppingCount = useShoppingStore.getState().domacnostItems.length;
+
 // Naplánovaný push po lokální změně (debounce, ať neposíláme při každém písmenu).
 export function schedulePush() {
   const familyId = useFamilyStore.getState().familyId;
   if (!familyId) return;
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = setTimeout(() => {
-    pushItems("shared_pantry_items", familyId, usePantryStore.getState().items).catch(() => {});
-    pushItems("shared_shopping_items", familyId, useShoppingStore.getState().domacnostItems).catch(() => {});
+    const pantry = usePantryStore.getState().items;
+    const shopping = useShoppingStore.getState().domacnostItems;
+    pushItems("shared_pantry_items", familyId, pantry).catch(() => {});
+    pushItems("shared_shopping_items", familyId, shopping).catch(() => {});
+    // Push druhému členovi jen když něco PŘIBYLO (nová položka).
+    if (pantry.length > lastPantryCount) {
+      const nova = pantry[pantry.length - 1];
+      notifyFamily("Přibylo do spížírny 🫙", nova?.product?.product_name ? `${nova.product.product_name} — mrkni doma.` : "Někdo přidal položku.");
+    } else if (shopping.length > lastShoppingCount) {
+      const nova = shopping[shopping.length - 1];
+      notifyFamily("Nákupní seznam 🛒", nova?.name ? `Přibylo: ${nova.name}` : "Někdo přidal na nákup.");
+    }
+    lastPantryCount = pantry.length;
+    lastShoppingCount = shopping.length;
   }, 1200);
 }
 

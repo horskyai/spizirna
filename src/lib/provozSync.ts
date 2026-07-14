@@ -87,14 +87,39 @@ export async function provozSyncNow() {
   } catch { /* sync není kritický, appka jede lokálně */ }
 }
 
+// Push ostatním členům provozovny (přes Edge Function) při přibytí zboží/prodeje.
+async function notifyProvoz(title: string, body: string) {
+  const pid = useProvozShareStore.getState().provozovnaId;
+  if (!pid) return;
+  try {
+    await supabase.functions.invoke("send-share-push", {
+      body: { scope: "provoz", groupId: pid, title, body },
+    });
+  } catch { /* push není kritický */ }
+}
+
+let lastPolozkyCount = useProvozStore.getState().polozky.length;
+let lastProdejkyCount = useKasaStore.getState().prodejky.length;
+
 export function provozSchedulePush() {
   const pid = useProvozShareStore.getState().provozovnaId;
   if (!pid) return;
   if (pushTimer) clearTimeout(pushTimer);
   pushTimer = setTimeout(() => {
-    pushItems("shared_provoz_polozky", pid, useProvozStore.getState().polozky).catch(() => {});
+    const polozky = useProvozStore.getState().polozky;
+    const prodejky = useKasaStore.getState().prodejky;
+    pushItems("shared_provoz_polozky", pid, polozky).catch(() => {});
     pushItems("shared_provoz_menu", pid, useKasaStore.getState().menu).catch(() => {});
-    pushItems("shared_provoz_prodejky", pid, useKasaStore.getState().prodejky).catch(() => {});
+    pushItems("shared_provoz_prodejky", pid, prodejky).catch(() => {});
+    // Push jen při PŘIBYTÍ (nová skladová položka / nový prodej).
+    if (polozky.length > lastPolozkyCount) {
+      const nova = polozky[polozky.length - 1];
+      notifyProvoz("Sklad 📦", nova?.nazev ? `Přibylo: ${nova.nazev}` : "Přibyla skladová položka.");
+    } else if (prodejky.length > lastProdejkyCount) {
+      notifyProvoz("Nový prodej 🧾", "Na kase proběhl prodej.");
+    }
+    lastPolozkyCount = polozky.length;
+    lastProdejkyCount = prodejky.length;
   }, 1200);
 }
 
