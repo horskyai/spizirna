@@ -30,6 +30,7 @@ import { bestRecipeFromStock, bestRecipeUsingExpiring, StockItem } from "@/lib/r
 import { daysUntil } from "@/lib/dateUtils";
 import { getCurrentLocale } from "@/store/localeStore";
 import { useGamificationStore } from "@/store/gamificationStore";
+import { isNotifEnabled } from "@/store/notifPrefsStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useFamilyStore } from "@/store/familyStore";
@@ -91,7 +92,7 @@ function buildHomeSmartPlan(): SmartNotif[] {
     arr.push(it.product.product_name);
     byDay.set(d, arr);
   }
-  for (const [d, names] of byDay) {
+  for (const [d, names] of (isNotifEnabled("expirace") ? byDay : new Map<number, string[]>())) {
     const seznam = names.slice(0, 3).join(", ") + (names.length > 3 ? "…" : "");
     // připomínka den předem (pokud končí dnes, pošli dnes)
     const daysFromNow = Math.max(0, d - 1);
@@ -110,7 +111,7 @@ function buildHomeSmartPlan(): SmartNotif[] {
   }
 
   // ── 2) DOCHÁZÍ — na řadě koupit dnes (getDueItems) ──
-  const due = recurring.getDueItems().map((i) => i.name);
+  const due = isNotifEnabled("dochazi") ? recurring.getDueItems().map((i) => i.name) : [];
   if (due.length > 0) {
     const seznam = due.slice(0, 3).join(", ") + (due.length > 3 ? "…" : "");
     out.push({
@@ -120,7 +121,7 @@ function buildHomeSmartPlan(): SmartNotif[] {
     });
   }
   // dochází podle ODHADU spotřeby (predictDaysLeft) — pro položky ve spížírně
-  for (const it of pantry) {
+  for (const it of (isNotifEnabled("dochazi") ? pantry : [])) {
     const left = recurring.predictDaysLeft(it.product.product_name, it.quantity);
     if (left !== null && left >= 1 && left <= 3) {
       out.push({
@@ -144,7 +145,7 @@ function buildHomeSmartPlan(): SmartNotif[] {
       const b = bestRecipeFromStock(recipes, stock)!;
       return { recipe: b.recipe, have: b.have, total: b.total, usesExpiring: [] as string[] };
     })());
-  if (rec) {
+  if (rec && isNotifEnabled("coUvarit")) {
     const uses = rec.usesExpiring.length > 0
       ? (locale === "sk" ? ` Využiješ ${rec.usesExpiring.slice(0, 2).join(", ")}, čo ti končí.` : ` Využiješ ${rec.usesExpiring.slice(0, 2).join(", ")}, co ti končí.`)
       : "";
@@ -158,7 +159,7 @@ function buildHomeSmartPlan(): SmartNotif[] {
   }
 
   // ── 4) PRÁZDNÁ SPÍŽÍRNA — málo položek → čas na nákup (za 2 dny, ať nespěchá) ──
-  if (pantry.length > 0 && pantry.length <= 3) {
+  if (isNotifEnabled("prazdnaSpizirna") && pantry.length > 0 && pantry.length <= 3) {
     out.push({
       daysFromNow: 2, hour: 17, minute: 0,
       title: locale === "sk" ? "Prázdna špajza 🧺" : "Prázdná spížírna 🧺",
@@ -170,7 +171,7 @@ function buildHomeSmartPlan(): SmartNotif[] {
 
   // ── 5) TIP NA VYUŽITÍ — máš hodně jedné suroviny (za 1 den, dopoledne) ──
   const hodne = pantry.filter((p) => p.quantity >= 5).sort((a, b) => b.quantity - a.quantity)[0];
-  if (hodne) {
+  if (hodne && isNotifEnabled("tipVyuziti")) {
     out.push({
       daysFromNow: 1, hour: 11, minute: 0,
       title: locale === "sk" ? "Máš toho dosť 🍽️" : "Máš toho dost 🍽️",
@@ -183,7 +184,7 @@ function buildHomeSmartPlan(): SmartNotif[] {
   // ── 6) STŘÁDKA / GAMIFIKACE — pochval za sérii dní aktivity (za 1 den ráno) ──
   const gam = useGamificationStore.getState();
   const streak = gam.streak ?? 0;
-  if (streak >= 3) {
+  if (streak >= 3 && isNotifEnabled("stradka")) {
     out.push({
       daysFromNow: 1, hour: 9, minute: 30,
       title: locale === "sk" ? `${streak} dní v rade! 🔥` : `${streak} dní v řadě! 🔥`,
@@ -193,16 +194,29 @@ function buildHomeSmartPlan(): SmartNotif[] {
     });
   }
 
-  // ── 7) PLÝTVÁNÍ / ZÁCHRANA (celkově) — pochval, kolik jsi zachránil (za 3 dny) ──
-  const saved = Math.round(gam.savedValue ?? 0);
-  if (saved >= 100) {
-    out.push({
-      daysFromNow: 3, hour: 18, minute: 30,
-      title: locale === "sk" ? "Zachránil si jedlo! 💚" : "Zachránil jsi jídlo! 💚",
-      body: locale === "sk"
-        ? `Vďaka tebe sa nevyhodilo jedlo za ${saved} Kč. Skvelá práca!`
-        : `Díky tobě se nevyhodilo jídlo za ${saved} Kč. Skvělá práce!`,
-    });
+  // ── 7) PLÝTVÁNÍ TENTO TÝDEN — kolik jsi vyhodil za posledních 7 dní (za 3 dny) ──
+  // Když je co ukázat: vyhozeno → varování; nic → pochvala za záchranu.
+  if (isNotifEnabled("plytvaniTyden")) {
+    const tyden = gam.getWastedThisWeek();
+    const vyhozeno = Math.round(tyden.value);
+    const saved = Math.round(gam.savedValue ?? 0);
+    if (vyhozeno >= 30) {
+      out.push({
+        daysFromNow: 3, hour: 18, minute: 30,
+        title: locale === "sk" ? "Plytvanie za týždeň 🗑️" : "Plýtvání za týden 🗑️",
+        body: locale === "sk"
+          ? `Tento týždeň si vyhodil jedlo za ${vyhozeno} Kč. Skús nakupovať menej naraz.`
+          : `Tento týden jsi vyhodil jídlo za ${vyhozeno} Kč. Zkus nakupovat míň najednou.`,
+      });
+    } else if (saved >= 100) {
+      out.push({
+        daysFromNow: 3, hour: 18, minute: 30,
+        title: locale === "sk" ? "Zachránil si jedlo! 💚" : "Zachránil jsi jídlo! 💚",
+        body: locale === "sk"
+          ? `Vďaka tebe sa nevyhodilo jedlo za ${saved} Kč. Skvelá práca!`
+          : `Díky tobě se nevyhodilo jídlo za ${saved} Kč. Skvělá práce!`,
+      });
+    }
   }
 
   // Seřaď podle dne (nejbližší dřív) — plánovač bere max SMART_MAX nejbližších.
@@ -228,14 +242,14 @@ function buildProvozSmartPlan(): SmartNotif[] {
   const lowStock = provoz.getPolozkyCritical().map((p) => p.nazev);
 
   // 1) RANNÍ PŘÍPRAVA (8:00) — zboží pod minimem, ať se stihne objednat/doplnit.
-  if (lowStock.length > 0) {
+  if (isNotifEnabled("provozRannePriprava") && lowStock.length > 0) {
     const seznam = lowStock.slice(0, 3).join(", ") + (lowStock.length > 3 ? "…" : "");
     out.push({
       daysFromNow: 1, hour: 8, minute: 0,
       title: locale === "sk" ? "Dobré ráno! Skontroluj sklad 📦" : "Dobré ráno! Zkontroluj sklad 📦",
       body: locale === "sk" ? `Pod minimom: ${seznam}. Doplň pred otvorením.` : `Pod minimem: ${seznam}. Doplň před otevřením.`,
     });
-  } else {
+  } else if (isNotifEnabled("provozRannePriprava")) {
     out.push({
       daysFromNow: 1, hour: 8, minute: 0,
       title: locale === "sk" ? "Dobré ráno! ☕" : "Dobré ráno! ☕",
@@ -244,7 +258,7 @@ function buildProvozSmartPlan(): SmartNotif[] {
   }
 
   // 2) VEČERNÍ SOUHRN (20:00) — tržba + porovnání s průměrem (slabší/silný den).
-  if (uctenekDnes > 0) {
+  if (isNotifEnabled("provozSouhrn") && uctenekDnes > 0) {
     const prumer = kasa.prumernaTrzba(14); // průměr za 14 dní (jen dny s prodejem)
     const castka = Math.round(trzbaDnes).toLocaleString(locale === "sk" ? "sk-SK" : "cs-CZ");
     let srovnani = "";
@@ -263,7 +277,7 @@ function buildProvozSmartPlan(): SmartNotif[] {
   }
 
   // 3) NEZAVŘENÁ UZÁVĚRKA — ráno další den, když byl dnes prodej a NEuzavřel se.
-  if (uctenekDnes > 0 && !kasa.jeDenUzavren(dnesISO)) {
+  if (isNotifEnabled("provozUzaverka") && uctenekDnes > 0 && !kasa.jeDenUzavren(dnesISO)) {
     out.push({
       daysFromNow: 1, hour: 9, minute: 0,
       title: locale === "sk" ? "Chýba uzávierka 🧾" : "Chybí uzávěrka 🧾",

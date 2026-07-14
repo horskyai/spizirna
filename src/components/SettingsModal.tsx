@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus, Download, BarChart3, Lock, Users, Copy, Check } from "lucide-react";
+import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus, Download, BarChart3, Lock, Users, Copy, Check, Sparkles } from "lucide-react";
+import { useNotifPrefsStore, NOTIF_META, NotifType } from "@/store/notifPrefsStore";
 import { exportHouseholdJSON, exportPantryCSV } from "@/lib/exportData";
 import { StatsModal } from "@/components/StatsModal";
 import { useAuthStore, type DeviceRow } from "@/store/authStore";
@@ -437,6 +438,13 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.expiryAlertsHint")}</p>
           </Section>
 
+          {/* ── Chytrá upozornění ── každý typ zvlášť zap/vyp (jen když jsou notif zapnuté) */}
+          {notif && (
+            <Section icon={<Sparkles size={15} />} title={t("settings.smartNotifs")}>
+              <SmartNotifSection mode={mode === "provoz" ? "provoz" : "domacnost"} locale={locale} />
+            </Section>
+          )}
+
           {/* ── Odznaky ── jen v domácnosti (gamifikace běží zatím tam) */}
           {mode !== "provoz" && (
             <Section icon={<Award size={15} />} title={t("game.badges.title")}>
@@ -595,6 +603,41 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
       </div>
 
       {showStats && <StatsModal onClose={() => setShowStats(false)} />}
+    </div>
+  );
+}
+
+// Přepínače chytrých upozornění — každý typ zvlášť, podle režimu.
+function SmartNotifSection({ mode, locale }: { mode: "domacnost" | "provoz"; locale: string }) {
+  const prefs = useNotifPrefsStore((s) => s.prefs);
+  const setEnabled = useNotifPrefsStore((s) => s.setEnabled);
+  const items = NOTIF_META[mode];
+  const isOn = (k: NotifType) => prefs[k] !== false;
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+      {items.map((it) => {
+        const on = isOn(it.key);
+        return (
+          <button
+            key={it.key}
+            onClick={() => setEnabled(it.key, !on)}
+            style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "7px 2px", background: "transparent" }}
+          >
+            <span style={{ fontSize: 13, color: "var(--text-primary)", textAlign: "left" }}>
+              {locale === "sk" ? it.sk : it.cs}
+            </span>
+            <span style={{
+              width: 44, height: 26, borderRadius: 99, flexShrink: 0, position: "relative",
+              background: on ? "var(--green-primary)" : "var(--border)", transition: "background 0.2s",
+            }}>
+              <span style={{
+                position: "absolute", top: 3, left: on ? 21 : 3, width: 20, height: 20, borderRadius: "50%",
+                background: "white", transition: "left 0.2s", boxShadow: "0 1px 3px rgba(0,0,0,0.2)",
+              }} />
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }

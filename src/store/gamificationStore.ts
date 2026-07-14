@@ -22,6 +22,8 @@ export interface GamificationStore extends GamificationStats {
   // Sčítá se jen tam, kde známe cenu (jinak 0), historii kusů drží total*.
   savedValue: number;
   wastedValue: number;
+  // Log vyhozených potravin s datem (kvůli „plýtvání tento týden"). Drží ~90 dní.
+  wasteLog: { date: string; value: number }[];
 
   recordActivity: () => void; // zavolat při každé akci uživatele (skenování, přidání)
   recordScanned: () => void;
@@ -33,6 +35,8 @@ export interface GamificationStore extends GamificationStats {
   getScore: () => number;
   getLevel: () => LevelInfo;
   getBadges: () => BadgeState[];
+  // Vyhozeno v Kč za posledních 7 dní (z wasteLog) + počet událostí.
+  getWastedThisWeek: () => { value: number; count: number };
 }
 
 // ── Úrovně ──────────────────────────────────────────────────────────────
@@ -176,6 +180,7 @@ export const useGamificationStore = create<GamificationStore>()(
         unlockedBadges: {},
         savedValue: 0,
         wastedValue: 0,
+        wasteLog: [],
 
         recordActivity: () => {
           const today = todayStr();
@@ -233,9 +238,16 @@ export const useGamificationStore = create<GamificationStore>()(
         },
 
         recordWasted: (value) => {
+          const v = value && value > 0 ? value : 0;
+          // Zapiš do logu s datem a nech jen posledních ~90 dní (ať localStorage neroste).
+          const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 90);
+          const cutoffISO = cutoff.toISOString();
+          const log = [...get().wasteLog, { date: new Date().toISOString(), value: v }]
+            .filter((e) => e.date >= cutoffISO);
           set({
             totalWasted: get().totalWasted + 1,
-            wastedValue: get().wastedValue + (value && value > 0 ? value : 0),
+            wastedValue: get().wastedValue + v,
+            wasteLog: log,
           });
           checkBadges();
         },
@@ -271,6 +283,16 @@ export const useGamificationStore = create<GamificationStore>()(
               unlockedAt,
             };
           });
+        },
+
+        getWastedThisWeek: () => {
+          const cutoff = new Date(); cutoff.setDate(cutoff.getDate() - 7);
+          const cutoffISO = cutoff.toISOString();
+          const recent = (get().wasteLog ?? []).filter((e) => e.date >= cutoffISO);
+          return {
+            value: recent.reduce((s, e) => s + (e.value || 0), 0),
+            count: recent.length,
+          };
         },
       };
     },
