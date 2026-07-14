@@ -554,6 +554,9 @@ function TodaySuggestionWidget() {
   const shoppingMode = appMode === "provoz" ? "provoz" : "domacnost";
   const [refreshKey, setRefreshKey] = useState(0);
   const [cookDone, setCookDone] = useState(false);
+  // POZOR: všechny hooky MUSÍ být nad podmíněným returnem níže (pravidlo hooků).
+  const [showDetail, setShowDetail] = useState(false);
+  const [cookStep, setCookStep] = useState(0);
 
   // Co uvařím dnes počítá podle aktuálního režimu: domácnost = spížírna,
   // provoz = sklad provozovny. Sjednotíme na seznam názvů surovin.
@@ -576,15 +579,16 @@ function TodaySuggestionWidget() {
       return { recipe: r, score: matched / total, matched, total };
     });
 
-    const best = scored
-      .filter((s) => s.score > 0)
-      .sort((a, b) => b.score - a.score);
+    const withScore = scored.filter((s) => s.score > 0).sort((a, b) => b.score - a.score);
+    if (withScore.length === 0) return null;
 
-    if (best.length === 0) return null;
-
-    // refreshKey slouží k přepínání návrhu
-    const idx = refreshKey % Math.min(best.length, 5);
-    return best[idx];
+    // Tlačítko „Opakovat" cykluje mezi návrhy. Aby fungovalo i když je jen pár
+    // receptů se shodou, doplníme pool o další recepty (i bez shody), seřazené
+    // podle skóre. Tak má tlačítko vždy z čeho vybírat (až 8 návrhů).
+    const zbytek = scored.filter((s) => s.score === 0);
+    const pool = [...withScore, ...zbytek].slice(0, 8);
+    const idx = refreshKey % pool.length;
+    return pool[idx];
   }, [recipes, stockNames, refreshKey]);
 
   if (!suggestion) return null;
@@ -596,9 +600,6 @@ function TodaySuggestionWidget() {
   const percent = Math.round((matched / total) * 100);
   // Chybějící suroviny počítáme proti aktuálním zásobám podle režimu (stockNames).
   const missing = recipe.ingredients.filter((ing) => !stockNames.some((n) => nameMatches(ing.name, n)));
-
-  const [showDetail, setShowDetail] = useState(false);
-  const [cookStep, setCookStep] = useState(0);
 
   const handleCookNow = () => {
     // Stejně jako v kartě receptu: odečti suroviny z příslušného skladu podle režimu.
