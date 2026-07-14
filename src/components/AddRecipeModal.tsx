@@ -510,6 +510,7 @@ export function AddRecipeModal({ onClose }: Props) {
                     });
                   }}
                   label={t("addrecipe.voiceIngredients")}
+                  collapsible
                 />
 
                 <button onClick={() => setStep("instructions")} className="btn-primary" disabled={!canProceedIngredients}>

@@ -330,15 +330,19 @@ function capitalize(s: string) {
 interface Props {
   onResult: (items: ParsedItem[]) => void;
   label?: string;
+  // Sbalený režim: ve výchozím stavu jen malý odkaz „Nadiktovat více"; po
+  // klepnutí se rozbalí celé diktovací pole. Kdo nechce, nechá sbalené.
+  collapsible?: boolean;
 }
 
-export function VoiceInput({ onResult, label }: Props) {
+export function VoiceInput({ onResult, label, collapsible }: Props) {
   const t = useT();
   const locale = useLocale();
   const [state, setState] = useState<"idle" | "listening" | "processing">("idle");
   const [transcript, setTranscript] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
+  const [expanded, setExpanded] = useState(!collapsible); // sbaleno jen v collapsible módu
   const recognitionRef = useRef<any>(null);
 
   // Nativní rozpoznávání řeči (jen v appce přes Capacitor plugin). Web tohle
@@ -476,6 +480,22 @@ export function VoiceInput({ onResult, label }: Props) {
   }, []);
 
   const isActive = state === "listening" || state === "processing";
+
+  // Sbalený stav: jen nenápadný odkaz s mikrofonem. Kdo chce, rozbalí.
+  if (collapsible && !expanded) {
+    return (
+      <button
+        type="button"
+        onClick={() => setExpanded(true)}
+        className="w-full flex items-center justify-center gap-1.5 py-2 text-xs font-semibold transition-all"
+        style={{ color: "var(--green-dark)" }}
+      >
+        <Mic size={14} />
+        <span>{label ?? t("voice.input.dictate")}</span>
+        <ChevronDown size={13} />
+      </button>
+    );
+  }
 
   return (
     <div className="space-y-2">

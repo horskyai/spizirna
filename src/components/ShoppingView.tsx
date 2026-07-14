@@ -126,7 +126,7 @@ function AddItemModal({ onClose, mode }: { onClose: () => void; mode: ShoppingMo
 
           <div style={{ height: 1, background: "var(--border)", margin: "4px 0" }} />
 
-          <VoiceInput onResult={handleVoice} label={t("shopping.voiceLabel")} />
+          <VoiceInput onResult={handleVoice} label={t("shopping.voiceLabel")} collapsible />
         </div>
       </div>
     </div>

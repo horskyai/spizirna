@@ -237,7 +237,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
 
         {/* Voice quick-add */}
         <div className="px-5 mb-3">
-          <VoiceInput onResult={handleVoicePantry} label={t("addproduct.voiceLabel")} />
+          <VoiceInput onResult={handleVoicePantry} label={t("addproduct.voiceLabel")} collapsible />
         </div>
 
         <div className="px-5 mb-2">
