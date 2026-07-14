@@ -97,6 +97,9 @@ export interface UcetniSouhrn {
 interface KasaStore {
   menu: MenuPolozka[];
   prodejky: Prodejka[];
+  // Provedené denní uzávěrky — den (YYYY-MM-DD) → kdy uzavřeno (ISO).
+  // Slouží k notifikaci „včera byl prodej, ale uzávěrka se neudělala".
+  uzaverky: Record<string, string>;
 
   // Správa menu
   addMenuPolozka: (p: Omit<MenuPolozka, "id">) => void;
@@ -117,6 +120,11 @@ interface KasaStore {
   getPocetProdejekDne: (isoDate: string) => number;
   // Účetní souhrn za období [od, do] včetně (YYYY-MM-DD).
   getSouhrn: (odISO: string, doISO: string) => UcetniSouhrn;
+
+  // Denní uzávěrka
+  uzavritDen: (isoDate: string) => void;          // označí den za uzavřený
+  jeDenUzavren: (isoDate: string) => boolean;     // byl den už uzavřen?
+  prumernaTrzba: (dniZpet: number) => number;     // průměrná denní tržba za N dní (jen dny s prodejem)
 }
 
 // Dnešní datum jako YYYY-MM-DD (lokální).
@@ -184,6 +192,7 @@ export const useKasaStore = create<KasaStore>()(
     (set, get) => ({
       menu: [],
       prodejky: [],
+      uzaverky: {},
 
       addMenuPolozka: (p) =>
         set((s) => ({
@@ -352,6 +361,32 @@ export const useKasaStore = create<KasaStore>()(
           trzba, pocetUctenek: vObdobi.length, hotovost, karta,
           nakup, zisk, marzeProcent, dph, dphCelkem, topProdukty,
         };
+      },
+
+      uzavritDen: (isoDate) =>
+        set((s) => ({ uzaverky: { ...s.uzaverky, [isoDate]: new Date().toISOString() } })),
+
+      jeDenUzavren: (isoDate) => !!get().uzaverky[isoDate],
+
+      // Průměrná denní tržba za posledních N dní — počítá jen dny, kdy byl prodej
+      // (zavřené dny nezkreslují průměr). Vrací 0, když není z čeho počítat.
+      prumernaTrzba: (dniZpet) => {
+        const dnyMap = new Map<string, number>();
+        for (const p of get().prodejky) {
+          const d = p.datum.slice(0, 10);
+          dnyMap.set(d, (dnyMap.get(d) ?? 0) + p.celkem);
+        }
+        const dnes = new Date();
+        const hranice = new Date(dnes);
+        hranice.setDate(dnes.getDate() - dniZpet);
+        const dnesStr = dnes.toISOString().slice(0, 10);
+        let soucet = 0, pocet = 0;
+        for (const [den, trzba] of dnyMap) {
+          if (den >= hranice.toISOString().slice(0, 10) && den < dnesStr) {
+            soucet += trzba; pocet++;
+          }
+        }
+        return pocet > 0 ? soucet / pocet : 0;
       },
     }),
     {

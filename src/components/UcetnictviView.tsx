@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { TrendingUp, Wallet, CreditCard, Banknote, Percent, FileText, FileSpreadsheet, Trophy } from "lucide-react";
+import { TrendingUp, Wallet, CreditCard, Banknote, Percent, FileText, FileSpreadsheet, Trophy, Lock, Check } from "lucide-react";
 import { useKasaStore, UcetniSouhrn, Prodejka } from "@/store/kasaStore";
 import { useBusinessStore, FirmaUdaje } from "@/store/businessStore";
 import { useT, useLocale } from "@/lib/i18n";
@@ -176,10 +176,14 @@ export function UcetnictviView() {
   const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
   const getSouhrn = useKasaStore((s) => s.getSouhrn);
   const prodejky = useKasaStore((s) => s.prodejky);
+  const uzavritDen = useKasaStore((s) => s.uzavritDen);
+  const jeDenUzavren = useKasaStore((s) => s.jeDenUzavren);
   const nazevFirmy = useBusinessStore((s) => s.name);
   const firma = useBusinessStore((s) => s.firma);
 
   const dnes = useMemo(() => new Date(), []);
+  const dnesISO = iso(dnes);
+  const [uzavreno, setUzavreno] = useState(() => jeDenUzavren(iso(new Date())));
   const [obdobi, setObdobi] = useState<ObdobiKey>("dnes");
   const [odVlastni, setOdVlastni] = useState(iso(dnes));
   const [doVlastni, setDoVlastni] = useState(iso(dnes));
@@ -246,6 +250,26 @@ export function UcetnictviView() {
             <StatCard icon={<CreditCard size={17} />} barva="#3d7a5a"
               label={t("ucto.karta")} hodnota={`${fmt(s.karta, dateLocale)} Kč`} />
           </div>
+
+          {/* Uzavřít den — jen pro dnešek; zaznamená provedenou uzávěrku
+              (pak appka nemusí ráno připomínat „nezapomněl jsi uzavřít"). */}
+          {obdobi === "dnes" && s.pocetUctenek > 0 && (
+            <button
+              onClick={() => { uzavritDen(dnesISO); setUzavreno(true); }}
+              disabled={uzavreno}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                width: "100%", padding: "12px", borderRadius: 14, marginBottom: 16,
+                fontSize: 14, fontWeight: 700, border: "none",
+                background: uzavreno ? "var(--green-light)" : "var(--green-primary)",
+                color: uzavreno ? "var(--green-dark)" : "white",
+              }}
+            >
+              {uzavreno
+                ? <><Check size={16} /> {t("ucto.denUzavren")}</>
+                : <><Lock size={16} /> {t("ucto.uzavritDen")}</>}
+            </button>
+          )}
 
           {/* Zisk / marže */}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>

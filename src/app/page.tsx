@@ -29,6 +29,7 @@ import { useRecipeStore } from "@/store/recipeStore";
 import { bestRecipeFromStock, bestRecipeUsingExpiring, StockItem } from "@/lib/recipeMatch";
 import { daysUntil } from "@/lib/dateUtils";
 import { getCurrentLocale } from "@/store/localeStore";
+import { useGamificationStore } from "@/store/gamificationStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useFamilyStore } from "@/store/familyStore";
@@ -156,7 +157,122 @@ function buildHomeSmartPlan(): SmartNotif[] {
     });
   }
 
+  // ── 4) PRÁZDNÁ SPÍŽÍRNA — málo položek → čas na nákup (za 2 dny, ať nespěchá) ──
+  if (pantry.length > 0 && pantry.length <= 3) {
+    out.push({
+      daysFromNow: 2, hour: 17, minute: 0,
+      title: locale === "sk" ? "Prázdna špajza 🧺" : "Prázdná spížírna 🧺",
+      body: locale === "sk"
+        ? `Ostávajú ti len ${pantry.length} položky — čas na väčší nákup?`
+        : `Zbývají ti jen ${pantry.length} položky — čas na větší nákup?`,
+    });
+  }
+
+  // ── 5) TIP NA VYUŽITÍ — máš hodně jedné suroviny (za 1 den, dopoledne) ──
+  const hodne = pantry.filter((p) => p.quantity >= 5).sort((a, b) => b.quantity - a.quantity)[0];
+  if (hodne) {
+    out.push({
+      daysFromNow: 1, hour: 11, minute: 0,
+      title: locale === "sk" ? "Máš toho dosť 🍽️" : "Máš toho dost 🍽️",
+      body: locale === "sk"
+        ? `Máš ${hodne.quantity}× ${hodne.product.product_name} — mrkni na recepty, nech sa neskazí.`
+        : `Máš ${hodne.quantity}× ${hodne.product.product_name} — mrkni na recepty, ať se nezkazí.`,
+    });
+  }
+
+  // ── 6) STŘÁDKA / GAMIFIKACE — pochval za sérii dní aktivity (za 1 den ráno) ──
+  const gam = useGamificationStore.getState();
+  const streak = gam.streak ?? 0;
+  if (streak >= 3) {
+    out.push({
+      daysFromNow: 1, hour: 9, minute: 30,
+      title: locale === "sk" ? `${streak} dní v rade! 🔥` : `${streak} dní v řadě! 🔥`,
+      body: locale === "sk"
+        ? "Super, že sa staráš o svoju špajzu. Pokračuj!"
+        : "Super, že se staráš o svoji spížírnu. Pokračuj!",
+    });
+  }
+
+  // ── 7) PLÝTVÁNÍ / ZÁCHRANA (celkově) — pochval, kolik jsi zachránil (za 3 dny) ──
+  const saved = Math.round(gam.savedValue ?? 0);
+  if (saved >= 100) {
+    out.push({
+      daysFromNow: 3, hour: 18, minute: 30,
+      title: locale === "sk" ? "Zachránil si jedlo! 💚" : "Zachránil jsi jídlo! 💚",
+      body: locale === "sk"
+        ? `Vďaka tebe sa nevyhodilo jedlo za ${saved} Kč. Skvelá práca!`
+        : `Díky tobě se nevyhodilo jídlo za ${saved} Kč. Skvělá práce!`,
+    });
+  }
+
   // Seřaď podle dne (nejbližší dřív) — plánovač bere max SMART_MAX nejbližších.
+  out.sort((a, b) => a.daysFromNow - b.daysFromNow || a.hour - b.hour);
+  return out;
+}
+
+// ── CHYTRÝ PLÁN NOTIFIKACÍ pro PROVOZ (obchod i restaurace) ──────────────────
+// Z reálných dat kasy/skladu. Vše lokálně.
+//  - RÁNO 8:00: ranní příprava — zboží pod minimem před otevřením
+//  - VEČER 20:00: souhrn tržby + porovnání s průměrem (slabší/silný den)
+//  - RÁNO příští den: nezavřená uzávěrka, když byl prodej a den se neuzavřel
+function buildProvozSmartPlan(): SmartNotif[] {
+  const locale = getCurrentLocale() === "sk" ? "sk" : "cs";
+  const out: SmartNotif[] = [];
+  const kasa = useKasaStore.getState();
+  const provoz = useProvozStore.getState();
+
+  const dnes = new Date();
+  const dnesISO = dnes.toISOString().slice(0, 10);
+  const trzbaDnes = kasa.getTrzbaDne(dnesISO);
+  const uctenekDnes = kasa.getPocetProdejekDne(dnesISO);
+  const lowStock = provoz.getPolozkyCritical().map((p) => p.nazev);
+
+  // 1) RANNÍ PŘÍPRAVA (8:00) — zboží pod minimem, ať se stihne objednat/doplnit.
+  if (lowStock.length > 0) {
+    const seznam = lowStock.slice(0, 3).join(", ") + (lowStock.length > 3 ? "…" : "");
+    out.push({
+      daysFromNow: 1, hour: 8, minute: 0,
+      title: locale === "sk" ? "Dobré ráno! Skontroluj sklad 📦" : "Dobré ráno! Zkontroluj sklad 📦",
+      body: locale === "sk" ? `Pod minimom: ${seznam}. Doplň pred otvorením.` : `Pod minimem: ${seznam}. Doplň před otevřením.`,
+    });
+  } else {
+    out.push({
+      daysFromNow: 1, hour: 8, minute: 0,
+      title: locale === "sk" ? "Dobré ráno! ☕" : "Dobré ráno! ☕",
+      body: locale === "sk" ? "Sklad je v poriadku. Pekný deň v prevádzke!" : "Sklad je v pořádku. Hezký den v provozu!",
+    });
+  }
+
+  // 2) VEČERNÍ SOUHRN (20:00) — tržba + porovnání s průměrem (slabší/silný den).
+  if (uctenekDnes > 0) {
+    const prumer = kasa.prumernaTrzba(14); // průměr za 14 dní (jen dny s prodejem)
+    const castka = Math.round(trzbaDnes).toLocaleString(locale === "sk" ? "sk-SK" : "cs-CZ");
+    let srovnani = "";
+    if (prumer > 0) {
+      const rozdil = Math.round(((trzbaDnes - prumer) / prumer) * 100);
+      if (rozdil <= -20) srovnani = locale === "sk" ? ` O ${Math.abs(rozdil)} % menej než zvyčajne.` : ` O ${Math.abs(rozdil)} % méně než obvykle.`;
+      else if (rozdil >= 20) srovnani = locale === "sk" ? ` O ${rozdil} % viac než zvyčajne! 🎉` : ` O ${rozdil} % víc než obvykle! 🎉`;
+    }
+    out.push({
+      daysFromNow: 0, hour: 20, minute: 0,
+      title: locale === "sk" ? "Zhrnutie dňa 💰" : "Souhrn dne 💰",
+      body: locale === "sk"
+        ? `Dnes tržba ${castka} Kč (${uctenekDnes} účteniek).${srovnani} Nezabudni na uzávierku.`
+        : `Dnes tržba ${castka} Kč (${uctenekDnes} účtenek).${srovnani} Nezapomeň na uzávěrku.`,
+    });
+  }
+
+  // 3) NEZAVŘENÁ UZÁVĚRKA — ráno další den, když byl dnes prodej a NEuzavřel se.
+  if (uctenekDnes > 0 && !kasa.jeDenUzavren(dnesISO)) {
+    out.push({
+      daysFromNow: 1, hour: 9, minute: 0,
+      title: locale === "sk" ? "Chýba uzávierka 🧾" : "Chybí uzávěrka 🧾",
+      body: locale === "sk"
+        ? "Včera bol predaj, ale deň si neuzavrel. Dodělaj uzávierku v Účto."
+        : "Včera byl prodej, ale den jsi neuzavřel. Dodělej uzávěrku v Účto.",
+    });
+  }
+
   out.sort((a, b) => a.daysFromNow - b.daysFromNow || a.hour - b.hour);
   return out;
 }
@@ -253,12 +369,11 @@ export default function Home() {
       localStorage.setItem("last-opened-at", String(Date.now()));
 
       if (mode === "provoz") {
-        // PROVOZ: zboží pod minimem + dnešní tržba/uzávěrka.
-        const lowStock = useProvozStore.getState().getPolozkyCritical().map((p) => p.nazev);
-        const dnes = new Date().toISOString().slice(0, 10);
-        const trzbaDnes = useKasaStore.getState().getTrzbaDne(dnes);
-        const uctenekDnes = useKasaStore.getState().getPocetProdejekDne(dnes);
-        scheduleDailyNudges({ mode: "provoz", provoz: { lowStock, trzbaDnes, uctenekDnes } });
+        // PROVOZ — CHYTRÝ plán: ranní příprava (sklad), večerní souhrn tržby
+        // s porovnáním vůči průměru, připomínka nezavřené uzávěrky. Vše lokálně.
+        const planP = buildProvozSmartPlan();
+        if (planP.length > 0) scheduleSmartNotifications(planP);
+        else scheduleDailyNudges({ mode: "provoz" });
         return;
       }
 

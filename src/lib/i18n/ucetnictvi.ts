@@ -18,6 +18,8 @@ export const ucetnictvi: Record<string, Translation> = {
   "ucto.uzaverka": { cs: "Uzávěrka", sk: "Uzávierka" },
   "ucto.trzba": { cs: "Tržba celkem", sk: "Tržba spolu" },
   "ucto.uctenek": { cs: "Účtenek", sk: "Účteniek" },
+  "ucto.uzavritDen": { cs: "Uzavřít den", sk: "Uzavrieť deň" },
+  "ucto.denUzavren": { cs: "Den uzavřen ✓", sk: "Deň uzavretý ✓" },
   "ucto.hotovost": { cs: "Hotovost", sk: "Hotovosť" },
   "ucto.karta": { cs: "Kartou", sk: "Kartou" },
   "ucto.zadneProdeje": { cs: "V tomto období žádný prodej", sk: "V tomto období žiadny predaj" },
