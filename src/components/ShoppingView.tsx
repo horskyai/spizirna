@@ -711,24 +711,24 @@ export function ShoppingView() {
                 return (
                   <div
                     key={item.id}
-                    className="flex items-center gap-3 px-4 py-3.5 transition-all"
+                    className="flex items-center gap-3 px-4 py-5 transition-all"
                     style={{ borderBottom: idx < groupItems.length - 1 ? "1px solid var(--border)" : "none" }}
                   >
                     <button
                       onClick={() => handleCheck(item)}
                       className={`flex-shrink-0 ${justChecked.has(item.id) ? "animate-check-bounce" : ""}`}
                       style={{
-                        width: 28, height: 28, borderRadius: "50%",
+                        width: 30, height: 30, borderRadius: "50%",
                         border: "2.5px solid var(--green-primary)",
                         background: justChecked.has(item.id) ? "var(--green-primary)" : "transparent",
                         display: "flex", alignItems: "center", justifyContent: "center",
                         transition: "background 0.15s",
                       }}
                     >
-                      {justChecked.has(item.id) && <Check size={13} color="white" strokeWidth={3} />}
+                      {justChecked.has(item.id) && <Check size={14} color="white" strokeWidth={3} />}
                     </button>
                     <button onClick={() => setEditItem(item)} className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{item.name}</p>
+                      <p className="text-sm font-medium" style={{ color: "var(--text-primary)", marginBottom: 3 }}>{item.name}</p>
                       <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
                         {fmtQty(item.quantity)} {item.unit}
                         {cat && <span style={{ color: "var(--text-tertiary)" }}> · {cat.emoji} {t(cat.labelKey)}</span>}
@@ -754,15 +754,15 @@ export function ShoppingView() {
               {checked.map((item, idx) => (
                 <div
                   key={item.id}
-                  className="flex items-center gap-3 px-4 py-3.5 transition-all"
+                  className="flex items-center gap-3 px-4 py-5 transition-all"
                   style={{ borderBottom: idx < checked.length - 1 ? "1px solid var(--border)" : "none", opacity: 0.5 }}
                 >
                   <button
                     onClick={() => handleCheck(item)}
-                    className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 transition-all"
-                    style={{ background: "var(--green-primary)", border: "2px solid var(--green-primary)" }}
+                    className="rounded-full flex items-center justify-center flex-shrink-0 transition-all"
+                    style={{ width: 30, height: 30, background: "var(--green-primary)", border: "2px solid var(--green-primary)" }}
                   >
-                    <Check size={12} color="white" strokeWidth={3} />
+                    <Check size={14} color="white" strokeWidth={3} />
                   </button>
                   <p className="text-sm flex-1" style={{ color: "var(--text-secondary)", textDecoration: "line-through" }}>{item.name}</p>
                   <button onClick={() => removeItem(item.id, mode)}>
