@@ -1,8 +1,8 @@
-// Edge Function: ranní přátelský push VŠEM uživatelům (jednou denně v 9:00 Praha).
-// Spouští ji pg_cron (viz migrace) — ne appka. Chráněno sdíleným tajemstvím
-// v query parametru ?key=..., aby ji nespustil kdokoli.
+// Edge Function: přátelský push uživatelům DOMÁCNOSTI (cron v 9:00 Praha).
+// Spouští ji pg_cron — ne appka. Chráněno sdíleným tajemstvím v ?key=...
 //
-// Obsah: milé střídající se hlášky ("Ahoj! Co dneska uvaříš?"). Žádná osobní data.
+// Obsah: milé hlášky vybrané podle SKUTEČNÉ pražské denní doby (ráno/odpoledne/
+// večer), ať nikdy nepřijde "Dobré ráno" odpoledne. Žádná osobní data.
 //
 // Secrets (Supabase → Edge Functions → Secrets):
 //   FIREBASE_SERVICE_ACCOUNT  – celý JSON klíč (už existuje)
@@ -11,24 +11,47 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
-// ── Přátelské ranní hlášky (CZ + SK) ─────────────────────────────────────────
+// ── Přátelské hlášky (CZ + SK) rozdělené podle denní doby ────────────────────
+// Pozdrav se vybere podle SKUTEČNÉ pražské hodiny, ať nikdy nepřijde
+// "Dobré ráno" odpoledne (kdyby se funkce spustila v jiný čas než 9:00).
 type Msg = { cs: { t: string; b: string }; sk: { t: string; b: string } };
-const MESSAGES: Msg[] = [
-  { cs: { t: "Ahoj! 🍳", b: "Co dobrého dneska uvaříš? Mrkni do Spižírny." },
-    sk: { t: "Ahoj! 🍳", b: "Čo dobré dnes uvaríš? Pozri sa do Špajze." } },
+
+const RANO: Msg[] = [
   { cs: { t: "Dobré ráno! ☀️", b: "Podívala ses dnes do Spižírny?" },
     sk: { t: "Dobré ráno! ☀️", b: "Pozrela si sa dnes do Špajze?" } },
-  { cs: { t: "Co dneska na stůl? 😋", b: "Nech se inspirovat recepty ve Spižírně." },
-    sk: { t: "Čo dnes na stôl? 😋", b: "Nechaj sa inšpirovať receptami v Špajzi." } },
-  { cs: { t: "Uvařila jsi dnes? 👩‍🍳", b: "Koukni, co máš doma, a dej se do toho." },
-    sk: { t: "Varila si dnes? 👩‍🍳", b: "Pozri, čo máš doma, a pusti sa do toho." } },
+  { cs: { t: "Ahoj! 🍳", b: "Co dobrého dneska uvaříš? Mrkni do Spižírny." },
+    sk: { t: "Ahoj! 🍳", b: "Čo dobré dnes uvaríš? Pozri sa do Špajze." } },
   { cs: { t: "Nový den 🫙", b: "Zkontroluj Spižírnu, ať máš přehled." },
     sk: { t: "Nový deň 🫙", b: "Skontroluj Špajzu, nech máš prehľad." } },
+];
+const ODPOLEDNE: Msg[] = [
+  { cs: { t: "Co dneska na stůl? 😋", b: "Nech se inspirovat recepty ve Spižírně." },
+    sk: { t: "Čo dnes na stôl? 😋", b: "Nechaj sa inšpirovať receptami v Špajzi." } },
+  { cs: { t: "Už víš, co k večeři? 🍽️", b: "Koukni, co máš doma, a dej se do toho." },
+    sk: { t: "Už vieš, čo na večeru? 🍽️", b: "Pozri, čo máš doma, a pusti sa do toho." } },
+];
+const VECER: Msg[] = [
+  { cs: { t: "Dobrý večer 🌙", b: "Zkontroluj Spižírnu, ať zítra víš, co máš." },
+    sk: { t: "Dobrý večer 🌙", b: "Skontroluj Špajzu, nech zajtra vieš, čo máš." } },
   { cs: { t: "Chybíš nám! 💚", b: "Jak to vypadá ve tvojí Spižírně?" },
     sk: { t: "Chýbaš nám! 💚", b: "Ako to vyzerá v tvojej Špajzi?" } },
 ];
 
-// Deterministický výběr podle dne (každý den jiná hláška, stabilně).
+// Aktuální hodina v Praze (bez závislosti na TZ serveru).
+function prahaHodina(): number {
+  const s = new Date().toLocaleString("en-US", { timeZone: "Europe/Prague", hour: "2-digit", hour12: false });
+  return parseInt(s, 10);
+}
+
+// Sada podle denní doby: ráno 5–11, odpoledne 12–17, jinak večer.
+function sadaProCas(): Msg[] {
+  const h = prahaHodina();
+  if (h >= 5 && h < 12) return RANO;
+  if (h >= 12 && h < 18) return ODPOLEDNE;
+  return VECER;
+}
+
+// Deterministický výběr podle dne (každý den jiná hláška ze sady, stabilně).
 function pickByDay(len: number): number {
   const daySeed = Math.floor(Date.now() / 86_400_000);
   return Math.abs((daySeed * 1103515245 + 12345) >> 8) % len;
@@ -94,8 +117,8 @@ Deno.serve(async (req: Request) => {
     }
     if (list.length === 0) return new Response(JSON.stringify({ sent: 0 }));
 
-    const idx = pickByDay(MESSAGES.length);
-    const msg = MESSAGES[idx];
+    const sada = sadaProCas();
+    const msg = sada[pickByDay(sada.length)];
 
     const sa = JSON.parse(Deno.env.get("FIREBASE_SERVICE_ACCOUNT")!);
     const accessToken = await getAccessToken(sa);
