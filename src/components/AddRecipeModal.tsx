@@ -262,8 +262,9 @@ export function AddRecipeModal({ onClose }: Props) {
             })}
           </div>
 
-          {/* Content */}
-          <div className="overflow-y-auto px-5 pb-10" style={{ maxHeight: "72vh" }}>
+          {/* Content — spodní padding se safe-area, ať poslední tlačítko
+              nezmizí za systémovou lištou (scroll má vlastní maxHeight). */}
+          <div className="overflow-y-auto px-5" style={{ maxHeight: "72vh", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}>
 
             {/* ===== BASIC ===== */}
             {step === "basic" && (

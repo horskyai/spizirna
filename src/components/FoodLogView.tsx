@@ -123,7 +123,7 @@ function QuickLogModal({ onClose, onAdd }: { onClose: () => void; onAdd: (item: 
         <div className="flex justify-center pt-3 pb-1">
           <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
         </div>
-        <div className="overflow-y-auto px-5 pt-2 pb-8 space-y-4" style={{ maxHeight: "85vh" }}>
+        <div className="overflow-y-auto px-5 pt-2 space-y-4" style={{ maxHeight: "85vh", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}>
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("foodlog.addMeal")}</h3>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
