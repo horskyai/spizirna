@@ -93,6 +93,11 @@ export const settings: Record<string, Translation> = {
 
   // ── Notifikace ──
   "settings.notifications": { cs: "Notifikace", sk: "Notifikácie" },
+  "settings.notifMaster": { cs: "Zapnout upozornění", sk: "Zapnúť upozornenia" },
+  "settings.notifMasterHint": {
+    cs: "Hlavní vypínač všech upozornění. Jednotlivé druhy si nastavíš níže v Chytrých upozorněních.",
+    sk: "Hlavný vypínač všetkých upozornení. Jednotlivé druhy si nastavíš nižšie v Chytrých upozorneniach.",
+  },
   "settings.smartNotifs": { cs: "Chytrá upozornění", sk: "Chytré upozornenia" },
   "settings.expiryAlerts": { cs: "Upozornění na blížící se spotřebu", sk: "Upozornenia na blížiacu sa spotrebu" },
   "settings.expiryAlertsHint": {

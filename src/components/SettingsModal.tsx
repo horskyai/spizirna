@@ -424,7 +424,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               onClick={toggleNotif}
               style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "2px", background: "transparent" }}
             >
-              <span style={{ fontSize: 13, color: "var(--text-primary)", textAlign: "left" }}>{t("settings.expiryAlerts")}</span>
+              <span style={{ fontSize: 13, color: "var(--text-primary)", textAlign: "left" }}>{t("settings.notifMaster")}</span>
               <span style={{
                 width: 44, height: 26, borderRadius: 99, flexShrink: 0, position: "relative",
                 background: notif ? "var(--green-primary)" : "var(--border)", transition: "background 0.2s",
@@ -435,7 +435,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                 }} />
               </span>
             </button>
-            <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.expiryAlertsHint")}</p>
+            <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.notifMasterHint")}</p>
           </Section>
 
           {/* ── Chytrá upozornění ── každý typ zvlášť zap/vyp (jen když jsou notif zapnuté) */}
