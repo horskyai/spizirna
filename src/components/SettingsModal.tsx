@@ -30,7 +30,7 @@ const EXPIRY_NOTIF_KEY = "expiry-notifications";
 export function SettingsModal({ onClose }: { onClose: () => void }) {
   const t = useT();
   const locale = useLocale();
-  const { profile, user, signOut } = useAuthStore();
+  const { profile, user, signOut, isTrialActive } = useAuthStore();
   const supportSubject = locale === "sk" ? "Špajza – podpora" : "Spižírna – podpora";
   const supportHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(supportSubject)}`;
   // Denní cíl má smysl jen v domácnosti — v provozovně se sekce skrývá.
@@ -511,11 +511,17 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           )}
 
           {/* ── Plán ── info o plánu; platby (změna/zrušení) až s Play Billing.
-              Zkušební doba (trial) zrušena — model je 50 položek zdarma / 149 Kč
-              (domácnost), provoz placený. Žádný časový odznak se neukazuje. */}
+              Trial JEN pro provoz (14 dní zdarma); domácnost trial nemá (má
+              model 50 položek zdarma / 149 Kč). Odznak se ukazuje jen v provozu
+              a jen dokud zkušebka běží. */}
           <Section icon={<Crown size={15} />} title={t("settings.plan")}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 2px 10px" }}>
               <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{planLabel}</span>
+              {mode === "provoz" && isTrialActive() && profile?.trial_ends_at && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green-dark)", background: "var(--green-light)", padding: "4px 10px", borderRadius: 99 }}>
+                  {t("settings.trialEnds").replace("{date}", formatDateShort(profile.trial_ends_at))}
+                </span>
+              )}
             </div>
             <p style={{ fontSize: 12, color: "var(--text-tertiary)", lineHeight: 1.4, margin: "2px 2px 0" }}>
               {t("settings.planInfo")}
