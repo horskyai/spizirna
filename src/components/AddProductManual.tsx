@@ -215,7 +215,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
       <div className="sheet-overlay animate-fade-in" onClick={onClose} style={{ position: "absolute", inset: 0 }} />
       <div
         className="relative animate-slide-up rounded-t-3xl overflow-hidden"
-        style={{ background: "var(--bg-primary)", maxHeight: "92dvh", paddingBottom: "env(safe-area-inset-bottom, 16px)" }}
+        style={{ background: "var(--bg-primary)", maxHeight: "92dvh" }}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Handle */}
@@ -281,7 +281,9 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
         </div>
 
         {/* Content */}
-        <div className="overflow-y-auto px-5 pb-8" style={{ maxHeight: "65vh" }}>
+        {/* Spodní padding respektuje systémovou lištu (gestová/tlačítková na Androidu),
+            ať poslední tlačítko „Přidat do spižírny" nezmizí za navigací. */}
+        <div className="overflow-y-auto px-5" style={{ maxHeight: "65vh", paddingBottom: "calc(32px + env(safe-area-inset-bottom, 0px))" }}>
 
           {/* ===== STEP: BASIC ===== */}
           {step === "basic" && (
