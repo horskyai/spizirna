@@ -248,13 +248,75 @@ export async function scheduleDailyNudges(opts: {
   }
 }
 
-// Zruší všechny naše naplánované denní notifikace.
+// Zruší všechny naše naplánované denní notifikace (i chytré, viz SMART_ID_BASE).
 export async function cancelDailyNudges(): Promise<void> {
   if (!Capacitor.isNativePlatform()) return;
   try {
     const { LocalNotifications } = await import("@capacitor/local-notifications");
     const ids = [];
     for (let d = 0; d < DAYS_AHEAD; d++) ids.push({ id: NOTIF_ID_BASE + d });
+    for (let i = 0; i < SMART_MAX; i++) ids.push({ id: SMART_ID_BASE + i });
     await LocalNotifications.cancel({ notifications: ids });
   } catch {}
+}
+
+// ── CHYTRÉ notifikace ────────────────────────────────────────────────────────
+// Volající (page.tsx, má přístup ke stores) spočítá konkrétní plán z reálných
+// dat a předá sem hotové položky. Tahle funkce je „hloupá" — jen je naplánuje.
+// Každá položka: kolik dní od teď, hodina, titulek, tělo. Priorita/řazení je
+// na volajícím; tady bereme max SMART_MAX nejbližších.
+const SMART_ID_BASE = 4300;
+const SMART_MAX = 24; // strop naplánovaných chytrých notifikací
+
+export interface SmartNotif {
+  daysFromNow: number; // 0 = dnes, 1 = zítra…
+  hour: number;        // hodina (0–23)
+  minute?: number;
+  title: string;
+  body: string;
+}
+
+export async function scheduleSmartNotifications(items: SmartNotif[]): Promise<void> {
+  if (!Capacitor.isNativePlatform()) return;
+  if (!isEnabled()) { await cancelDailyNudges(); return; }
+
+  const { LocalNotifications } = await import("@capacitor/local-notifications");
+  const perm = await LocalNotifications.checkPermissions();
+  if (perm.display !== "granted") {
+    const req = await LocalNotifications.requestPermissions();
+    if (req.display !== "granted") return;
+  }
+  try {
+    await LocalNotifications.createChannel({
+      id: CHANNEL_ID,
+      name: getCurrentLocale() === "sk" ? "Špajza – pripomienky" : "Spižírna – připomínky",
+      importance: 3, visibility: 1,
+    });
+  } catch {}
+
+  // Zruš vše předchozí (denní i chytré), ať se nehromadí a nepřekrývá.
+  await cancelDailyNudges();
+
+  const now = new Date();
+  const toSchedule = [];
+  let idx = 0;
+  for (const it of items) {
+    if (idx >= SMART_MAX) break;
+    const at = new Date(now);
+    at.setDate(now.getDate() + Math.max(0, it.daysFromNow));
+    at.setHours(it.hour, it.minute ?? 0, 0, 0);
+    if (at.getTime() <= now.getTime()) continue; // čas už minul → přeskoč
+    toSchedule.push({
+      id: SMART_ID_BASE + idx,
+      channelId: CHANNEL_ID,
+      title: it.title,
+      body: it.body,
+      schedule: { at, allowWhileIdle: true },
+      smallIcon: "ic_launcher_foreground",
+    });
+    idx++;
+  }
+  if (toSchedule.length > 0) {
+    await LocalNotifications.schedule({ notifications: toSchedule });
+  }
 }

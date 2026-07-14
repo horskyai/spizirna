@@ -67,6 +67,13 @@ export const usePantryStore = create<PantryStore>()(
       consumeItem: (id, amount) => {
         const item = get().items.find((i) => i.id === id);
         if (!item) return;
+        // Zaznamenej spotřebu → appka se učí rychlost spotřeby (predictDaysLeft)
+        // a umí chytře upozornit „dochází ti X". Dynamický import kvůli cyklu.
+        try {
+          import("@/store/recurringStore").then(({ useRecurringStore }) => {
+            useRecurringStore.getState().recordConsumption(item.product.product_name, amount);
+          }).catch(() => {});
+        } catch { /* záznam spotřeby není kritický */ }
         const remaining = item.quantity - amount;
         if (remaining <= 0) {
           set((s) => ({ items: s.items.filter((i) => i.id !== id) }));

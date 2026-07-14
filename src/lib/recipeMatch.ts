@@ -78,3 +78,48 @@ export function bestRecipeFromStock(
   }
   return best ? { recipe: best.recipe, have: best.have, total: best.total } : null;
 }
+
+// Jako bestRecipeFromStock, ale PREFERUJE recepty, které využijí suroviny
+// končící do `expiringWithin` dní (ať se nic nevyhodí). Vrací navíc seznam
+// končících surovin, které recept spotřebuje, pro text notifikace.
+// expiryById: mapa StockItem.id → počet dní do expirace (může být záporné).
+export function bestRecipeUsingExpiring(
+  recipes: Recipe[],
+  stock: StockItem[],
+  expiryById: Record<string, number>,
+  opts: { minHave?: number; minRatio?: number; expiringWithin?: number } = {},
+): { recipe: Recipe; have: number; total: number; usesExpiring: string[] } | null {
+  const minHave = opts.minHave ?? 2;
+  const minRatio = opts.minRatio ?? 0.6;
+  const within = opts.expiringWithin ?? 3;
+
+  let best: { recipe: Recipe; have: number; total: number; ratio: number; expScore: number; uses: string[] } | null = null;
+  for (const r of recipes) {
+    if (r.ingredients.length === 0) continue;
+    let have = 0;
+    const uses: string[] = [];
+    let expScore = 0;
+    for (const ing of r.ingredients) {
+      const m = findStock(stock, ing);
+      const ok = m && (ing.quantity === 0 || m.quantity >= ing.quantity);
+      if (ok && m) {
+        have++;
+        const days = expiryById[m.id];
+        if (days !== undefined && days <= within) {
+          // čím blíž expiraci, tím vyšší bonus (dnes/prošlé = nejvíc)
+          expScore += Math.max(1, within - Math.max(0, days) + 1);
+          uses.push(m.name);
+        }
+      }
+    }
+    const total = r.ingredients.length;
+    const ratio = have / total;
+    if (have < minHave || ratio < minRatio) continue;
+    // Primárně recepty využívající končící suroviny (expScore), pak pokrytí.
+    if (!best || expScore > best.expScore || (expScore === best.expScore && ratio > best.ratio)) {
+      best = { recipe: r, have, total, ratio, expScore, uses };
+    }
+  }
+  if (!best) return null;
+  return { recipe: best.recipe, have: best.have, total: best.total, usesExpiring: best.uses };
+}
