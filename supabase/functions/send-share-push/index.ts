@@ -12,6 +12,14 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "jsr:@supabase/supabase-js@2";
 
+// CORS hlavičky — appka (WebView) volá funkci z jiného originu, prohlížeč
+// nejdřív pošle OPTIONS preflight. Bez těchhle hlaviček push nikdy neodejde.
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
 // ── FCM OAuth token z service account klíče (bez externí knihovny) ──────────
 async function getAccessToken(sa: { client_email: string; private_key: string }): Promise<string> {
   const now = Math.floor(Date.now() / 1000);
@@ -57,10 +65,17 @@ function pemToArrayBuffer(pem: string): ArrayBuffer {
 }
 
 Deno.serve(async (req: Request) => {
+  // CORS preflight — musí se vrátit HNED, před čtením těla (jinak spadne na req.json()).
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders });
+  }
   try {
     const { scope, groupId, title, body } = await req.json();
     if (!scope || !groupId) {
-      return new Response(JSON.stringify({ error: "missing scope/groupId" }), { status: 400 });
+      return new Response(JSON.stringify({ error: "missing scope/groupId" }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // Kdo volá (z JWT) — jemu push neposíláme (je to jeho vlastní změna).
@@ -77,14 +92,22 @@ Deno.serve(async (req: Request) => {
     const groupCol = scope === "provoz" ? "provozovna_id" : "family_id";
     const { data: members } = await admin
       .from(memberTable).select("user_id").eq(groupCol, groupId);
-    const otherIds = (members ?? []).map((m: { user_id: string }) => m.user_id).filter((id) => id !== callerId);
-    if (otherIds.length === 0) return new Response(JSON.stringify({ sent: 0 }));
+    const otherIds = (members ?? []).map((m: { user_id: string }) => m.user_id).filter((id: string) => id !== callerId);
+    if (otherIds.length === 0) {
+      return new Response(JSON.stringify({ sent: 0 }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // Načti jejich push tokeny
     const { data: tokens } = await admin
       .from("push_tokens").select("token").in("user_id", otherIds);
     const tokenList = (tokens ?? []).map((t: { token: string }) => t.token);
-    if (tokenList.length === 0) return new Response(JSON.stringify({ sent: 0 }));
+    if (tokenList.length === 0) {
+      return new Response(JSON.stringify({ sent: 0 }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // FCM
     const sa = JSON.parse(Deno.env.get("FIREBASE_SERVICE_ACCOUNT")!);
@@ -104,8 +127,13 @@ Deno.serve(async (req: Request) => {
       });
       if (r.ok) sent++;
     }
-    return new Response(JSON.stringify({ sent }), { headers: { "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ sent }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   } catch (e) {
-    return new Response(JSON.stringify({ error: String(e) }), { status: 500 });
+    return new Response(JSON.stringify({ error: String(e) }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
   }
 });
