@@ -133,10 +133,10 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
           style={{ paddingTop: "max(20px, env(safe-area-inset-top, 20px))" }}
         >
           {/* Top row: greeting + actions */}
-          <div className="flex items-center justify-between mb-4">
-            <div>
+          <div className="flex items-start justify-between mb-4" style={{ gap: 16 }}>
+            <div style={{ minWidth: 0 }}>
               <p className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>{t(greetingKey())}{firstName ? `, ${firstName}` : ""} 👋</p>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                 <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)", lineHeight: 1.2 }}>{t("header.myPantry")}</h1>
                 <span
                   title={mode === "provoz" ? t("plan.provoz") : t("plan.domacnost")}
@@ -152,7 +152,7 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
                 </span>
               </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
               {expiringCount > 0 && (
                 <button
                   onClick={() => setShowExpiry(true)}
