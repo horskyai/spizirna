@@ -7,7 +7,7 @@ import { useModeStore } from "@/store/modeStore";
 import { useAuthStore } from "@/store/authStore";
 import { useBusinessStore } from "@/store/businessStore";
 import { useRecurringStore } from "@/store/recurringStore";
-import { Plus, Bell, AlertTriangle, ScanLine, PenLine, Home, Briefcase, Settings, HelpCircle, ChefHat, RefreshCw, Check } from "lucide-react";
+import { Plus, Bell, AlertTriangle, ScanLine, PenLine, Settings, HelpCircle, ChefHat, RefreshCw, Check } from "lucide-react";
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { ScreenGuide, useScreenGuide } from "@/components/ScreenGuide";
@@ -136,21 +136,7 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
           <div className="flex items-start justify-between mb-4" style={{ gap: 16 }}>
             <div style={{ minWidth: 0 }}>
               <p className="text-xs font-medium" style={{ color: "var(--text-tertiary)" }}>{t(greetingKey())}{firstName ? `, ${firstName}` : ""} 👋</p>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-                <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)", lineHeight: 1.2 }}>{t("header.myPantry")}</h1>
-                <span
-                  title={mode === "provoz" ? t("plan.provoz") : t("plan.domacnost")}
-                  style={{
-                    display: "flex", alignItems: "center", justifyContent: "center",
-                    width: 26, height: 26, borderRadius: 99,
-                    background: mode === "provoz" ? "#FDEBD7" : "var(--green-light)",
-                    color: mode === "provoz" ? "#B85C00" : "var(--green-dark)",
-                    border: `1px solid ${mode === "provoz" ? "#F59E42" : "var(--green-primary)"}`,
-                  }}
-                >
-                  {mode === "provoz" ? <Briefcase size={13} /> : <Home size={13} />}
-                </span>
-              </div>
+              <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text-primary)", lineHeight: 1.2 }}>{t("header.myPantry")}</h1>
             </div>
             <div className="flex items-center gap-2" style={{ flexShrink: 0 }}>
               {expiringCount > 0 && (
