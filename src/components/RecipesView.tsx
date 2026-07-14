@@ -821,10 +821,10 @@ function TodaySuggestionWidget() {
             <>
               <button
                 onClick={handleCookNow}
-                className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex items-center justify-center gap-2"
-                style={{ background: "rgba(255,255,255,0.2)", color: "white", border: "1px solid rgba(255,255,255,0.3)", lineHeight: 1.2 }}
+                className="flex-1 py-2.5 rounded-2xl text-sm font-bold flex flex-col items-center justify-center"
+                style={{ background: "rgba(255,255,255,0.2)", color: "white", border: "1px solid rgba(255,255,255,0.3)", lineHeight: 1.15, gap: 5 }}
               >
-                <ChefHat size={16} style={{ flexShrink: 0 }} />
+                <ChefHat size={18} />
                 <span style={{ textAlign: "center" }}>{t("recipes.today.cookFromWhatIHave")}</span>
               </button>
               {missing.length > 0 && (
