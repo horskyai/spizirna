@@ -143,9 +143,10 @@ export default function Home() {
   }, []);
 
   // Chytré lokální notifikace (jen v appce) — při každém otevření přeplánuj
-  // večerní (18:00) pošťouchnutí na příští dny. Spočítá, co brzy končí, kolik je
-  // na nákupu, jmenovité připomínky a jak dlouho appku neotevřel → z toho se
-  // vybere osobní text. (Ranní 9:00 obecnou hlášku posílá server push.)
+  // večerní pošťouchnutí na příští dny. Obsah se liší podle režimu:
+  //  - DOMÁCNOST: recept z toho co máš, expirace, nákup, připomínky.
+  //  - PROVOZ: zboží pod minimem, souhrn tržby + připomínka uzávěrky.
+  // (Ranní 9:00 obecnou hlášku posílá server push.)
   useEffect(() => {
     if (!user) return;
     try {
@@ -154,22 +155,32 @@ export default function Home() {
       const daysAgo = prev ? Math.floor((Date.now() - prev) / 86_400_000) : 0;
       localStorage.setItem(LAST_OPEN_KEY, String(Date.now()));
 
+      if (mode === "provoz") {
+        // PROVOZ: zboží pod minimem + dnešní tržba/uzávěrka.
+        const lowStock = useProvozStore.getState().getPolozkyCritical().map((p) => p.nazev);
+        const dnes = new Date().toISOString().slice(0, 10);
+        const trzbaDnes = useKasaStore.getState().getTrzbaDne(dnes);
+        const uctenekDnes = useKasaStore.getState().getPocetProdejekDne(dnes);
+        scheduleDailyNudges({ mode: "provoz", provoz: { lowStock, trzbaDnes, uctenekDnes } });
+        return;
+      }
+
+      // DOMÁCNOST
       const expiringCount = usePantryStore.getState().getExpiringItems(3).length;
       const shoppingCount = useShoppingStore.getState().getItems("domacnost").filter((i) => !i.checked).length;
       // Zásoby a připomínky, kterým právě nadešel čas koupit → jmenovitá notifikace.
       const dueReminders = useRecurringStore.getState().getDueItems().map((i) => i.name);
 
-      // Tip na recept z toho, co má doma (jen domácí spižírna). Vybere nejlépe
-      // uvařitelný recept z aktuálních zásob → večerní notifikace „Co dnes uvařit?".
+      // Tip na recept z toho, co má doma. Vybere nejlépe uvařitelný recept.
       const stock: StockItem[] = usePantryStore.getState().items.map((p) => ({
         id: p.id, name: p.product.product_name, quantity: p.quantity, ean: p.product.ean_code,
       }));
       const best = bestRecipeFromStock(useRecipeStore.getState().recipes, stock);
       const recipeSuggestion = best ? { name: best.recipe.name, have: best.have, total: best.total } : null;
 
-      scheduleDailyNudges({ expiringCount, shoppingCount, lastOpenedDaysAgo: daysAgo, dueReminders, recipeSuggestion });
+      scheduleDailyNudges({ mode: "domacnost", expiringCount, shoppingCount, lastOpenedDaysAgo: daysAgo, dueReminders, recipeSuggestion });
     } catch { /* notifikace nejsou kritické */ }
-  }, [user]);
+  }, [user, mode]);
 
   // Úplný reset aplikace: otevřením /?reset se smažou všechna lokální data
   // a appka začne od splash screenu a onboardingu jako při první instalaci

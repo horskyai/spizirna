@@ -81,9 +81,17 @@ Deno.serve(async (req: Request) => {
       return new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 });
     }
 
-    // Načti všechny push tokeny (i s jazykem, pokud ho ukládáme).
-    const { data: tokens } = await admin.from("push_tokens").select("token, locale");
-    const list = tokens ?? [];
+    // Načti push tokeny. Ranní přátelská hláška ("Co dneska uvaříš?") je jen pro
+    // DOMÁCNOST — majitelům provozu nedává smysl (ti mají vlastní večerní lokální
+    // notifikace: sklad/tržba/uzávěrka). Vyřadíme proto uživatele s mode='provoz'.
+    const { data: tokens } = await admin.from("push_tokens").select("token, locale, user_id");
+    let list = tokens ?? [];
+    if (list.length > 0) {
+      const { data: provozUsers } = await admin
+        .from("profiles").select("id").eq("mode", "provoz");
+      const provozSet = new Set((provozUsers ?? []).map((p: { id: string }) => p.id));
+      list = list.filter((t: { user_id?: string }) => !t.user_id || !provozSet.has(t.user_id));
+    }
     if (list.length === 0) return new Response(JSON.stringify({ sent: 0 }));
 
     const idx = pickByDay(MESSAGES.length);

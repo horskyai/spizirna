@@ -39,6 +39,45 @@ function isEnabled(): boolean {
 
 type Locale = "cs" | "sk";
 
+// Sestaví text večerní notifikace pro PROVOZ (obchod i restaurace). Priorita:
+// 1) zboží pod minimem (objednat), 2) tržba za den + připomínka uzávěrky.
+// Vrátí null, když není co říct (žádný prodej, sklad v pořádku).
+function buildProvozMessage(
+  locale: Locale,
+  opts: {
+    lowStock: string[];        // názvy položek pod minimem
+    trzbaDnes: number;         // dnešní tržba v Kč
+    uctenekDnes: number;       // počet účtenek dnes
+  },
+): { title: string; body: string } | null {
+  const { lowStock, trzbaDnes, uctenekDnes } = opts;
+
+  // 1) NEJVYŠŠÍ PRIORITA: dochází zboží → objednej (nejdůležitější pro provoz).
+  if (lowStock.length > 0) {
+    const seznam = lowStock.slice(0, 3).join(", ") + (lowStock.length > 3 ? "…" : "");
+    return {
+      title: locale === "sk" ? "Dochádza zásoba 📦" : "Dochází zásoba 📦",
+      body: locale === "sk"
+        ? `Pod minimom: ${seznam}. Nezabudni objednať.`
+        : `Pod minimem: ${seznam}. Nezapomeň objednat.`,
+    };
+  }
+
+  // 2) Byl dnes prodej → souhrn tržby + pobídka k uzávěrce.
+  if (uctenekDnes > 0) {
+    const castka = trzbaDnes.toLocaleString(locale === "sk" ? "sk-SK" : "cs-CZ");
+    return {
+      title: locale === "sk" ? "Zhrnutie dňa 💰" : "Souhrn dne 💰",
+      body: locale === "sk"
+        ? `Dnes tržba ${castka} Kč (${uctenekDnes} účteniek). Nezabudni na dennú uzávierku.`
+        : `Dnes tržba ${castka} Kč (${uctenekDnes} účtenek). Nezapomeň na denní uzávěrku.`,
+    };
+  }
+
+  // Nic k hlášení (zavřeno / sklad OK) → večer neotravujeme.
+  return null;
+}
+
 // Sestaví CHYTRÝ text večerní notifikace podle stavu appky (priorita shora).
 // Vrátí null, když není nic k připomenutí → večerní notifikace se nepošle.
 function buildSmartMessage(
@@ -116,10 +155,14 @@ function buildSmartMessage(
   return null;
 }
 
-// Naplánuje CHYTROU večerní notifikaci (18:00) na DAYS_AHEAD dní dopředu.
-// Text se určí z aktuálního stavu appky (co končí, nákup, připomínky, nepřítomnost).
-// Ráno 9:00 řeší obecnou hlášku server push — tady jde jen o osobní večerní.
+// Naplánuje CHYTROU večerní notifikaci na DAYS_AHEAD dní dopředu.
+// Text se liší podle režimu:
+//  - DOMÁCNOST: recept z toho co máš, expirace, nákup, připomínky (buildSmartMessage)
+//  - PROVOZ: zboží pod minimem, souhrn tržby + uzávěrka (buildProvozMessage)
+// Ráno 9:00 obecnou hlášku posílá server push (jen doména/domácnost styl).
 export async function scheduleDailyNudges(opts: {
+  // Režim účtu — určuje, které notifikace se plánují. Default domácnost.
+  mode?: "domacnost" | "provoz";
   expiringCount?: number;
   shoppingCount?: number;
   lastOpenedDaysAgo?: number;
@@ -127,6 +170,8 @@ export async function scheduleDailyNudges(opts: {
   dueReminders?: string[];
   // Tip na recept z aktuálních zásob (spočítá volající přes bestRecipeFromStock).
   recipeSuggestion?: { name: string; have: number; total: number } | null;
+  // PROVOZ data: zboží pod minimem, dnešní tržba a počet účtenek.
+  provoz?: { lowStock: string[]; trzbaDnes: number; uctenekDnes: number };
 }): Promise<void> {
   // Jen v nativní appce — web notifikace neplánuje.
   if (!Capacitor.isNativePlatform()) return;
@@ -160,14 +205,21 @@ export async function scheduleDailyNudges(opts: {
   const locale: Locale = getCurrentLocale() === "sk" ? "sk" : "cs";
   const now = new Date();
 
-  // Chytrý text z aktuálního stavu. Když není co říct → večer neplánujeme nic.
-  const msg = buildSmartMessage(locale, {
-    expiringCount: opts.expiringCount ?? 0,
-    shoppingCount: opts.shoppingCount ?? 0,
-    lastOpenedDaysAgo: opts.lastOpenedDaysAgo ?? 0,
-    dueReminders: opts.dueReminders ?? [],
-    recipeSuggestion: opts.recipeSuggestion ?? null,
-  });
+  // Chytrý text z aktuálního stavu — podle režimu (provoz vs. domácnost).
+  // Když není co říct → večer neplánujeme nic.
+  const msg = opts.mode === "provoz"
+    ? buildProvozMessage(locale, {
+        lowStock: opts.provoz?.lowStock ?? [],
+        trzbaDnes: opts.provoz?.trzbaDnes ?? 0,
+        uctenekDnes: opts.provoz?.uctenekDnes ?? 0,
+      })
+    : buildSmartMessage(locale, {
+        expiringCount: opts.expiringCount ?? 0,
+        shoppingCount: opts.shoppingCount ?? 0,
+        lastOpenedDaysAgo: opts.lastOpenedDaysAgo ?? 0,
+        dueReminders: opts.dueReminders ?? [],
+        recipeSuggestion: opts.recipeSuggestion ?? null,
+      });
   if (!msg) return;
 
   // Naplánuj večerní notifikaci na příštích DAYS_AHEAD dní. Čas se každý den
