@@ -18,7 +18,15 @@ import { getCurrentLocale } from "@/store/localeStore";
 const CHANNEL_ID = "spizirna-daily";
 const NOTIF_ID_BASE = 4200; // pevný rozsah ID pro naše denní notifikace
 const DAYS_AHEAD = 7;       // plánujeme večerní notifikace na týden dopředu
-const EVENING_HOUR = 18;    // večerní chytrá notifikace v 18:00 (ráno dělá server)
+
+// Večerní okno: čas se každý den STŘÍDÁ (17:00–20:30), ať to není monotónní.
+// Deterministicky podle dne (ne náhodně) → stabilní i po přeplánování.
+const EVENING_SLOTS: Array<[number, number]> = [
+  [17, 30], [18, 0], [18, 30], [19, 0], [19, 30], [20, 0],
+];
+function eveningSlotFor(daySeed: number): [number, number] {
+  return EVENING_SLOTS[Math.abs((daySeed * 2654435761) >>> 0) % EVENING_SLOTS.length];
+}
 
 // Zapnuto? (přepínač v Nastavení ukládá do localStorage EXPIRY_NOTIF_KEY)
 function isEnabled(): boolean {
@@ -35,11 +43,35 @@ type Locale = "cs" | "sk";
 // Vrátí null, když není nic k připomenutí → večerní notifikace se nepošle.
 function buildSmartMessage(
   locale: Locale,
-  opts: { expiringCount: number; shoppingCount: number; lastOpenedDaysAgo: number; dueReminders: string[] },
+  opts: {
+    expiringCount: number;
+    shoppingCount: number;
+    lastOpenedDaysAgo: number;
+    dueReminders: string[];
+    // Tip na recept, který jde uvařit z aktuálních zásob (název + kolik surovin máš).
+    recipeSuggestion?: { name: string; have: number; total: number } | null;
+  },
 ): { title: string; body: string } | null {
-  const { expiringCount, shoppingCount, lastOpenedDaysAgo, dueReminders } = opts;
+  const { expiringCount, shoppingCount, lastOpenedDaysAgo, dueReminders, recipeSuggestion } = opts;
 
-  // 1) NEJVYŠŠÍ PRIORITA: jmenovité "Zásoby a připomínky" — je čas koupit konkrétní věci.
+  // 0) NEJLÁKAVĚJŠÍ: máš doma skoro všechno na konkrétní recept → navrhni ho.
+  //    Dáváme přednost, když ti něco zároveň končí (ať se to spotřebuje), jinak
+  //    jako milý tip. (Prioritu 1 = "je čas koupit" ale necháváme nad tímhle,
+  //    protože nákup má časový spouštěč.)
+  if (recipeSuggestion && dueReminders.length === 0) {
+    const { name, have, total } = recipeSuggestion;
+    const kdyz = expiringCount > 0
+      ? (locale === "sk" ? " Zíde sa to — niečo ti čoskoro končí." : " Hodí se to — něco ti brzy končí.")
+      : "";
+    return {
+      title: locale === "sk" ? "Čo dnes uvariť? 🍳" : "Co dnes uvařit? 🍳",
+      body: locale === "sk"
+        ? `Máš doma ${have} z ${total} surovín na „${name}". Skús to!${kdyz}`
+        : `Máš doma ${have} z ${total} surovin na „${name}". Zkus to!${kdyz}`,
+    };
+  }
+
+  // 1) jmenovité "Zásoby a připomínky" — je čas koupit konkrétní věci.
   if (dueReminders.length > 0) {
     const seznam = dueReminders.slice(0, 3).join(", ") + (dueReminders.length > 3 ? "…" : "");
     return {
@@ -93,6 +125,8 @@ export async function scheduleDailyNudges(opts: {
   lastOpenedDaysAgo?: number;
   // Názvy položek ze "Zásoby a připomínky", kterým právě nadešel čas koupit.
   dueReminders?: string[];
+  // Tip na recept z aktuálních zásob (spočítá volající přes bestRecipeFromStock).
+  recipeSuggestion?: { name: string; have: number; total: number } | null;
 }): Promise<void> {
   // Jen v nativní appce — web notifikace neplánuje.
   if (!Capacitor.isNativePlatform()) return;
@@ -132,16 +166,21 @@ export async function scheduleDailyNudges(opts: {
     shoppingCount: opts.shoppingCount ?? 0,
     lastOpenedDaysAgo: opts.lastOpenedDaysAgo ?? 0,
     dueReminders: opts.dueReminders ?? [],
+    recipeSuggestion: opts.recipeSuggestion ?? null,
   });
   if (!msg) return;
 
-  // Naplánuj večerní 18:00 na příštích DAYS_AHEAD dní (dnešek jen když ještě nebylo 18:00).
+  // Naplánuj večerní notifikaci na příštích DAYS_AHEAD dní. Čas se každý den
+  // STŘÍDÁ (viz EVENING_SLOTS), ať to není pořád stejná hodina. Dnešek jen když
+  // vybraný čas ještě nenastal.
   const toSchedule = [];
   for (let d = 0; d < DAYS_AHEAD; d++) {
     const at = new Date(now);
     at.setDate(now.getDate() + d);
-    at.setHours(EVENING_HOUR, 0, 0, 0);
-    if (at.getTime() <= now.getTime()) continue; // dnešní 18:00 už bylo → přeskoč
+    const daySeed = Math.floor(at.getTime() / 86_400_000);
+    const [h, m] = eveningSlotFor(daySeed);
+    at.setHours(h, m, 0, 0);
+    if (at.getTime() <= now.getTime()) continue; // dnešní vybraný čas už byl → přeskoč
     toSchedule.push({
       id: NOTIF_ID_BASE + d,
       channelId: CHANNEL_ID,

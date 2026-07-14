@@ -17,41 +17,7 @@ import { toBaseUnit } from "@/lib/units";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { useT, useLocale } from "@/lib/i18n";
 import { localizeRecipe } from "@/lib/localizeRecipe";
-
-// Unifikovaná zásoba napříč režimy (spižírna i provozní sklad).
-interface StockItem { id: string; name: string; quantity: number; ean?: string }
-
-// JEDNA sdílená matchovací logika pro celý soubor (karta receptu i denní návrh),
-// ať se STOP sety nerozcházejí. Rozseká název na klíčová slova bez stopslov.
-const MATCH_STOP = new Set(["konzervovaná", "konzervovaný", "konzervované", "čerstvý", "čerstvá", "čerstvé",
-  "sušený", "sušená", "sušené", "mražený", "mražená", "mražené", "celý", "celá", "celé",
-  "strouhaný", "strouhaná", "nakrájený", "nakrájená", "mletý", "mletá", "mleté",
-  "uvařená", "uvařený", "velký", "velká", "malý", "malá", "baby", "sterilované", "sterilovaný"]);
-function matchKeywords(str: string): string[] {
-  return str.toLowerCase()
-    .split(/[\s,()\/]+/)
-    .map(w => w.replace(/[^a-záčďéěíňóřšťúůýž]/g, ""))
-    .filter(w => w.length > 2 && !MATCH_STOP.has(w));
-}
-// Shodují se názvy ingredience a produktu aspoň jedním klíčovým slovem?
-function nameMatches(ingName: string, stockName: string): boolean {
-  const iw = matchKeywords(ingName), pw = matchKeywords(stockName);
-  return iw.some(a => pw.some(b => b.includes(a) || a.includes(b)));
-}
-
-// Najde ve skladu položku odpovídající ingredienci (přesně přes EAN/název,
-// jinak fuzzy přes klíčová slova). Sdíleno domácností i provozem.
-function findStock(stock: StockItem[], ing: { name: string; linked_ean?: string; linked_product_name?: string }): StockItem | null {
-  if (ing.linked_ean) {
-    const m = stock.find((p) => p.ean && p.ean === ing.linked_ean);
-    if (m) return m;
-  }
-  if (ing.linked_product_name) {
-    const m = stock.find((p) => p.name === ing.linked_product_name);
-    if (m) return m;
-  }
-  return stock.find((p) => nameMatches(ing.name, p.name)) ?? null;
-}
+import { StockItem, findStock, nameMatches } from "@/lib/recipeMatch";
 
 function RecipeCard({ recipe, onDelete }: { recipe: Recipe; onDelete: () => void }) {
   const t = useT();

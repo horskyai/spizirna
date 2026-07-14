@@ -25,6 +25,8 @@ import { SettingsModal } from "@/components/SettingsModal";
 import { DiscountWheel } from "@/components/DiscountWheel";
 import { useDiscountStore, WHEEL_AFTER_DAYS } from "@/store/discountStore";
 import { scheduleDailyNudges } from "@/lib/notifications";
+import { useRecipeStore } from "@/store/recipeStore";
+import { bestRecipeFromStock, StockItem } from "@/lib/recipeMatch";
 import { usePantryStore } from "@/store/pantryStore";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useFamilyStore } from "@/store/familyStore";
@@ -157,7 +159,15 @@ export default function Home() {
       // Zásoby a připomínky, kterým právě nadešel čas koupit → jmenovitá notifikace.
       const dueReminders = useRecurringStore.getState().getDueItems().map((i) => i.name);
 
-      scheduleDailyNudges({ expiringCount, shoppingCount, lastOpenedDaysAgo: daysAgo, dueReminders });
+      // Tip na recept z toho, co má doma (jen domácí spižírna). Vybere nejlépe
+      // uvařitelný recept z aktuálních zásob → večerní notifikace „Co dnes uvařit?".
+      const stock: StockItem[] = usePantryStore.getState().items.map((p) => ({
+        id: p.id, name: p.product.product_name, quantity: p.quantity, ean: p.product.ean_code,
+      }));
+      const best = bestRecipeFromStock(useRecipeStore.getState().recipes, stock);
+      const recipeSuggestion = best ? { name: best.recipe.name, have: best.have, total: best.total } : null;
+
+      scheduleDailyNudges({ expiringCount, shoppingCount, lastOpenedDaysAgo: daysAgo, dueReminders, recipeSuggestion });
     } catch { /* notifikace nejsou kritické */ }
   }, [user]);
 
