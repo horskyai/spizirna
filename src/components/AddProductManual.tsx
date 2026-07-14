@@ -283,7 +283,7 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
         {/* Content */}
         {/* Spodní padding respektuje systémovou lištu (gestová/tlačítková na Androidu),
             ať poslední tlačítko „Přidat do spižírny" nezmizí za navigací. */}
-        <div className="overflow-y-auto px-5" style={{ maxHeight: "65vh", paddingBottom: "calc(32px + env(safe-area-inset-bottom, 0px))" }}>
+        <div className="overflow-y-auto px-5" style={{ maxHeight: "65vh", paddingBottom: "calc(56px + env(safe-area-inset-bottom, 0px))" }}>
 
           {/* ===== STEP: BASIC ===== */}
           {step === "basic" && (
