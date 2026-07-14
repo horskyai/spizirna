@@ -140,9 +140,10 @@ export default function Home() {
     return () => { unsubP(); unsubS(); unsubProvoz(); unsubKasa(); };
   }, []);
 
-  // Přátelské lokální notifikace (jen v appce) — při každém otevření přeplánuj
-  // denní pošťouchnutí na příští dny v 9:00. Spočítá, co brzy končí, kolik je
-  // na nákupu a jak dlouho appku neotevřel (kvůli výběru vhodné zprávy).
+  // Chytré lokální notifikace (jen v appce) — při každém otevření přeplánuj
+  // večerní (18:00) pošťouchnutí na příští dny. Spočítá, co brzy končí, kolik je
+  // na nákupu, jmenovité připomínky a jak dlouho appku neotevřel → z toho se
+  // vybere osobní text. (Ranní 9:00 obecnou hlášku posílá server push.)
   useEffect(() => {
     if (!user) return;
     try {
