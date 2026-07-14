@@ -11,7 +11,8 @@ interface Profile {
   plan: "free" | "basic" | "family";
   // Režim vázaný na účet — jeden e-mail = jeden režim (domácnost/provoz).
   mode?: "domacnost" | "provoz" | null;
-  trial_ends_at: string;
+  // Zrušený trial — nové účty ho nemají. Zůstává volitelně kvůli starým profilům.
+  trial_ends_at?: string | null;
   family_id?: string;
 }
 
@@ -212,9 +213,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     return null;
   },
 
+  // Trial zrušen — funkce zůstává kvůli kompatibilitě, ale bez data vrací false.
   isTrialActive: () => {
     const { profile } = get();
-    if (!profile) return false;
+    if (!profile?.trial_ends_at) return false;
     return new Date(profile.trial_ends_at) > new Date();
   },
 
