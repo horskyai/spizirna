@@ -54,8 +54,8 @@ export function BusinessTypeSelect({ onDone }: { onDone: () => void }) {
   };
 
   return (
-    <div style={{ minHeight: "100dvh", background: "var(--bg-primary)", display: "flex", flexDirection: "column", padding: "max(32px, env(safe-area-inset-top, 32px)) 20px 24px" }}>
-      <div style={{ maxWidth: 480, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column", flex: 1 }}>
+    <div style={{ height: "100dvh", background: "var(--bg-primary)", display: "flex", flexDirection: "column", overflowY: "auto", WebkitOverflowScrolling: "touch", padding: "max(32px, env(safe-area-inset-top, 32px)) 20px calc(24px + env(safe-area-inset-bottom, 0px))" }}>
+      <div style={{ maxWidth: 480, margin: "0 auto", width: "100%", display: "flex", flexDirection: "column" }}>
         <div style={{ textAlign: "center", marginBottom: 24 }}>
           <h1 style={{ fontSize: 24, fontWeight: 800, color: "var(--text-primary)", marginBottom: 6 }}>
             {locale === "sk" ? "Aký máte prevádzku?" : "Jaký máte provoz?"}
@@ -67,7 +67,7 @@ export function BusinessTypeSelect({ onDone }: { onDone: () => void }) {
           </p>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 14, flex: 1 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           {CARDS.map((c) => {
             const active = vybrano === c.id;
             return (

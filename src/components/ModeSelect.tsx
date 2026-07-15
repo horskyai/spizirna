@@ -215,7 +215,7 @@ export function ModeSelect({ onDone }: { onDone: () => void }) {
 
         {/* ── ONBOARDING SLIDE ── */}
         {!isChoosing && (
-          <div key={slide} className="animate-fade-in" style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0 }}>
+          <div key={slide} className="animate-fade-in" style={{ flex: 1, minHeight: 0, overflowY: "auto", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 0, paddingBottom: 8 }}>
             <img
               src={current.img}
               alt=""
