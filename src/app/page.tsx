@@ -6,6 +6,7 @@ import { useFeaturesStore } from "@/store/featuresStore";
 import { useModeStore } from "@/store/modeStore";
 import { useAuthStore } from "@/store/authStore";
 import { TabBar } from "@/components/TabBar";
+import { SideNav } from "@/components/SideNav";
 import { AppHeader } from "@/components/AppHeader";
 import { PantryView } from "@/components/PantryView";
 import { Scanner } from "@/components/Scanner";
@@ -479,20 +480,32 @@ export default function Home() {
 
   return (
     <ErrorBoundary>
-    <div className="relative flex-1 flex flex-col overflow-hidden" style={{ background: "var(--bg-primary)" }}>
-      <AppHeader onOpenSettings={openSettings} />
+    {/* app-shell + pc-layout: na PC (≥1024px) se přepne na řádkové rozložení
+        (postranní menu | obsah). Na mobilu zůstává svislé, beze změny. */}
+    <div className="app-shell pc-layout relative flex-1 flex flex-col overflow-hidden" style={{ background: "var(--bg-primary)" }}>
+      {/* Postranní menu — jen PC. Na skenování ho skryjeme (plné okno kamery). */}
+      {activeTab !== "skenovat" && <SideNav onOpenSettings={openSettings} />}
 
-      <main className="flex-1 overflow-hidden flex flex-col">
-        {(activeTab === "spizirna" || (activeTab === "jidlo" && !calorieTracking)) && <PantryView />}
-        {activeTab === "skenovat" && <Scanner />}
-        {showFoodLog && <FoodLogView />}
-        {activeTab === "recepty" && <RecipesView />}
-        {activeTab === "nakup" && <ShoppingView />}
-        {activeTab === "opakujici" && <RecurringView />}
-        {activeTab === "provoz" && <ProvozView />}
-      </main>
+      {/* Pravý sloupec: hlavička + obsah + (mobilní) spodní lišta */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <AppHeader onOpenSettings={openSettings} />
 
-      <TabBar />
+        <main className="app-main pc-main flex-1 overflow-hidden flex flex-col">
+          {(activeTab === "spizirna" || (activeTab === "jidlo" && !calorieTracking)) && <PantryView />}
+          {activeTab === "skenovat" && <Scanner />}
+          {showFoodLog && <FoodLogView />}
+          {activeTab === "recepty" && <RecipesView />}
+          {activeTab === "nakup" && <ShoppingView />}
+          {activeTab === "opakujici" && <RecurringView />}
+          {activeTab === "provoz" && <ProvozView />}
+        </main>
+
+        {/* Spodní lišta jen na mobilu — na PC nahrazena postranním menu */}
+        <div className="mobile-only">
+          <TabBar />
+        </div>
+      </div>
+      {/* konec pravého sloupce */}
 
       {activeSheet === "product" && scannedProduct && (
         <ProductSheet product={scannedProduct} onClose={() => closeSheet()} fromScanner={activeTab === "skenovat"} />
