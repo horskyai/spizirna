@@ -156,7 +156,7 @@ export function AuthScreen() {
   }
 
   return (
-    <div className="flex flex-col min-h-dvh" style={{ background: "var(--bg-primary)" }}>
+    <div className="flex flex-col min-h-dvh" style={{ background: "var(--bg-primary)", maxHeight: "100dvh", overflowY: "auto", WebkitOverflowScrolling: "touch" }}>
       {/* ── Horní uvítací část — gradientní hero s logem ── */}
       <div
         className="flex flex-col items-center justify-center text-center px-6"

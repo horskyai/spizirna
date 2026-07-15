@@ -29,7 +29,7 @@ export function DeviceLimitScreen() {
   };
 
   return (
-    <div style={{ minHeight: "100dvh", display: "flex", flexDirection: "column", background: "var(--bg-primary)", padding: "24px 20px", paddingTop: "max(48px, env(safe-area-inset-top, 48px))" }}>
+    <div style={{ minHeight: "100dvh", maxHeight: "100dvh", overflowY: "auto", WebkitOverflowScrolling: "touch", display: "flex", flexDirection: "column", background: "var(--bg-primary)", padding: "max(48px, env(safe-area-inset-top, 48px)) 20px calc(24px + env(safe-area-inset-bottom, 0px))" }}>
       <div style={{ maxWidth: 420, width: "100%", margin: "0 auto", display: "flex", flexDirection: "column", flex: 1 }}>
         {/* Hlavička */}
         <div style={{ textAlign: "center", marginBottom: 24 }}>
