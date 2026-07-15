@@ -737,7 +737,9 @@ export function KasaView() {
   }
 
   return (
-    <div>
+    <div className="kasa-root">
+      {/* Hlavní sloupec (produkty + historie). Na PC vlevo, košík vpravo. */}
+      <div className="kasa-main">
       {/* Denní tržba */}
       <div className="hero-card mb-4" style={{ padding: 16 }}>
         <div className="flex justify-between items-start">
@@ -872,9 +874,11 @@ export function KasaView() {
         </>
       )}
 
-      {/* Fixní košík dole */}
+      </div>{/* konec kasa-main */}
+
+      {/* Košík. Na mobilu fixní panel dole, na PC pravý sloupec (viz CSS). */}
       {cartPocet > 0 && (
-        <div style={{
+        <div className="kasa-cart" style={{
           position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 90,
           background: "var(--bg-primary)", borderTop: "1px solid var(--border)",
           padding: "12px 20px", paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",

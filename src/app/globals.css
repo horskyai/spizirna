@@ -478,11 +478,18 @@ a { text-decoration: none; color: inherit; }
 
   /* Kořen view = flex-1 overflow-y-auto. Necentrujeme ho (scrollbar má zůstat
      vpravo), ale obsah UVNITŘ omezíme na max-šířku a vycentrujeme paddingem. */
-  .app-main.pc-main > div[class*="overflow-y-auto"],
-  .app-main.pc-main > div[class*="overflow-auto"] {
+  .app-main.pc-main > div[class*="overflow-y-auto"]:not(.provoz-scroll),
+  .app-main.pc-main > div[class*="overflow-auto"]:not(.provoz-scroll) {
     padding-left: max(24px, calc((100% - var(--pc-content-max, 860px)) / 2));
     padding-right: max(24px, calc((100% - var(--pc-content-max, 860px)) / 2));
   }
+
+  /* Provozní obsah: kasa potřebuje širší plochu (dvousloupcový layout),
+     ostatní taby (sklad/inventura/účto) stačí užší a vycentrované. */
+  .provoz-inner { max-width: 1080px !important; }
+  .provoz-inner.provoz-tab-ucetnictvi,
+  .provoz-inner.provoz-tab-sklad,
+  .provoz-inner.provoz-tab-inventura { max-width: 920px !important; }
 
   /* Spodní listy (bottom-sheet) na PC → vycentrovaný dialog uprostřed obrazovky,
      ne přilepený přes celou šířku dole. Cílíme na fixed wrapper, který obsahuje
@@ -500,5 +507,36 @@ a { text-decoration: none; color: inherit; }
   /* Táhlo (drag handle) nahoře nedává na PC dialogu smysl — schováme ho. */
   div:has(> .sheet-overlay) > .rounded-t-3xl > .flex.justify-center:first-child {
     display: none;
+  }
+
+  /* ===== KASA na PC: dva sloupce — produkty vlevo | košík vpravo ===== */
+  .kasa-root {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 380px;
+    gap: 24px;
+    align-items: start;
+  }
+  /* Košík na PC = pravý sloupec, přilepený nahoře (sticky), ne fixní dole. */
+  .kasa-root .kasa-cart {
+    position: sticky !important;
+    top: 12px;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    border-top: none !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 18px !important;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.06) !important;
+    padding: 16px !important;
+  }
+  /* Vnitřní 720px omezení košíku na PC ruší — má vyplnit svůj sloupec. */
+  .kasa-root .kasa-cart > div {
+    max-width: none !important;
+  }
+  /* Dlaždice produktů měly dole velký margin kvůli fixnímu košíku — na PC
+     už košík není dole, tak margin zrušíme. */
+  .kasa-root .kasa-main > div[style*="margin-bottom: 180px"],
+  .kasa-root .kasa-main > div[style*="marginBottom: 180"] {
+    margin-bottom: 24px !important;
   }
 }
