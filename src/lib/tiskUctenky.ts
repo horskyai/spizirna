@@ -23,6 +23,8 @@ export interface UctenkaData {
   celkem: number;
   platba?: string;      // "hotovost" | "karta"
   datum: string;        // ISO
+  cislo?: string;       // lidský kód účtenky pro tisk, např. "26-000042"
+  vraceno?: boolean;    // doklad o vrácení (na účtence odlišíme nadpisem)
 }
 
 export type TiskVysledek =
@@ -82,7 +84,10 @@ async function tiskBluetooth(data: UctenkaData, printerAddress: string): Promise
     if (data.firma.ico) p = p.text(`ICO: ${data.firma.ico}\n`);
     if (data.firma.dic) p = p.text(`DIC: ${data.firma.dic}\n`);
     if (data.firma.telefon) p = p.text(`Tel: ${data.firma.telefon}\n`);
-    p = p.align("left").text(`${CARA}\n${datumStr}\n${CARA}\n`);
+    if (data.vraceno) p = p.align("center").bold(true).text("*** VRACENI ***\n").bold(false).align("left");
+    p = p.align("left").text(`${CARA}\n`);
+    if (data.cislo) p = p.text(`Uctenka c. ${data.cislo}\n`);
+    p = p.text(`${datumStr}\n${CARA}\n`);
     for (const r of data.radky) {
       const soucet = r.cena * r.mnozstvi;
       p = p.text(`${bezDiakritiky(r.nazev)}\n`);
@@ -122,7 +127,10 @@ function escposBajty(data: UctenkaData): number[] {
   if (data.firma.ico) line(`ICO: ${data.firma.ico}`);
   if (data.firma.dic) line(`DIC: ${data.firma.dic}`);
   if (data.firma.telefon) line(`Tel: ${data.firma.telefon}`);
-  align(0); line(CARA); line(datumText(data.datum)); line(CARA);
+  if (data.vraceno) { align(1); bold(true); line("*** VRACENI ***"); bold(false); }
+  align(0); line(CARA);
+  if (data.cislo) line(`Uctenka c. ${data.cislo}`);
+  line(datumText(data.datum)); line(CARA);
   for (const r of data.radky) {
     line(r.nazev);
     align(2); line(`${r.mnozstvi} x ${kc(r.cena)} = ${kc(r.cena * r.mnozstvi)}`); align(0);
@@ -217,10 +225,12 @@ async function tiskPdf(data: UctenkaData): Promise<TiskVysledek> {
       .paticka{text-align:center;color:#555;margin-top:20px;font-size:13px}
     </style></head><body>
       <h1>${escapeHtml(data.nazevFirmy || "Účtenka")}</h1>
+      ${data.vraceno ? `<div style="text-align:center;font-weight:800;color:#C0392B;margin-bottom:8px">DOKLAD O VRÁCENÍ</div>` : ""}
       <div class="meta">
         ${data.firma.adresa ? escapeHtml(data.firma.adresa) + "<br>" : ""}
         ${data.firma.ico ? "IČO: " + escapeHtml(data.firma.ico) + " " : ""}
         ${data.firma.dic ? "DIČ: " + escapeHtml(data.firma.dic) : ""}<br>
+        ${data.cislo ? `<b>Účtenka č. ${escapeHtml(data.cislo)}</b><br>` : ""}
         ${datumText(data.datum)}
       </div>
       <table>${radkyHtml}</table>

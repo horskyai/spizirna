@@ -5,7 +5,7 @@ import {
   ClipboardList, Plus, X, ChevronRight,
   AlertTriangle, Check, Truck, Package, BarChart3, Trash2, ScanLine, Keyboard,
   FileText, Download, FileSpreadsheet, Pencil, Share2, Mic, MicOff, Loader, Search,
-  Camera, Image as ImageIcon, TrendingDown, ChefHat
+  Camera, Image as ImageIcon, TrendingDown, ChefHat, Receipt, RotateCcw, Printer, Mail
 } from "lucide-react";
 import { parseSpokenText } from "@/components/VoiceInput";
 import {
@@ -18,6 +18,9 @@ import {
   OdpisDuvod,
 } from "@/store/provozStore";
 import { lookupProductByEAN } from "@/lib/productLookup";
+import { useKasaStore, Prodejka, formatCisloUctenky } from "@/store/kasaStore";
+import { tiskUctenky, TiskarnaTyp } from "@/lib/tiskUctenky";
+import { Capacitor } from "@capacitor/core";
 import { Scanner } from "@/components/Scanner";
 import { KasaView } from "@/components/KasaView";
 import { UcetnictviView } from "@/components/UcetnictviView";
@@ -822,6 +825,229 @@ function AktivniInventura({ inventura }: { inventura: Inventura }) {
               </div>
             );
           })}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Historie účtenek + vyhledávání podle kódu + částečné vrácení ───────────────
+function UctenkyView() {
+  const t = useT();
+  const locale = useLocale();
+  const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
+  const prodejky = useKasaStore((s) => s.prodejky);
+  const [hledej, setHledej] = useState("");
+  const [detail, setDetail] = useState<Prodejka | null>(null);
+
+  // Filtrace: podle kódu účtenky (i bez pomlčky) nebo názvu položky.
+  const filtr = hledej.trim().toLowerCase().replace(/[\s-]/g, "");
+  const zobrazene = prodejky.filter((p) => {
+    if (!filtr) return true;
+    const kod = (p.cislo ?? "").toLowerCase();
+    if (kod.includes(filtr)) return true;
+    return p.radky.some((r) => r.nazev.toLowerCase().replace(/[\s-]/g, "").includes(filtr));
+  });
+
+  return (
+    <div>
+      {/* Vyhledávání podle kódu */}
+      <div style={{ position: "relative", marginBottom: 14 }}>
+        <Search size={16} style={{ position: "absolute", left: 14, top: "50%", transform: "translateY(-50%)", color: "var(--text-tertiary)" }} />
+        <input
+          value={hledej}
+          onChange={(e) => setHledej(e.target.value)}
+          placeholder={t("uctenky.hledej")}
+          style={{ width: "100%", paddingLeft: 40, paddingRight: 14, paddingTop: 12, paddingBottom: 12, borderRadius: 14, fontSize: 15, border: "1.5px solid var(--border)", background: "white", outline: "none", color: "var(--text-primary)" }}
+        />
+      </div>
+
+      {zobrazene.length === 0 ? (
+        <div style={{ textAlign: "center", padding: "40px 20px", color: "var(--text-tertiary)" }}>
+          <Receipt size={40} strokeWidth={1.5} style={{ marginBottom: 10, opacity: 0.5 }} />
+          <p style={{ fontSize: 14 }}>{hledej ? t("uctenky.nicNenalezeno") : t("uctenky.zadne")}</p>
+        </div>
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {zobrazene.map((p) => (
+            <button key={p.id} onClick={() => setDetail(p)}
+              style={{ display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 14, background: "white", border: "1px solid var(--border)", textAlign: "left", cursor: "pointer" }}>
+              <div style={{ width: 38, height: 38, borderRadius: 11, flexShrink: 0, display: "flex", alignItems: "center", justifyContent: "center", background: p.vraceno ? "#FDE8E8" : "var(--green-light)" }}>
+                {p.vraceno ? <RotateCcw size={18} style={{ color: "#C0392B" }} /> : <Receipt size={18} style={{ color: "var(--green-primary)" }} />}
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
+                  #{formatCisloUctenky(p.cislo)}
+                  {p.vraceno && <span style={{ fontSize: 11, fontWeight: 700, color: "#C0392B", marginLeft: 6 }}>{t("uctenky.vraceni")}</span>}
+                </p>
+                <p style={{ fontSize: 11, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                  {new Date(p.datum).toLocaleString(dateLocale, { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" })} · {p.radky.map((r) => `${r.mnozstvi}× ${r.nazev}`).join(", ")}
+                </p>
+              </div>
+              <span style={{ fontSize: 15, fontWeight: 800, color: p.celkem < 0 ? "#C0392B" : "var(--text-primary)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+                {p.celkem.toLocaleString(dateLocale)} Kč
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+
+      {detail && <UctenkaDetail prodejka={detail} onClose={() => setDetail(null)} />}
+    </div>
+  );
+}
+
+// Detail účtenky: tisk (rolička/A4) + částečné vrácení.
+function UctenkaDetail({ prodejka, onClose }: { prodejka: Prodejka; onClose: () => void }) {
+  const t = useT();
+  const locale = useLocale();
+  const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
+  const vratitPolozky = useKasaStore((s) => s.vratitPolozky);
+  const nazevFirmy = useBusinessStore((s) => s.name);
+  const firma = useBusinessStore((s) => s.firma);
+  const jeNativni = Capacitor.isNativePlatform();
+  const [rezimVraceni, setRezimVraceni] = useState(false);
+  // Kolik kusů z každého řádku vrátit (index → počet).
+  const [vraceni, setVraceni] = useState<Record<number, number>>({});
+  const [toast, setToast] = useState<string | null>(null);
+
+  const jeVracenka = !!prodejka.vraceno;
+
+  const tisk = async (typ: TiskarnaTyp) => {
+    await tiskUctenky(
+      {
+        nazevFirmy: nazevFirmy || "",
+        firma: { ico: firma.ico, dic: firma.dic, adresa: firma.adresa, telefon: firma.telefon, patickaUctenky: firma.patickaUctenky },
+        radky: prodejka.radky.map((r) => ({ nazev: r.nazev, mnozstvi: r.mnozstvi, cena: r.cena })),
+        celkem: prodejka.celkem,
+        platba: prodejka.platba,
+        datum: prodejka.datum,
+        cislo: formatCisloUctenky(prodejka.cislo),
+        vraceno: prodejka.vraceno,
+      },
+      typ,
+    );
+  };
+
+  const celkemVraceno = prodejka.radky.reduce((sum, r, i) => sum + r.cena * (vraceni[i] ?? 0), 0);
+
+  const potvrditVraceni = () => {
+    const polozky = Object.entries(vraceni)
+      .map(([i, m]) => ({ radekIndex: Number(i), mnozstvi: m }))
+      .filter((x) => x.mnozstvi > 0);
+    if (polozky.length === 0) return;
+    const id = vratitPolozky(prodejka.id, polozky);
+    if (id) {
+      setToast(t("uctenky.vraceno"));
+      setTimeout(() => { setToast(null); onClose(); }, 1500);
+    }
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div className="sheet-overlay animate-fade-in" onClick={onClose} style={{ position: "absolute", inset: 0 }} />
+      <div className="relative animate-slide-up rounded-t-3xl overflow-hidden" onClick={(e) => e.stopPropagation()}
+        style={{ background: "var(--bg-primary)", maxHeight: "90dvh" }}>
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
+        </div>
+        <div className="overflow-y-auto px-5 pt-2" style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))" }}>
+          <div className="flex items-center justify-between mb-1">
+            <div>
+              <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
+                #{formatCisloUctenky(prodejka.cislo)}
+              </h3>
+              <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
+                {new Date(prodejka.datum).toLocaleString(dateLocale, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                {jeVracenka && prodejka.puvodniCislo && ` · ${t("uctenky.kUctence")} #${formatCisloUctenky(prodejka.puvodniCislo)}`}
+              </p>
+            </div>
+            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
+              <X size={16} style={{ color: "var(--text-secondary)" }} />
+            </button>
+          </div>
+
+          {jeVracenka && (
+            <div style={{ background: "#FDE8E8", borderRadius: 12, padding: "8px 12px", marginBottom: 12 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "#C0392B" }}>{t("uctenky.tojeVracenka")}</span>
+            </div>
+          )}
+
+          {/* Řádky */}
+          <div className="card overflow-hidden" style={{ marginBottom: 14 }}>
+            {prodejka.radky.map((r, i) => (
+              <div key={i} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderBottom: i < prodejka.radky.length - 1 ? "1px solid var(--border)" : "none" }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{r.nazev}</p>
+                  <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>{r.mnozstvi}× {r.cena.toLocaleString(dateLocale)} Kč</p>
+                </div>
+                {rezimVraceni ? (
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                    <button onClick={() => setVraceni((v) => ({ ...v, [i]: Math.max(0, (v[i] ?? 0) - 1) }))}
+                      style={{ width: 30, height: 30, borderRadius: 8, background: "var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <X size={13} style={{ color: "var(--text-secondary)" }} />
+                    </button>
+                    <span style={{ minWidth: 40, textAlign: "center", fontSize: 14, fontWeight: 700, color: (vraceni[i] ?? 0) > 0 ? "#C0392B" : "var(--text-tertiary)" }}>
+                      {vraceni[i] ?? 0}/{r.mnozstvi}
+                    </span>
+                    <button onClick={() => setVraceni((v) => ({ ...v, [i]: Math.min(r.mnozstvi, (v[i] ?? 0) + 1) }))}
+                      style={{ width: 30, height: 30, borderRadius: 8, background: "var(--green-light)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                      <Plus size={13} style={{ color: "var(--green-primary)" }} />
+                    </button>
+                  </div>
+                ) : (
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", flexShrink: 0, fontVariantNumeric: "tabular-nums" }}>
+                    {(r.cena * r.mnozstvi).toLocaleString(dateLocale)} Kč
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Celkem / vratná částka */}
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, padding: "0 4px" }}>
+            <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-secondary)" }}>
+              {rezimVraceni ? t("uctenky.kVraceni") : t("kasa.celkem")}
+            </span>
+            <span style={{ fontSize: 20, fontWeight: 800, color: rezimVraceni ? "#C0392B" : "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>
+              {(rezimVraceni ? -celkemVraceno : prodejka.celkem).toLocaleString(dateLocale)} Kč
+            </span>
+          </div>
+
+          {/* Akce */}
+          {rezimVraceni ? (
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={() => { setRezimVraceni(false); setVraceni({}); }} className="btn-secondary" style={{ flex: 1 }}>
+                {t("uctenky.zrusit")}
+              </button>
+              <button onClick={potvrditVraceni} disabled={celkemVraceno <= 0} className="btn-primary" style={{ flex: 2, opacity: celkemVraceno > 0 ? 1 : 0.5, background: "#C0392B" }}>
+                <RotateCcw size={16} /> {t("uctenky.potvrditVraceni")}
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => tisk("pdf")} className="btn-secondary" style={{ flex: 1 }}>
+                  <Printer size={16} /> {t("uctenky.tiskA4")}
+                </button>
+                {jeNativni && (
+                  <button onClick={() => tisk("bluetooth")} className="btn-secondary" style={{ flex: 1 }}>
+                    <Receipt size={16} /> {t("uctenky.tiskRolicka")}
+                  </button>
+                )}
+              </div>
+              {!jeVracenka && (
+                <button onClick={() => setRezimVraceni(true)} className="btn-secondary" style={{ color: "#C0392B", borderColor: "#F0B4B4" }}>
+                  <RotateCcw size={16} /> {t("uctenky.vratitZbozi")}
+                </button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+      {toast && (
+        <div style={{ position: "fixed", bottom: 90, left: "50%", transform: "translateX(-50%)", background: "var(--text-primary)", color: "white", padding: "10px 18px", borderRadius: 12, fontSize: 14, fontWeight: 600, zIndex: 400 }}>
+          {toast}
         </div>
       )}
     </div>
@@ -1789,7 +2015,7 @@ function CoDokoupit() {
 }
 
 // ── Hlavní view ───────────────────────────────────────────────────────────────
-type ProvozTab = "kasa" | "ucetnictvi" | "inventura" | "sklad" | "recepty" | "historie" | "odpisy" | "dodavatele";
+type ProvozTab = "kasa" | "ucetnictvi" | "inventura" | "sklad" | "recepty" | "historie" | "odpisy" | "dodavatele" | "uctenky";
 
 export function ProvozView() {
   const t = useT();
@@ -1843,6 +2069,7 @@ export function ProvozView() {
   // Účto) jsou přímo ve spodní liště, tady nejsou. Recepty jen restaurace.
   const VIC_TABS: { id: ProvozTab; labelKey: string; icon: React.ReactNode }[] = [
     ...(jeObchod ? [] : [{ id: "recepty" as ProvozTab, labelKey: "provoz.tab.recepty", icon: <ChefHat size={15} /> }]),
+    { id: "uctenky", labelKey: "provoz.tab.uctenky", icon: <Receipt size={15} /> },
     { id: "dodavatele", labelKey: "provoz.tab.dodavatele", icon: <Truck size={15} /> },
     { id: "odpisy", labelKey: "provoz.tab.odpisy", icon: <TrendingDown size={15} /> },
     { id: "historie", labelKey: "provoz.tab.historie", icon: <BarChart3 size={15} /> },
@@ -1971,6 +2198,7 @@ export function ProvozView() {
         {tab === "sklad" && <SpravaSkladu />}
         {tab === "recepty" && <RecipesView />}
         {tab === "historie" && <HistorieInventur />}
+        {tab === "uctenky" && <UctenkyView />}
         {tab === "odpisy" && <OdpisyView />}
         {tab === "dodavatele" && <DodavateleView />}
       </div>

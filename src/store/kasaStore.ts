@@ -57,10 +57,19 @@ export type ZpusobPlatby = "hotovost" | "karta";
 
 export interface Prodejka {
   id: string;
+  cislo?: string;          // lidský 8místný kód účtenky: RR + 6 číslic pořadí, zobrazí se "26-000042"
   datum: string;           // ISO datetime prodeje
   radky: ProdejkaRadek[];
   celkem: number;          // celková částka účtenky (Kč, s DPH)
   platba?: ZpusobPlatby;   // hotovost / karta (pro uzávěrku); default hotovost
+  vraceno?: boolean;       // true = tato účtenka je doklad o vrácení (záporné částky)
+  puvodniCislo?: string;   // u dokladu o vrácení: kód původní účtenky, ke které se vrací
+}
+
+// Formátuje 8místný kód pro zobrazení: "26000042" → "26-000042".
+export function formatCisloUctenky(cislo: string | undefined): string {
+  if (!cislo) return "";
+  return cislo.length === 8 ? `${cislo.slice(0, 2)}-${cislo.slice(2)}` : cislo;
 }
 
 export interface CartItem {
@@ -114,6 +123,10 @@ interface KasaStore {
   // Vrací id nové prodejky, nebo null když je košík prázdný.
   prodat: (cart: CartItem[], platba?: ZpusobPlatby) => string | null;
   stornoProdejka: (id: string) => void; // smaže účtenku a vrátí zboží na sklad
+  // Částečné vrácení: vrátí VYBRANÉ řádky z účtenky (množství po kusech).
+  // Vytvoří samostatný doklad o vrácení (záporné částky), zboží vrátí na sklad,
+  // původní účtenku ponechá. Vrací id dokladu o vrácení, nebo null.
+  vratitPolozky: (prodejkaId: string, vraceni: { radekIndex: number; mnozstvi: number }[]) => string | null;
 
   // Výpočty
   getTrzbaDne: (isoDate: string) => number;      // tržba za daný den (YYYY-MM-DD)
@@ -131,6 +144,17 @@ interface KasaStore {
 function dnesLocal(): string {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+// Vygeneruje 8místný kód účtenky: RR (rok) + 6 číslic pořadí v rámci roku.
+// Pořadí = kolik dokladů (prodej i vrácení) už letos je + 1. Roste postupně,
+// po Novém roce se pořadí resetuje (prefix roku je rozliší). Vrací "26000042".
+function generujCisloUctenky(prodejky: Prodejka[]): string {
+  const d = new Date();
+  const rr = String(d.getFullYear() % 100).padStart(2, "0");
+  const letosCount = prodejky.filter((p) => p.cislo?.startsWith(rr)).length;
+  const poradi = String(letosCount + 1).padStart(6, "0");
+  return `${rr}${poradi}`;
 }
 
 // Odečte/vrátí danou skladovou položku (podle id). znamenko −1 = prodej (úbytek),
@@ -271,9 +295,10 @@ export const useKasaStore = create<KasaStore>()(
         // Kolik porcí se prodalo za každou menu položku (pro denní počítadlo).
         const prodanoPorci: Record<string, number> = {};
         radky.forEach((r) => { if (r.menuId) prodanoPorci[r.menuId] = (prodanoPorci[r.menuId] ?? 0) + r.mnozstvi; });
+        const cislo = generujCisloUctenky(get().prodejky);
         set((s) => ({
           prodejky: [
-            { id, datum: new Date().toISOString(), radky, celkem, platba },
+            { id, cislo, datum: new Date().toISOString(), radky, celkem, platba },
             ...s.prodejky,
           ],
           // Navýš denní počítadlo prodaných porcí (reset, když je nový den).
@@ -306,6 +331,41 @@ export const useKasaStore = create<KasaStore>()(
             return { ...m, prodanoDnes: Math.max(0, (m.prodanoDnes ?? 0) - vr) };
           }),
         }));
+      },
+
+      vratitPolozky: (prodejkaId, vraceni) => {
+        const orig = get().prodejky.find((p) => p.id === prodejkaId);
+        if (!orig) return null;
+        // Sestav vrácené řádky (jen kladné množství, max co bylo prodáno).
+        const radky: ProdejkaRadek[] = [];
+        vraceni.forEach(({ radekIndex, mnozstvi }) => {
+          const r = orig.radky[radekIndex];
+          if (!r) return;
+          const kolik = Math.min(Math.max(0, mnozstvi), r.mnozstvi);
+          if (kolik > 0) radky.push({ ...r, mnozstvi: kolik });
+        });
+        if (radky.length === 0) return null;
+        // Doklad o vrácení: záporná částka, vlastní kód, odkaz na původní účtenku.
+        const celkem = -radky.reduce((sum, r) => sum + r.cena * r.mnozstvi, 0);
+        const id = crypto.randomUUID();
+        const cislo = generujCisloUctenky(get().prodejky);
+        const dnes = dnesLocal();
+        const vratPorci: Record<string, number> = {};
+        radky.forEach((r) => { if (r.menuId) vratPorci[r.menuId] = (vratPorci[r.menuId] ?? 0) + r.mnozstvi; });
+        set((s) => ({
+          prodejky: [
+            { id, cislo, datum: new Date().toISOString(), radky, celkem, platba: orig.platba, vraceno: true, puvodniCislo: orig.cislo },
+            ...s.prodejky,
+          ],
+          menu: s.menu.map((m) => {
+            const vr = vratPorci[m.id];
+            if (!vr || m.vazbaTyp !== "porce" || m.navarenoDatum !== dnes) return m;
+            return { ...m, prodanoDnes: Math.max(0, (m.prodanoDnes ?? 0) - vr) };
+          }),
+        }));
+        // Zboží zpět na sklad (kladné znaménko = návrat).
+        radky.forEach((r) => promitniDoSkladu(r, r.mnozstvi, 1));
+        return id;
       },
 
       getTrzbaDne: (isoDate) =>

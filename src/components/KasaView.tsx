@@ -7,7 +7,7 @@ import {
   Banknote, CreditCard, UtensilsCrossed,
 } from "lucide-react";
 import {
-  useKasaStore, MenuPolozka, MenuVazbaTyp, CartItem, ZpusobPlatby,
+  useKasaStore, MenuPolozka, MenuVazbaTyp, CartItem, ZpusobPlatby, formatCisloUctenky,
 } from "@/store/kasaStore";
 import { useProvozStore, INVENTURA_KATEGORIE } from "@/store/provozStore";
 import { useRecipeStore } from "@/store/recipeStore";
@@ -842,6 +842,8 @@ export function KasaView() {
         celkem: prodejka.celkem,
         platba: prodejka.platba,
         datum: prodejka.datum,
+        cislo: formatCisloUctenky(prodejka.cislo),
+        vraceno: prodejka.vraceno,
       },
       tiskTyp,
       target,
@@ -987,6 +989,7 @@ export function KasaView() {
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
                         {new Date(p.datum).toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" })} · {p.celkem.toLocaleString(dateLocale)} Kč
+                        {p.cislo && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-tertiary)", marginLeft: 6, fontVariantNumeric: "tabular-nums" }}>#{formatCisloUctenky(p.cislo)}</span>}
                       </p>
                       <p style={{ fontSize: 11, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {p.radky.map((r) => `${r.mnozstvi}× ${r.nazev}`).join(", ")}

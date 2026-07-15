@@ -30,8 +30,24 @@ export const provoz: Record<string, Translation> = {
   "provoz.tab.sklad": { cs: "Sklad", sk: "Sklad" },
   "provoz.tab.recepty": { cs: "Recepty", sk: "Recepty" },
   "provoz.tab.historie": { cs: "Historie", sk: "História" },
+  "provoz.tab.uctenky": { cs: "Účtenky", sk: "Účtenky" },
   "provoz.tab.odpisy": { cs: "Odpisy", sk: "Odpisy" },
   "provoz.tab.dodavatele": { cs: "Dodavatelé", sk: "Dodávatelia" },
+
+  // Historie účtenek + vrácení
+  "uctenky.hledej": { cs: "Hledat účtenku (kód nebo zboží)", sk: "Hľadať účtenku (kód alebo tovar)" },
+  "uctenky.zadne": { cs: "Zatím žádné účtenky", sk: "Zatiaľ žiadne účtenky" },
+  "uctenky.nicNenalezeno": { cs: "Nic nenalezeno", sk: "Nič nenájdené" },
+  "uctenky.vraceni": { cs: "VRÁCENÍ", sk: "VRÁTENIE" },
+  "uctenky.tojeVracenka": { cs: "Toto je doklad o vrácení zboží.", sk: "Toto je doklad o vrátení tovaru." },
+  "uctenky.kUctence": { cs: "k účtence", sk: "k účtenke" },
+  "uctenky.tiskA4": { cs: "Tisk A4 / PDF", sk: "Tlač A4 / PDF" },
+  "uctenky.tiskRolicka": { cs: "Roličková", sk: "Rolková" },
+  "uctenky.vratitZbozi": { cs: "Vrátit zboží / peníze", sk: "Vrátiť tovar / peniaze" },
+  "uctenky.kVraceni": { cs: "K vrácení", sk: "Na vrátenie" },
+  "uctenky.zrusit": { cs: "Zrušit", sk: "Zrušiť" },
+  "uctenky.potvrditVraceni": { cs: "Potvrdit vrácení", sk: "Potvrdiť vrátenie" },
+  "uctenky.vraceno": { cs: "Zboží vráceno na sklad", sk: "Tovar vrátený na sklad" },
 
   // ── Export (CSV/PDF) ──
   "provoz.export.nazev": { cs: "Název", sk: "Názov" },
