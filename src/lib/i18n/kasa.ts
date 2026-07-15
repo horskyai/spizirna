@@ -125,6 +125,18 @@ export const kasa: Record<string, Translation> = {
   "kasa.skenNenalezen": { cs: "Kód {n} není ve skladu", sk: "Kód {n} nie je v sklade" },
   "kasa.skenPridano": { cs: "{n} přidáno do košíku", sk: "{n} pridané do košíka" },
 
+  // Rychlé založení nového zboží přímo z kasy (když kód/PLU není ve skladu)
+  "kasa.nove.titul": { cs: "Založit nové zboží", sk: "Založiť nový tovar" },
+  "kasa.nove.popis": { cs: "Není ve skladu. Vyplň a rovnou se přidá do skladu i na účtenku.", sk: "Nie je v sklade. Vyplň a rovno sa pridá do skladu aj na účtenku." },
+  "kasa.nove.nazev": { cs: "Název zboží", sk: "Názov tovaru" },
+  "kasa.nove.nazevPlaceholder": { cs: "např. Pepsi 0,5l", sk: "napr. Pepsi 0,5l" },
+  "kasa.nove.cena": { cs: "Prodejní cena", sk: "Predajná cena" },
+  "kasa.nove.pocet": { cs: "Počet na skladě", sk: "Počet na sklade" },
+  "kasa.nove.kategorie": { cs: "Kategorie", sk: "Kategória" },
+  "kasa.nove.ulozit": { cs: "Založit a přidat na účtenku", sk: "Založiť a pridať na účtenku" },
+  "kasa.nove.zalozeno": { cs: "{n} založeno do skladu", sk: "{n} založené do skladu" },
+  "kasa.nove.zalozitTlac": { cs: "Založit nové zboží", sk: "Založiť nový tovar" },
+
   // Historie prodejů
   "kasa.historieDnes": { cs: "Dnešní prodeje", sk: "Dnešné predaje" },
   "kasa.zadneProdeje": { cs: "Dnes zatím žádný prodej", sk: "Dnes zatiaľ žiadny predaj" },

@@ -458,6 +458,102 @@ function DlazdiceSekce({
 }
 
 // ── Numpad (číselná klávesnice) ─────────────────────────────────────────────────
+// ── Modal: rychlé založení nového zboží přímo z kasy ────────────────────────
+// Otevře se, když obsluha naskenuje / zadá kód zboží, které ještě NENÍ ve skladu.
+// Po uložení se položka založí do skladu (s počátečním počtem kusů) a rovnou
+// se přidá na účtenku. Od té chvíle se prodej odečítá ze skladu automaticky.
+function NovaSkladovaPolozka({
+  initNazev, ean, onUlozit, onClose, t,
+}: {
+  initNazev: string;
+  ean?: string;
+  onUlozit: (d: { nazev: string; cena: number; pocet: number; kategorie: string; ean?: string }) => void;
+  onClose: () => void;
+  t: (k: string) => string;
+}) {
+  const [nazev, setNazev] = useState(initNazev);
+  const [cena, setCena] = useState("");
+  const [pocet, setPocet] = useState("1");
+  const [kategorie, setKategorie] = useState<string>("ostatni");
+
+  const ulozit = () => {
+    const c = parseFloat(cena.replace(",", "."));
+    const p = parseInt(pocet, 10);
+    onUlozit({
+      nazev: nazev.trim(),
+      cena: isNaN(c) ? 0 : c,
+      pocet: isNaN(p) || p < 0 ? 0 : p,
+      kategorie,
+      ean,
+    });
+  };
+
+  const inputStyle: React.CSSProperties = {
+    width: "100%", padding: "12px 14px", borderRadius: 14, fontSize: 15,
+    border: "1.5px solid var(--border)", background: "white", outline: "none", color: "var(--text-primary)",
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 260, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div className="sheet-overlay animate-fade-in" onClick={onClose} style={{ position: "absolute", inset: 0 }} />
+      <div className="relative animate-slide-up rounded-t-3xl overflow-hidden" onClick={(e) => e.stopPropagation()}
+        style={{ background: "var(--bg-primary)", maxHeight: "90dvh" }}>
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} />
+        </div>
+        <div className="overflow-y-auto px-5 pt-2" style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))" }}>
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("kasa.nove.titul")}</h3>
+            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
+              <X size={16} style={{ color: "var(--text-secondary)" }} />
+            </button>
+          </div>
+          <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5, marginBottom: 16 }}>{t("kasa.nove.popis")}</p>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", display: "block", marginBottom: 5 }}>{t("kasa.nove.nazev")}</label>
+              <input autoFocus value={nazev} onChange={(e) => setNazev(e.target.value)} placeholder={t("kasa.nove.nazevPlaceholder")} style={inputStyle} />
+            </div>
+            <div style={{ display: "flex", gap: 10 }}>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", display: "block", marginBottom: 5 }}>{t("kasa.nove.cena")}</label>
+                <input value={cena} onChange={(e) => setCena(e.target.value)} inputMode="decimal" placeholder="0" style={{ ...inputStyle, textAlign: "right", fontWeight: 700 }} />
+              </div>
+              <div style={{ flex: 1 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", display: "block", marginBottom: 5 }}>{t("kasa.nove.pocet")}</label>
+                <input value={pocet} onChange={(e) => setPocet(e.target.value)} inputMode="numeric" placeholder="1" style={{ ...inputStyle, textAlign: "right", fontWeight: 700 }} />
+              </div>
+            </div>
+            <div>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", display: "block", marginBottom: 5 }}>{t("kasa.nove.kategorie")}</label>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 8 }}>
+                {INVENTURA_KATEGORIE.map((k) => {
+                  const active = kategorie === k.id;
+                  return (
+                    <button key={k.id} onClick={() => setKategorie(k.id)}
+                      style={{
+                        display: "flex", alignItems: "center", gap: 8, padding: "10px 12px", borderRadius: 12, fontSize: 13, fontWeight: active ? 700 : 500,
+                        textAlign: "left", background: active ? "var(--green-light)" : "white",
+                        border: `1.5px solid ${active ? "var(--green-primary)" : "var(--border)"}`,
+                        color: active ? "var(--green-dark)" : "var(--text-primary)",
+                      }}>
+                      <span>{k.emoji}</span> {k.label}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+            <button onClick={ulozit} disabled={!nazev.trim()} className="btn-primary" style={{ opacity: nazev.trim() ? 1 : 0.5, marginTop: 4 }}>
+              <Check size={17} /> {t("kasa.nove.ulozit")}
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function NumpadModal({
   nasobic, setNasobic, onKod, onVolna, onClose, t, dateLocale,
 }: {
@@ -542,6 +638,7 @@ export function KasaView() {
   const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
   const { menu, prodejky, prodat, stornoProdejka, getTrzbaDne, getPocetProdejekDne, getZbyvaPorci } = useKasaStore();
   const polozky = useProvozStore((s) => s.polozky);
+  const addPolozka = useProvozStore((s) => s.addPolozka);
   const jeObchod = useBusinessStore((s) => s.typProvozu) === "obchod";
   // Zaměstnanec (skrytí správy nabídky/cen) = lokální PIN-zámek NEBO cloud role.
   const zamestnanec = useJeZamestnanec();
@@ -552,6 +649,9 @@ export function KasaView() {
   const [showSprava, setShowSprava] = useState(false);
   const [showScanner, setShowScanner] = useState(false);
   const [showNumpad, setShowNumpad] = useState(false);
+  // Rychlé založení nového zboží (kód/PLU/název, který není ve skladu).
+  // Předvyplní se název (z katalogu) a EAN, obsluha doplní cenu + počet.
+  const [novaPolozka, setNovaPolozka] = useState<{ nazev: string; ean?: string } | null>(null);
   const [nasobic, setNasobic] = useState(1); // množství, které se přidá k dalšímu kliknutému zboží
   const [prijato, setPrijato] = useState(""); // kolik zákazník dal hotově (volitelné → počítá vrácení)
   const [toast, setToast] = useState<string | null>(null);
@@ -631,8 +731,10 @@ export function KasaView() {
     if (p) { pridat(`sklad:${p.id}`); setToast(t("kasa.skenPridano").replace("{n}", p.nazev)); setTimeout(() => setToast(null), 2000); return true; }
     const m = menu.find((x) => x.plu === k);
     if (m) { pridat(`menu:${m.id}`); setToast(t("kasa.skenPridano").replace("{n}", m.nazev)); setTimeout(() => setToast(null), 2000); return true; }
-    setToast(t("kasa.pluNenalezen").replace("{n}", k)); setTimeout(() => setToast(null), 2200);
-    return false;
+    // Kód není ve skladu ani v nabídce → nabídni založit nové zboží.
+    // Delší číselné kódy bývají EAN (předvyplníme), krátké spíš PLU (nepředvyplňujeme).
+    setNovaPolozka({ nazev: "", ean: k.length >= 8 ? k : undefined });
+    return true;
   };
   // Numpad: přidej volnou položku (částka bez vazby na sklad).
   const pridatVolnou = (castka: number) => {
@@ -645,21 +747,49 @@ export function KasaView() {
   };
 
   // Sken v kase: najdi skladovou položku podle EAN → přidej do košíku.
+  // Když zboží ve skladu není, nabídneme ho rovnou založit (předvyplníme
+  // název z katalogu, když ho známe, a EAN pro příští sken).
   const handleScanned = async (ean: string) => {
     setShowScanner(false);
     let p = polozky.find((x) => x.ean === ean);
+    let katalogNazev: string | undefined;
     if (!p) {
-      // Zkus dohledat název přes katalog, ať aspoň řekneme co to bylo.
       const prod = await lookupProductByEAN(ean).catch(() => null);
-      const jmeno = prod?.product_name;
-      p = jmeno ? polozky.find((x) => x.nazev.toLowerCase().trim() === jmeno.toLowerCase().trim()) : undefined;
+      katalogNazev = prod?.product_name;
+      p = katalogNazev ? polozky.find((x) => x.nazev.toLowerCase().trim() === katalogNazev!.toLowerCase().trim()) : undefined;
     }
     if (p) {
       pridat(`sklad:${p.id}`);
       setToast(t("kasa.skenPridano").replace("{n}", p.nazev));
+      setTimeout(() => setToast(null), 2500);
     } else {
-      setToast(t("kasa.skenNenalezen").replace("{n}", ean));
+      // Není ve skladu → otevři rychlé založení.
+      setNovaPolozka({ nazev: katalogNazev ?? "", ean });
     }
+  };
+
+  // Založí nové zboží do skladu a rovnou ho přidá na účtenku. Volá se z modálu
+  // rychlého založení (sken/PLU neznámého kódu). Sklad a kasa jsou tak propojené
+  // i směrem „přidání z kasy → sklad".
+  const zalozitNove = (data: { nazev: string; cena: number; pocet: number; kategorie: string; ean?: string }) => {
+    const nazev = data.nazev.trim();
+    if (!nazev) return;
+    addPolozka({
+      nazev,
+      kategorie: data.kategorie as (typeof INVENTURA_KATEGORIE)[number]["id"],
+      jednotka: "ks",
+      aktualniStav: data.pocet,
+      minZasoba: 0,
+      prodejniCena: data.cena > 0 ? data.cena : undefined,
+      ...(data.ean ? { ean: data.ean } : {}),
+    });
+    // Položka právě vznikla — najdi ji (unikátní podle EAN, jinak názvu) a přidej do košíku.
+    const nova = useProvozStore.getState().polozky.find(
+      (p) => (data.ean && p.ean === data.ean) || p.nazev.toLowerCase().trim() === nazev.toLowerCase(),
+    );
+    if (nova) pridat(`sklad:${nova.id}`);
+    setNovaPolozka(null);
+    setToast(t("kasa.nove.zalozeno").replace("{n}", nazev));
     setTimeout(() => setToast(null), 2500);
   };
 
@@ -978,6 +1108,17 @@ export function KasaView() {
           onClose={() => setShowNumpad(false)}
           t={t}
           dateLocale={dateLocale}
+        />
+      )}
+
+      {/* Rychlé založení nového zboží (kód/PLU/sken mimo sklad) */}
+      {novaPolozka && (
+        <NovaSkladovaPolozka
+          initNazev={novaPolozka.nazev}
+          ean={novaPolozka.ean}
+          onUlozit={zalozitNove}
+          onClose={() => setNovaPolozka(null)}
+          t={t}
         />
       )}
 
