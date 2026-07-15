@@ -5,6 +5,11 @@ import { useAuthStore } from "@/store/authStore";
 import { getCurrentMode } from "@/store/modeStore";
 import { useT } from "@/lib/i18n";
 import { ChefHat, Mail, Lock, User } from "lucide-react";
+import { Capacitor } from "@capacitor/core";
+
+// Registrace je jen v nativní appce z Play. Na webu (prohlížeč) se registrovat
+// nedá — kdo chce účet, stáhne appku. Web slouží jen k přihlášení.
+const JE_APP = Capacitor.isNativePlatform();
 
 // Google login zapnutý — provider nastavený v Supabase (Google Cloud OAuth
 // klient, projekt Spizirna, 2026-07-15). Tlačítko "Pokračovat přes Google"
@@ -192,26 +197,34 @@ export function AuthScreen() {
         </div>
       </div>
 
-      {/* ── Formulářová karta — pluje přes okraj hera ── */}
+      {/* ── Formulářová karta — pluje přes okraj hera. Na PC omezená šířka
+             a vycentrovaná, ať se neroztáhne přes celou obrazovku. ── */}
       <div className="flex-1 px-5" style={{ paddingBottom: "calc(24px + env(safe-area-inset-bottom, 0px))" }}>
-        <div className="card animate-slide-up" style={{ padding: 20, marginTop: -24 }}>
+        <div className="card animate-slide-up" style={{ padding: 20, marginTop: -24, maxWidth: 460, marginLeft: "auto", marginRight: "auto", width: "100%" }}>
 
-      {/* Toggle */}
-      <div className="flex rounded-2xl p-1 mb-5" style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)" }}>
-        {(["login", "signup"] as const).map((m) => (
-          <button
-            key={m}
-            onClick={() => { setMode(m); setError(null); }}
-            className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
-            style={{
-              background: mode === m ? "var(--green-primary)" : "transparent",
-              color: mode === m ? "white" : "var(--text-secondary)",
-            }}
-          >
-            {m === "login" ? t("auth.login") : t("auth.signup")}
-          </button>
-        ))}
-      </div>
+      {/* Toggle Přihlásit/Registrace — jen v nativní appce. Na webu registrace
+          není (účet se zakládá v appce z Play), tak ukážeme jen nadpis. */}
+      {JE_APP ? (
+        <div className="flex rounded-2xl p-1 mb-5" style={{ background: "var(--bg-primary)", border: "1.5px solid var(--border)" }}>
+          {(["login", "signup"] as const).map((m) => (
+            <button
+              key={m}
+              onClick={() => { setMode(m); setError(null); }}
+              className="flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all"
+              style={{
+                background: mode === m ? "var(--green-primary)" : "transparent",
+                color: mode === m ? "white" : "var(--text-secondary)",
+              }}
+            >
+              {m === "login" ? t("auth.login") : t("auth.signup")}
+            </button>
+          ))}
+        </div>
+      ) : (
+        <h2 className="text-lg font-bold mb-5" style={{ color: "var(--text-primary)", textAlign: "center" }}>
+          {t("auth.login")}
+        </h2>
+      )}
 
       {/* Form */}
       <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
