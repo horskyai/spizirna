@@ -134,7 +134,7 @@ export const kasa: Record<string, Translation> = {
 
   // Tisk účtenky (BETA — Bluetooth termotiskárna)
   "kasa.tiskTitul": { cs: "Vytisknout účtenku", sk: "Vytlačiť účtenku" },
-  "kasa.tiskBetaHint": { cs: "Tisk na Bluetooth účtenkovou tiskárnu. Funkce je ve zkušebním provozu — nemusí fungovat na všech tiskárnách.", sk: "Tlač na Bluetooth účtenkovú tlačiareň. Funkcia je v skúšobnej prevádzke — nemusí fungovať na všetkých tlačiarňach." },
+  "kasa.tiskBetaHint": { cs: "Tisk účtenky — Bluetooth, WiFi/síťová tiskárna, nebo na papír (PDF). Vyber, co máš. Ve zkušebním provozu.", sk: "Tlač účtenky — Bluetooth, WiFi/sieťová tlačiareň, alebo na papier (PDF). Vyber, čo máš. V skúšobnej prevádzke." },
   "kasa.tiskNajdi": { cs: "Najít tiskárnu (Bluetooth)", sk: "Nájsť tlačiareň (Bluetooth)" },
   "kasa.tiskHledam": { cs: "Hledám tiskárny…", sk: "Hľadám tlačiarne…" },
   "kasa.tiskHledejZnovu": { cs: "Hledat znovu", sk: "Hľadať znova" },
@@ -142,4 +142,11 @@ export const kasa: Record<string, Translation> = {
   "kasa.tiskHotovo": { cs: "Účtenka vytištěna ✓", sk: "Účtenka vytlačená ✓" },
   "kasa.tiskChyba": { cs: "Tisk se nezdařil. Zkontroluj tiskárnu.", sk: "Tlač sa nepodarila. Skontroluj tlačiareň." },
   "kasa.tiskZavrit": { cs: "Zavřít", sk: "Zavrieť" },
+  // Typy tiskáren + WiFi/PDF ovládání
+  "kasa.tiskTypBt": { cs: "Bluetooth", sk: "Bluetooth" },
+  "kasa.tiskTypWifi": { cs: "WiFi/síť", sk: "WiFi/sieť" },
+  "kasa.tiskTypPdf": { cs: "Papír (PDF)", sk: "Papier (PDF)" },
+  "kasa.tiskPdfBtn": { cs: "Vytisknout na papír", sk: "Vytlačiť na papier" },
+  "kasa.tiskVytisknout": { cs: "Vytisknout", sk: "Vytlačiť" },
+  "kasa.tiskNajdiSit": { cs: "Vyhledat tiskárny v síti", sk: "Vyhľadať tlačiarne v sieti" },
 };

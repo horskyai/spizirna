@@ -18,7 +18,7 @@ import { Scanner } from "@/components/Scanner";
 import { lookupProductByEAN } from "@/lib/productLookup";
 import { useT, useLocale } from "@/lib/i18n";
 import { Capacitor } from "@capacitor/core";
-import { najdiTiskarny, tiskUctenky } from "@/lib/tiskUctenky";
+import { najdiTiskarny, najdiSitoveTiskarny, tiskUctenky, TiskarnaTyp } from "@/lib/tiskUctenky";
 
 // Dnešní datum jako YYYY-MM-DD (lokální, ne UTC — ať tržba sedí na den obsluhy).
 function dnesISO(): string {
@@ -562,6 +562,11 @@ export function KasaView() {
   const [tiskProdejkaId, setTiskProdejkaId] = useState<string | null>(null);
   const [tiskStav, setTiskStav] = useState<"idle" | "hledam" | "tisknu">("idle");
   const [tiskarny, setTiskarny] = useState<{ name: string; address: string }[]>([]);
+  // Typ tiskárny: bluetooth / wifi / pdf (uloží se pro příště).
+  const [tiskTyp, setTiskTyp] = useState<TiskarnaTyp>(() => {
+    try { return (localStorage.getItem("tisk-typ") as TiskarnaTyp) || "bluetooth"; } catch { return "bluetooth"; }
+  });
+  const [rucniIp, setRucniIp] = useState(() => { try { return localStorage.getItem("tisk-wifi-ip") || ""; } catch { return ""; } });
 
   const dnes = dnesISO();
   const trzba = getTrzbaDne(dnes);
@@ -678,16 +683,26 @@ export function KasaView() {
     }
   };
 
-  // Tisk účtenky (BETA): najdi BT tiskárny → vyber → vytiskni.
+  // Ulož zvolený typ tiskárny pro příště.
+  const zmenTyp = (typ: TiskarnaTyp) => {
+    setTiskTyp(typ);
+    setTiskarny([]);
+    try { localStorage.setItem("tisk-typ", typ); } catch {}
+  };
+
+  // Hledání tiskáren podle typu: BT sken / síťový sken. PDF hledání nepotřebuje.
   const spustitHledaniTiskaren = async () => {
     setTiskStav("hledam");
-    const found = await najdiTiskarny();
+    const found = tiskTyp === "wifi" ? await najdiSitoveTiskarny() : await najdiTiskarny();
     setTiskarny(found);
     setTiskStav("idle");
   };
-  const vytisknout = async (address: string) => {
+
+  // Vytiskne účtenku daným typem. target = BT adresa / WiFi IP / (PDF nic).
+  const vytisknout = async (target?: string) => {
     const prodejka = prodejky.find((p) => p.id === tiskProdejkaId);
     if (!prodejka) return;
+    if (tiskTyp === "wifi" && target) { try { localStorage.setItem("tisk-wifi-ip", target); } catch {} }
     setTiskStav("tisknu");
     const res = await tiskUctenky(
       {
@@ -698,7 +713,8 @@ export function KasaView() {
         platba: prodejka.platba,
         datum: prodejka.datum,
       },
-      address,
+      tiskTyp,
+      target,
     );
     setTiskStav("idle");
     if (res.ok) {
@@ -970,7 +986,26 @@ export function KasaView() {
               <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("kasa.tiskTitul")}</h3>
               <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "#E8862E", padding: "2px 7px", borderRadius: 99, letterSpacing: "0.04em" }}>BETA</span>
             </div>
-            <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: "0 0 16px", lineHeight: 1.4 }}>{t("kasa.tiskBetaHint")}</p>
+            <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: "0 0 12px", lineHeight: 1.4 }}>{t("kasa.tiskBetaHint")}</p>
+
+            {/* Přepínač typu tiskárny */}
+            <div style={{ display: "flex", gap: 6, marginBottom: 14 }}>
+              {([
+                { id: "bluetooth" as const, label: t("kasa.tiskTypBt"), emoji: "🔵" },
+                { id: "wifi" as const, label: t("kasa.tiskTypWifi"), emoji: "📶" },
+                { id: "pdf" as const, label: t("kasa.tiskTypPdf"), emoji: "📄" },
+              ]).map((o) => {
+                const on = tiskTyp === o.id;
+                return (
+                  <button key={o.id} onClick={() => zmenTyp(o.id)}
+                    style={{ flex: 1, padding: "8px 4px", borderRadius: 12, fontSize: 12, fontWeight: 700,
+                      background: on ? "var(--green-primary)" : "white", color: on ? "white" : "var(--text-secondary)",
+                      border: `1.5px solid ${on ? "var(--green-primary)" : "var(--border)"}`, display: "flex", flexDirection: "column", alignItems: "center", gap: 3 }}>
+                    <span style={{ fontSize: 16 }}>{o.emoji}</span>{o.label}
+                  </button>
+                );
+              })}
+            </div>
 
             {tiskStav === "hledam" && (
               <p style={{ fontSize: 14, color: "var(--text-secondary)", textAlign: "center", padding: "16px 0" }}>{t("kasa.tiskHledam")}</p>
@@ -979,12 +1014,45 @@ export function KasaView() {
               <p style={{ fontSize: 14, color: "var(--text-secondary)", textAlign: "center", padding: "16px 0" }}>{t("kasa.tiskTisknu")}</p>
             )}
 
-            {tiskStav === "idle" && tiskarny.length === 0 && (
+            {/* PDF: rovnou vytisknout (systémový dialog) */}
+            {tiskStav === "idle" && tiskTyp === "pdf" && (
+              <button onClick={() => vytisknout()} className="btn-primary" style={{ width: "100%" }}>
+                {t("kasa.tiskPdfBtn")}
+              </button>
+            )}
+
+            {/* WiFi: ruční IP + hledání */}
+            {tiskStav === "idle" && tiskTyp === "wifi" && (
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                <div style={{ display: "flex", gap: 8 }}>
+                  <input value={rucniIp} onChange={(e) => setRucniIp(e.target.value)} placeholder="192.168.1.50"
+                    inputMode="decimal"
+                    style={{ flex: 1, padding: "10px 12px", borderRadius: 12, fontSize: 14, border: "1.5px solid var(--border)", background: "white", outline: "none", color: "var(--text-primary)" }} />
+                  <button onClick={() => rucniIp.trim() && vytisknout(rucniIp.trim())} disabled={!rucniIp.trim()}
+                    style={{ padding: "10px 16px", borderRadius: 12, background: "var(--green-primary)", color: "white", fontSize: 13, fontWeight: 700, opacity: rucniIp.trim() ? 1 : 0.5 }}>
+                    {t("kasa.tiskVytisknout")}
+                  </button>
+                </div>
+                {tiskarny.length > 0 && tiskarny.map((tp) => (
+                  <button key={tp.address} onClick={() => vytisknout(tp.address)}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, background: "white", border: "1.5px solid var(--border)", textAlign: "left" }}>
+                    <span style={{ fontSize: 18 }}>🖨️</span>
+                    <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{tp.name}</span>
+                  </button>
+                ))}
+                <button onClick={spustitHledaniTiskaren} style={{ fontSize: 13, color: "var(--green-dark)", fontWeight: 600, padding: "8px 0" }}>
+                  {t("kasa.tiskNajdiSit")}
+                </button>
+              </div>
+            )}
+
+            {/* Bluetooth: sken + seznam */}
+            {tiskStav === "idle" && tiskTyp === "bluetooth" && tiskarny.length === 0 && (
               <button onClick={spustitHledaniTiskaren} className="btn-primary" style={{ width: "100%" }}>
                 {t("kasa.tiskNajdi")}
               </button>
             )}
-            {tiskStav === "idle" && tiskarny.length > 0 && (
+            {tiskStav === "idle" && tiskTyp === "bluetooth" && tiskarny.length > 0 && (
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {tiskarny.map((tp) => (
                   <button key={tp.address} onClick={() => vytisknout(tp.address)}
