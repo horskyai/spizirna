@@ -42,6 +42,12 @@ import { useProvozStore } from "@/store/provozStore";
 import { useKasaStore } from "@/store/kasaStore";
 import { initPush } from "@/lib/pushNotifications";
 import { useRecurringStore } from "@/store/recurringStore";
+import { Capacitor } from "@capacitor/core";
+
+// Web (PC i prohlížeč) = JEN přihlášení. Onboarding (jazyk, výběr režimu,
+// uvítání, výběr plánu) běží pouze v nativní appce z Google Play. Registrace
+// se dělá jen v appce; na webu se člověk už jen přihlásí.
+const JE_APP = Capacitor.isNativePlatform();
 
 class ErrorBoundary extends Component<{ children: ReactNode }, { error: string | null }> {
   constructor(props: { children: ReactNode }) {
@@ -427,8 +433,20 @@ export default function Home() {
     return !!(savedMode && JSON.parse(savedMode)?.state?.mode !== null);
   });
 
-  // 1) Výběr jazyka (čeština / slovenština)
-  if (!localeSelected) {
+  // NA WEBU: žádný onboarding. Dokud není přihlášený uživatel, ukaž rovnou
+  // přihlašovací obrazovku (přeskoč výběr jazyka i režimu). Registrace a
+  // onboarding se dělají jen v appce z Google Play; na web se člověk už jen
+  // přihlásí a data (jazyk/režim) se načtou z jeho účtu.
+  if (!JE_APP && !authLoading && !user) {
+    return (
+      <ErrorBoundary>
+        <AuthScreen />
+      </ErrorBoundary>
+    );
+  }
+
+  // 1) Výběr jazyka (čeština / slovenština) — jen v appce
+  if (JE_APP && !localeSelected) {
     return (
       <ErrorBoundary>
         <LanguageSelect onDone={() => setLocaleSelected(true)} />
@@ -436,8 +454,8 @@ export default function Home() {
     );
   }
 
-  // 2) Výběr režimu — první spuštění (jen jednou)
-  if (!modeSelected || mode === null) {
+  // 2) Výběr režimu — první spuštění (jen jednou), jen v appce
+  if (JE_APP && (!modeSelected || mode === null)) {
     return (
       <ErrorBoundary>
         <ModeSelect onDone={() => setModeSelected(true)} />
@@ -468,6 +486,17 @@ export default function Home() {
       </ErrorBoundary>
     );
   }
+  // NA WEBU: přihlášený, ale režim se ještě dotahuje z profilu účtu (mode === null).
+  // Krátce počkáme, ať appka nerenderuje bez zvoleného režimu. V appce sem kód
+  // nedojde, protože onboarding režim nastaví ještě před přihlášením.
+  if (!JE_APP && mode === null) {
+    return (
+      <div style={{ minHeight: "100dvh", display: "flex", alignItems: "center", justifyContent: "center", background: "var(--bg-primary)" }}>
+        <div style={{ width: 36, height: 36, border: "3px solid var(--border)", borderTopColor: "var(--green-primary)", borderRadius: "50%", animation: "spin 0.8s linear infinite" }} />
+      </div>
+    );
+  }
+
   // Provozní režim, ale ještě nevybraný typ (obchod/restaurace) → výběr, jednou.
   // Po výběru se typProvozu uloží do store a komponenta se překreslí sama.
   if (mode === "provoz" && businessTyp === null) {
