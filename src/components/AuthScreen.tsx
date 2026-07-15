@@ -6,11 +6,10 @@ import { getCurrentMode } from "@/store/modeStore";
 import { useT } from "@/lib/i18n";
 import { ChefHat, Mail, Lock, User } from "lucide-react";
 
-// Google login je hotový v kódu, ale čeká na zapnutí provideru v Supabase
-// (Google Cloud OAuth) — plánováno na Google Play fázi. Do té doby tlačítko
-// skryté, ať testery nemate (klik by házel chybu "provider not enabled").
-// Zapnutí: přepni na true, až bude Google provider nastavený v Supabase.
-const GOOGLE_LOGIN_ENABLED = false;
+// Google login zapnutý — provider nastavený v Supabase (Google Cloud OAuth
+// klient, projekt Spizirna, 2026-07-15). Tlačítko "Pokračovat přes Google"
+// je viditelné na webu i v appce (appka načítá web, redirect je stejný origin).
+const GOOGLE_LOGIN_ENABLED = true;
 
 export function AuthScreen() {
   const t = useT();
