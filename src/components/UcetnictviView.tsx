@@ -30,6 +30,12 @@ function fmt(n: number, locale: string): string {
   return n.toLocaleString(locale, { maximumFractionDigits: 2 });
 }
 
+// Styl tlačítka pohybu hotovosti v zásuvce.
+const zbtn: React.CSSProperties = {
+  flex: "1 1 90px", padding: "9px 8px", borderRadius: 11, fontSize: 13, fontWeight: 700,
+  background: "white", color: "var(--text-primary)", border: "1.5px solid var(--border)",
+};
+
 // ── Export CSV — jeden řádek na prodejní řádek účtenky ──────────────────────────
 function exportCSV(prodejky: Prodejka[], odISO: string, doISO: string) {
   const head = ["Datum", "Čas", "Položka", "Množství", "Cena/ks", "Celkem", "DPH %", "Platba"];
@@ -178,6 +184,9 @@ export function UcetnictviView() {
   const prodejky = useKasaStore((s) => s.prodejky);
   const uzavritDen = useKasaStore((s) => s.uzavritDen);
   const jeDenUzavren = useKasaStore((s) => s.jeDenUzavren);
+  const pohybyHotovosti = useKasaStore((s) => s.pohybyHotovosti);
+  const pridejPohybHotovosti = useKasaStore((s) => s.pridejPohybHotovosti);
+  const getStavZasuvky = useKasaStore((s) => s.getStavZasuvky);
   const nazevFirmy = useBusinessStore((s) => s.name);
   const firma = useBusinessStore((s) => s.firma);
 
@@ -187,6 +196,7 @@ export function UcetnictviView() {
   const [obdobi, setObdobi] = useState<ObdobiKey>("dnes");
   const [odVlastni, setOdVlastni] = useState(iso(dnes));
   const [doVlastni, setDoVlastni] = useState(iso(dnes));
+  const [napocitano, setNapocitano] = useState(""); // reálně napočítaná hotovost v zásuvce (pro rozdíl)
 
   const [odISO, doISO] = obdobi === "vlastni"
     ? [odVlastni, doVlastni]
@@ -270,6 +280,66 @@ export function UcetnictviView() {
                 : <><Lock size={16} /> {t("ucto.uzavritDen")}</>}
             </button>
           )}
+
+          {/* Pokladní zásuvka — jen pro dnešek (řízení hotovosti aktuální směny) */}
+          {obdobi === "dnes" && (() => {
+            const z = getStavZasuvky(dnesISO);
+            const nap = parseFloat(napocitano.replace(",", "."));
+            const maRozdil = !isNaN(nap) && napocitano.trim() !== "";
+            const rozdil = maRozdil ? nap - z.ocekavano : 0;
+            const dnesniPohyby = pohybyHotovosti.filter((p) => p.datum.slice(0, 10) === dnesISO);
+            const ptej = (typ: "pocatecni" | "vklad" | "vyber") => {
+              const lbl = typ === "pocatecni" ? t("ucto.zasuvka.pocatecni") : typ === "vklad" ? t("ucto.zasuvka.vklad") : t("ucto.zasuvka.vyber");
+              const val = window.prompt(`${lbl} (Kč):`);
+              if (val == null) return;
+              const c = parseFloat(val.replace(",", "."));
+              if (!isNaN(c) && c > 0) pridejPohybHotovosti(typ, c);
+            };
+            return (
+              <div className="card overflow-hidden" style={{ marginBottom: 16 }}>
+                <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 8 }}>
+                  <Wallet size={16} style={{ color: "var(--green-primary)" }} />
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)", flex: 1 }}>{t("ucto.zasuvka.titul")}</p>
+                  <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{t("ucto.zasuvka.ocekavano")}</span>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>{fmt(z.ocekavano, dateLocale)} Kč</span>
+                </div>
+                {/* Rozpad */}
+                <div style={{ padding: "10px 16px", fontSize: 12.5, color: "var(--text-secondary)", display: "flex", flexDirection: "column", gap: 3, borderBottom: "1px solid var(--border)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}><span>{t("ucto.zasuvka.pocatecni")}</span><b style={{ color: "var(--text-primary)" }}>{fmt(z.pocatecni, dateLocale)} Kč</b></div>
+                  <div style={{ display: "flex", justifyContent: "space-between" }}><span>{t("ucto.zasuvka.trzbaHot")}</span><b style={{ color: "var(--green-dark)" }}>+{fmt(z.trzbaHotovost, dateLocale)} Kč</b></div>
+                  {z.vraceniHotovost > 0 && <div style={{ display: "flex", justifyContent: "space-between" }}><span>{t("ucto.zasuvka.vraceni")}</span><b style={{ color: "#C0392B" }}>−{fmt(z.vraceniHotovost, dateLocale)} Kč</b></div>}
+                  {z.vklady > 0 && <div style={{ display: "flex", justifyContent: "space-between" }}><span>{t("ucto.zasuvka.vklady")}</span><b style={{ color: "var(--green-dark)" }}>+{fmt(z.vklady, dateLocale)} Kč</b></div>}
+                  {z.vybery > 0 && <div style={{ display: "flex", justifyContent: "space-between" }}><span>{t("ucto.zasuvka.vybery")}</span><b style={{ color: "#C0392B" }}>−{fmt(z.vybery, dateLocale)} Kč</b></div>}
+                </div>
+                {/* Tlačítka pohybů */}
+                <div style={{ display: "flex", gap: 8, padding: "10px 16px", flexWrap: "wrap" }}>
+                  <button onClick={() => ptej("pocatecni")} style={zbtn}>{t("ucto.zasuvka.pocatecniBtn")}</button>
+                  <button onClick={() => ptej("vklad")} style={zbtn}>+ {t("ucto.zasuvka.vklad")}</button>
+                  <button onClick={() => ptej("vyber")} style={zbtn}>− {t("ucto.zasuvka.vyber")}</button>
+                </div>
+                {/* Kontrola: napočítaná hotovost → rozdíl */}
+                <div style={{ padding: "10px 16px", borderTop: "1px solid var(--border)", display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                  <span style={{ fontSize: 13, color: "var(--text-secondary)", flexShrink: 0 }}>{t("ucto.zasuvka.napocitano")}</span>
+                  <input type="number" inputMode="decimal" value={napocitano} onChange={(e) => setNapocitano(e.target.value)} placeholder="—"
+                    style={{ flex: 1, minWidth: 90, textAlign: "right", padding: "8px 12px", borderRadius: 12, fontSize: 15, fontWeight: 700, border: "1.5px solid var(--border)", background: "white", outline: "none", color: "var(--text-primary)" }} />
+                  <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Kč</span>
+                </div>
+                {maRozdil && (
+                  <div style={{ padding: "10px 16px 14px" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 14px", borderRadius: 12,
+                      background: Math.abs(rozdil) < 0.5 ? "var(--green-light)" : rozdil > 0 ? "#FFF3D6" : "#FDE8E8" }}>
+                      <span style={{ fontSize: 14, fontWeight: 700, color: Math.abs(rozdil) < 0.5 ? "var(--green-dark)" : rozdil > 0 ? "#8a5a00" : "#C0392B" }}>
+                        {Math.abs(rozdil) < 0.5 ? t("ucto.zasuvka.sedi") : rozdil > 0 ? t("ucto.zasuvka.prebytek") : t("ucto.zasuvka.manko")}
+                      </span>
+                      <span style={{ fontSize: 20, fontWeight: 800, fontVariantNumeric: "tabular-nums", color: Math.abs(rozdil) < 0.5 ? "var(--green-dark)" : rozdil > 0 ? "#8a5a00" : "#C0392B" }}>
+                        {rozdil > 0 ? "+" : ""}{fmt(rozdil, dateLocale)} Kč
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Zisk / marže */}
           <div style={{ display: "flex", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>

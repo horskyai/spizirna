@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import {
   Plus, X, Minus, Trash2, ShoppingCart, Check, Pencil,
   Settings2, Receipt, RotateCcw, Package, Soup, Ban, ScanLine, EyeOff, Eye, Calculator,
-  Banknote, CreditCard, UtensilsCrossed, GraduationCap,
+  Banknote, CreditCard, UtensilsCrossed, GraduationCap, UserRound, SplitSquareHorizontal,
 } from "lucide-react";
 import {
   useKasaStore, MenuPolozka, MenuVazbaTyp, CartItem, ZpusobPlatby, formatCisloUctenky,
@@ -20,6 +20,7 @@ import { useT, useLocale } from "@/lib/i18n";
 import { Capacitor } from "@capacitor/core";
 import { najdiTiskarny, najdiSitoveTiskarny, tiskUctenky, TiskarnaTyp } from "@/lib/tiskUctenky";
 import { skenZvuk } from "@/lib/skenZvuk";
+import { useStaffStore, useAktivniJmeno } from "@/store/staffStore";
 
 // Dnešní datum jako YYYY-MM-DD (lokální, ne UTC — ať tržba sedí na den obsluhy).
 function dnesISO(): string {
@@ -459,6 +460,168 @@ function DlazdiceSekce({
 }
 
 // ── Numpad (číselná klávesnice) ─────────────────────────────────────────────────
+// ── Modal: dělení účtu (restaurace) ─────────────────────────────────────────
+// Dvě věci, které obsluha reálně potřebuje:
+//  1) Rozpočet na N osob — kolik platí každý (jen kalkulačka, nemění zápis).
+//  2) Dělená platba — část hotově, část kartou (uloží se rozpis pro účetnictví).
+function RozdelitModal({ celkem, dateLocale, onZaplatitDeleno, onClose, t }: {
+  celkem: number;
+  dateLocale: string;
+  onZaplatitDeleno: (hotovost: number, karta: number) => void;
+  onClose: () => void;
+  t: (k: string) => string;
+}) {
+  const [osoby, setOsoby] = useState(2);
+  const [hotovost, setHotovost] = useState(""); // kolik z celku platí hotově; zbytek kartou
+  const hot = Math.min(Math.max(0, parseFloat(hotovost.replace(",", ".")) || 0), celkem);
+  const kartou = Math.max(0, celkem - hot);
+  const naOsobu = osoby > 0 ? celkem / osoby : celkem;
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 260, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div className="sheet-overlay animate-fade-in" onClick={onClose} style={{ position: "absolute", inset: 0 }} />
+      <div className="relative animate-slide-up rounded-t-3xl overflow-hidden" onClick={(e) => e.stopPropagation()}
+        style={{ background: "var(--bg-primary)", maxHeight: "88dvh" }}>
+        <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} /></div>
+        <div className="overflow-y-auto px-5 pt-2" style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))" }}>
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("kasa.rozdelit.titul")}</h3>
+            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
+              <X size={16} style={{ color: "var(--text-secondary)" }} />
+            </button>
+          </div>
+          <p style={{ fontSize: 14, color: "var(--text-secondary)", marginBottom: 18 }}>
+            {t("kasa.celkem")}: <b style={{ color: "var(--text-primary)" }}>{celkem.toLocaleString(dateLocale)} Kč</b>
+          </p>
+
+          {/* 1) Rozpočet na osoby */}
+          <div style={{ background: "white", border: "1.5px solid var(--border)", borderRadius: 16, padding: 16, marginBottom: 14 }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 10 }}>{t("kasa.rozdelit.naOsoby")}</p>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 16, marginBottom: 10 }}>
+              <button onClick={() => setOsoby((o) => Math.max(1, o - 1))} style={{ width: 40, height: 40, borderRadius: 12, background: "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", border: "none" }}><Minus size={18} /></button>
+              <span style={{ fontSize: 26, fontWeight: 800, minWidth: 40, textAlign: "center", color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>{osoby}</span>
+              <button onClick={() => setOsoby((o) => Math.min(20, o + 1))} style={{ width: 40, height: 40, borderRadius: 12, background: "var(--green-light)", display: "flex", alignItems: "center", justifyContent: "center", border: "none" }}><Plus size={18} style={{ color: "var(--green-primary)" }} /></button>
+            </div>
+            <div style={{ textAlign: "center", padding: "10px", borderRadius: 12, background: "var(--green-light)" }}>
+              <span style={{ fontSize: 13, color: "var(--green-dark)" }}>{t("kasa.rozdelit.kazdy")} </span>
+              <span style={{ fontSize: 22, fontWeight: 800, color: "var(--green-dark)", fontVariantNumeric: "tabular-nums" }}>{naOsobu.toLocaleString(dateLocale, { maximumFractionDigits: 2 })} Kč</span>
+            </div>
+          </div>
+
+          {/* 2) Dělená platba hotovost / karta */}
+          <div style={{ background: "white", border: "1.5px solid var(--border)", borderRadius: 16, padding: 16, marginBottom: 16 }}>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)", marginBottom: 10 }}>{t("kasa.rozdelit.platba")}</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
+              <span style={{ fontSize: 13, color: "var(--text-secondary)", flexShrink: 0, width: 70 }}>{t("kasa.hotove")}</span>
+              <input type="number" inputMode="decimal" value={hotovost} onChange={(e) => setHotovost(e.target.value)} placeholder="0"
+                style={{ flex: 1, minWidth: 0, textAlign: "right", padding: "9px 12px", borderRadius: 12, fontSize: 15, fontWeight: 700, border: "1.5px solid var(--border)", background: "var(--bg-primary)", outline: "none", color: "var(--text-primary)" }} />
+              <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Kč</span>
+            </div>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "10px 12px", borderRadius: 12, background: "var(--bg-primary)" }}>
+              <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t("kasa.rozdelit.zbytekKartou")}</span>
+              <span style={{ fontSize: 17, fontWeight: 800, color: "var(--text-primary)", fontVariantNumeric: "tabular-nums" }}>{kartou.toLocaleString(dateLocale, { maximumFractionDigits: 2 })} Kč</span>
+            </div>
+          </div>
+
+          <button onClick={() => onZaplatitDeleno(hot, kartou)} disabled={hot <= 0 && kartou <= 0} className="btn-primary">
+            <Check size={18} /> {t("kasa.rozdelit.zaplatit")}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Modal: obsluha na směně (přihlášení + správa zaměstnanců) ───────────────
+// Přihlášená obsluha se zapíše ke každé účtence i stornu → majitel vidí, kdo
+// co udělal. Přidání/mazání zaměstnanců jen pro majitele (ne pro zaměstnance).
+function ObsluhaModal({ onClose, zamestnanec, t }: { onClose: () => void; zamestnanec: boolean; t: (k: string) => string }) {
+  const zamestnanci = useStaffStore((s) => s.zamestnanci);
+  const aktivniId = useStaffStore((s) => s.aktivniId);
+  const prihlas = useStaffStore((s) => s.prihlas);
+  const odhlas = useStaffStore((s) => s.odhlas);
+  const pridej = useStaffStore((s) => s.pridej);
+  const smaz = useStaffStore((s) => s.smaz);
+  const [pridavam, setPridavam] = useState(false);
+  const [noveJmeno, setNoveJmeno] = useState("");
+  const [novePin, setNovePin] = useState("");
+
+  const prihlasit = (id: string, jmeno: string) => {
+    const pin = window.prompt(t("kasa.obsluha.zadejPin").replace("{n}", jmeno));
+    if (pin == null) return;
+    if (!prihlas(id, pin)) window.alert(t("kasa.obsluha.spatnyPin"));
+    else onClose();
+  };
+  const ulozitNoveho = () => {
+    if (!noveJmeno.trim() || novePin.trim().length < 4) return;
+    pridej(noveJmeno.trim(), novePin.trim());
+    setNoveJmeno(""); setNovePin(""); setPridavam(false);
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 260, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div className="sheet-overlay animate-fade-in" onClick={onClose} style={{ position: "absolute", inset: 0 }} />
+      <div className="relative animate-slide-up rounded-t-3xl overflow-hidden" onClick={(e) => e.stopPropagation()}
+        style={{ background: "var(--bg-primary)", maxHeight: "88dvh" }}>
+        <div className="flex justify-center pt-3 pb-1"><div className="w-10 h-1 rounded-full" style={{ background: "var(--border)" }} /></div>
+        <div className="overflow-y-auto px-5 pt-2" style={{ paddingBottom: "max(24px, env(safe-area-inset-bottom, 24px))" }}>
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("kasa.obsluha.titul")}</h3>
+            <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>
+              <X size={16} style={{ color: "var(--text-secondary)" }} />
+            </button>
+          </div>
+          <p style={{ fontSize: 13, color: "var(--text-secondary)", lineHeight: 1.5, marginBottom: 16 }}>{t("kasa.obsluha.popis")}</p>
+
+          {zamestnanci.length === 0 && !pridavam && (
+            <p style={{ fontSize: 13.5, color: "var(--text-tertiary)", textAlign: "center", padding: "8px 0 16px" }}>{t("kasa.obsluha.zadni")}</p>
+          )}
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 }}>
+            {zamestnanci.map((z) => {
+              const aktivni = z.id === aktivniId;
+              return (
+                <div key={z.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "12px 14px", borderRadius: 14, background: aktivni ? "var(--green-light)" : "white", border: `1.5px solid ${aktivni ? "var(--green-primary)" : "var(--border)"}` }}>
+                  <UserRound size={18} style={{ color: aktivni ? "var(--green-primary)" : "var(--text-tertiary)", flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontSize: 15, fontWeight: 600, color: "var(--text-primary)" }}>{z.jmeno}</span>
+                  {aktivni ? (
+                    <button onClick={odhlas} style={{ padding: "6px 12px", borderRadius: 9, fontSize: 12.5, fontWeight: 700, background: "var(--green-primary)", color: "white", border: "none" }}>{t("kasa.obsluha.odhlasit")}</button>
+                  ) : (
+                    <button onClick={() => prihlasit(z.id, z.jmeno)} style={{ padding: "6px 12px", borderRadius: 9, fontSize: 12.5, fontWeight: 700, background: "white", color: "var(--green-dark)", border: "1.5px solid var(--green-primary)" }}>{t("kasa.obsluha.prihlasitBtn")}</button>
+                  )}
+                  {!zamestnanec && (
+                    <button onClick={() => { if (window.confirm(t("kasa.obsluha.smazatQ").replace("{n}", z.jmeno))) smaz(z.id); }} style={{ width: 30, height: 30, borderRadius: 8, background: "#FDE8E8", display: "flex", alignItems: "center", justifyContent: "center", border: "none", flexShrink: 0 }}>
+                      <Trash2 size={14} style={{ color: "#C0392B" }} />
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Přidání zaměstnance — jen majitel */}
+          {!zamestnanec && (pridavam ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: "14px", borderRadius: 14, background: "white", border: "1.5px solid var(--border)" }}>
+              <input autoFocus value={noveJmeno} onChange={(e) => setNoveJmeno(e.target.value)} placeholder={t("kasa.obsluha.jmenoPlaceholder")}
+                style={{ padding: "11px 14px", borderRadius: 12, fontSize: 15, border: "1.5px solid var(--border)", background: "var(--bg-primary)", outline: "none", color: "var(--text-primary)" }} />
+              <input value={novePin} onChange={(e) => setNovePin(e.target.value.replace(/\D/g, ""))} inputMode="numeric" placeholder={t("kasa.obsluha.pinPlaceholder")}
+                style={{ padding: "11px 14px", borderRadius: 12, fontSize: 15, border: "1.5px solid var(--border)", background: "var(--bg-primary)", outline: "none", color: "var(--text-primary)", letterSpacing: "0.2em" }} />
+              <div style={{ display: "flex", gap: 8 }}>
+                <button onClick={() => { setPridavam(false); setNoveJmeno(""); setNovePin(""); }} style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: 14, fontWeight: 600, background: "var(--border)", color: "var(--text-secondary)", border: "none" }}>{t("kasa.obsluha.zrusit")}</button>
+                <button onClick={ulozitNoveho} disabled={!noveJmeno.trim() || novePin.length < 4} style={{ flex: 1, padding: "10px", borderRadius: 12, fontSize: 14, fontWeight: 700, background: "var(--green-primary)", color: "white", border: "none", opacity: (!noveJmeno.trim() || novePin.length < 4) ? 0.5 : 1 }}>{t("kasa.obsluha.ulozit")}</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setPridavam(true)} style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "12px", borderRadius: 14, fontSize: 14, fontWeight: 700, background: "var(--green-light)", color: "var(--green-dark)", border: "1.5px dashed var(--green-primary)" }}>
+              <Plus size={16} /> {t("kasa.obsluha.pridat")}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── Modal: rychlé založení nového zboží přímo z kasy ────────────────────────
 // Otevře se, když obsluha naskenuje / zadá kód zboží, které ještě NENÍ ve skladu.
 // Po uložení se položka založí do skladu (s počátečním počtem kusů) a rovnou
@@ -653,6 +816,9 @@ export function KasaView() {
   // Rychlé založení nového zboží (kód/PLU/název, který není ve skladu).
   // Předvyplní se název (z katalogu) a EAN, obsluha doplní cenu + počet.
   const [novaPolozka, setNovaPolozka] = useState<{ nazev: string; ean?: string } | null>(null);
+  const [showObsluha, setShowObsluha] = useState(false); // modál přihlášení obsluhy na směnu
+  const aktivniObsluha = useAktivniJmeno(); // jméno přihlášené obsluhy (odpovědnost)
+  const [showRozdelit, setShowRozdelit] = useState(false); // modál dělení účtu (platba / na osoby)
   const [nasobic, setNasobic] = useState(1); // množství, které se přidá k dalšímu kliknutému zboží
   const [prijato, setPrijato] = useState(""); // kolik zákazník dal hotově (volitelné → počítá vrácení)
   const [toast, setToast] = useState<string | null>(null);
@@ -835,7 +1001,7 @@ export function KasaView() {
     setTimeout(() => setToast(null), 2500);
   };
 
-  const zaplatit = (platba: ZpusobPlatby) => {
+  const zaplatit = (platba: ZpusobPlatby, rozpisPlatby?: { hotovost: number; karta: number }) => {
     const items: CartItem[] = Object.entries(cart).map(([key, mnozstvi]) => {
       const [typ, id] = key.split(":");
       return typ === "sklad" ? { polozkaId: id, mnozstvi } : { menuId: id, mnozstvi };
@@ -851,17 +1017,19 @@ export function KasaView() {
       setVolne([]);
       setNasobic(1);
       setPrijato("");
+      setShowRozdelit(false);
       setToast(t("kasa.treninkProdej").replace("{n}", castka.toLocaleString(dateLocale)));
       setTimeout(() => setToast(null), 2500);
       return;
     }
 
-    const id = prodat(items, platba);
+    const id = prodat(items, platba, rozpisPlatby);
     if (id) {
       setCart({});
       setVolne([]);
       setNasobic(1);
       setPrijato("");
+      setShowRozdelit(false);
       setToast(t("kasa.zaplaceno").replace("{n}", castka.toLocaleString(dateLocale)));
       setTimeout(() => setToast(null), 2500);
       // V appce nabídni tisk účtenky (BETA). Na webu tisk není.
@@ -969,6 +1137,11 @@ export function KasaView() {
                 <GraduationCap size={14} /> {t("kasa.trenink")}
               </button>
             )}
+            {/* Obsluha na směně — jméno se zapíše ke každé účtence i stornu. */}
+            <button onClick={() => setShowObsluha(true)}
+              style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "white", background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)" }}>
+              <UserRound size={14} /> {aktivniObsluha || t("kasa.obsluha.prihlasit")}
+            </button>
           </div>
         </div>
       </div>
@@ -1194,6 +1367,13 @@ export function KasaView() {
             <button onClick={() => { setCart({}); setVolne([]); setNasobic(1); }} style={{ width: 46, height: 50, borderRadius: 14, background: "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Trash2 size={18} style={{ color: "var(--text-secondary)" }} />
             </button>
+            {/* Rozdělit účet — jen restaurace (u obchodu se lidi nedělí o účet). */}
+            {!jeObchod && (
+              <button onClick={() => setShowRozdelit(true)} title={t("kasa.rozdelit.titul")}
+                style={{ width: 46, height: 50, borderRadius: 14, background: "var(--green-light)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: "1.5px solid var(--green-primary)" }}>
+                <SplitSquareHorizontal size={18} style={{ color: "var(--green-primary)" }} />
+              </button>
+            )}
             <button onClick={() => zaplatit("hotovost")}
               style={{ flex: 1, height: 50, borderRadius: 14, background: "var(--green-primary)", color: "white", fontSize: 15, fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
               <Banknote size={19} /> {t("kasa.hotove")}
@@ -1227,6 +1407,20 @@ export function KasaView() {
           ean={novaPolozka.ean}
           onUlozit={zalozitNove}
           onClose={() => setNovaPolozka(null)}
+          t={t}
+        />
+      )}
+
+      {/* Přihlášení obsluhy na směnu + správa zaměstnanců */}
+      {showObsluha && <ObsluhaModal onClose={() => setShowObsluha(false)} zamestnanec={zamestnanec} t={t} />}
+
+      {/* Dělení účtu — platba hotovost+karta nebo rozpočet na N osob */}
+      {showRozdelit && cartPocet > 0 && (
+        <RozdelitModal
+          celkem={cartCelkem}
+          dateLocale={dateLocale}
+          onZaplatitDeleno={(hotovost, karta) => zaplatit(karta >= hotovost ? "karta" : "hotovost", { hotovost, karta })}
+          onClose={() => setShowRozdelit(false)}
           t={t}
         />
       )}

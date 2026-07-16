@@ -136,6 +136,31 @@ export const kasa: Record<string, Translation> = {
   // Rychlé bankovky u platby hotově
   "kasa.presne": { cs: "Přesně", sk: "Presne" },
 
+  // Dělení účtu (restaurace)
+  "kasa.rozdelit.titul": { cs: "Rozdělit účet", sk: "Rozdeliť účet" },
+  "kasa.rozdelit.naOsoby": { cs: "Rozpočítat na osoby", sk: "Rozpočítať na osoby" },
+  "kasa.rozdelit.kazdy": { cs: "Každý zaplatí", sk: "Každý zaplatí" },
+  "kasa.rozdelit.platba": { cs: "Rozdělit platbu", sk: "Rozdeliť platbu" },
+  "kasa.rozdelit.zbytekKartou": { cs: "Zbytek kartou", sk: "Zvyšok kartou" },
+  "kasa.rozdelit.zaplatit": { cs: "Zaplatit rozděleně", sk: "Zaplatiť rozdelene" },
+
+  // Obsluha na směně (odpovědnost — jméno u účtenky/storna)
+  "kasa.obsluha.prihlasit": { cs: "Obsluha", sk: "Obsluha" },
+  "kasa.obsluha.titul": { cs: "Obsluha na směně", sk: "Obsluha na zmene" },
+  "kasa.obsluha.popis": { cs: "Kdo je přihlášený, ten se zapíše ke každé účtence i stornu. Majitel pak vidí, kdo co udělal.", sk: "Kto je prihlásený, ten sa zapíše ku každej účtenke aj stornu. Majiteľ potom vidí, kto čo urobil." },
+  "kasa.obsluha.zadni": { cs: "Zatím žádní zaměstnanci. Přidej prvního níže.", sk: "Zatiaľ žiadni zamestnanci. Pridaj prvého nižšie." },
+  "kasa.obsluha.prihlasitBtn": { cs: "Přihlásit", sk: "Prihlásiť" },
+  "kasa.obsluha.odhlasit": { cs: "Odhlásit", sk: "Odhlásiť" },
+  "kasa.obsluha.zadejPin": { cs: "PIN pro {n}:", sk: "PIN pre {n}:" },
+  "kasa.obsluha.spatnyPin": { cs: "Špatný PIN", sk: "Nesprávny PIN" },
+  "kasa.obsluha.pridat": { cs: "Přidat zaměstnance", sk: "Pridať zamestnanca" },
+  "kasa.obsluha.jmenoPlaceholder": { cs: "Jméno (např. Kačka)", sk: "Meno (napr. Kačka)" },
+  "kasa.obsluha.pinPlaceholder": { cs: "PIN (min. 4 číslice)", sk: "PIN (min. 4 číslice)" },
+  "kasa.obsluha.zrusit": { cs: "Zrušit", sk: "Zrušiť" },
+  "kasa.obsluha.ulozit": { cs: "Uložit", sk: "Uložiť" },
+  "kasa.obsluha.smazatQ": { cs: "Smazat zaměstnance {n}?", sk: "Zmazať zamestnanca {n}?" },
+  "kasa.obsluha.stitek": { cs: "Obsluha", sk: "Obsluha" },
+
   // „To samé znovu" — zopakování poslední účtenky do košíku
   "kasa.opakovatPosledni": { cs: "Poslední účet znovu", sk: "Posledný účet znova" },
   "kasa.opakovanoToast": { cs: "Poslední účet vložen do košíku", sk: "Posledný účet vložený do košíka" },

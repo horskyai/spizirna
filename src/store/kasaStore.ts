@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useProvozStore } from "@/store/provozStore";
 import { useRecipeStore } from "@/store/recipeStore";
+import { useStaffStore } from "@/store/staffStore";
 
 // ── Kasa (pokladna / POS) ──────────────────────────────────────────────────────
 // Prodej v provozovně, který AUTOMATICKY odečítá ze skladu — obsluha už nemusí
@@ -64,6 +65,8 @@ export interface Prodejka {
   platba?: ZpusobPlatby;   // hotovost / karta (pro uzávěrku); default hotovost
   vraceno?: boolean;       // true = tato účtenka je doklad o vrácení (záporné částky)
   puvodniCislo?: string;   // u dokladu o vrácení: kód původní účtenky, ke které se vrací
+  obsluha?: string;        // jméno obsluhy, která doklad vytvořila (odpovědnost za prodej/storno)
+  rozpisPlatby?: { hotovost: number; karta: number }; // dělená platba: kolik hotově a kolik kartou
 }
 
 // Formátuje 8místný kód pro zobrazení: "26000042" → "26-000042".
@@ -103,12 +106,35 @@ export interface UcetniSouhrn {
   topProdukty: { nazev: string; mnozstvi: number; trzba: number }[]; // nejprodávanější
 }
 
+// Pohyb hotovosti v zásuvce (mimo prodej/vrácení, ty se počítají z účtenek).
+// pocatecni = ranní vklad do zásuvky; vklad/vyber = ruční příjem/odvod hotovosti.
+export type TypPohybu = "pocatecni" | "vklad" | "vyber";
+export interface PohybHotovosti {
+  id: string;
+  datum: string;       // ISO datetime
+  typ: TypPohybu;
+  castka: number;      // vždy kladná; význam určuje typ
+  poznamka?: string;
+}
+
+// Výsledek uzávěrky zásuvky pro daný den — očekávaný vs. napočítaný stav.
+export interface StavZasuvky {
+  pocatecni: number;   // ranní vklad
+  trzbaHotovost: number; // hotovostní tržby dne (z účtenek)
+  vraceniHotovost: number; // hotovostní vrácení dne (záporné doklady)
+  vklady: number;      // ruční vklady
+  vybery: number;      // ruční výběry
+  ocekavano: number;   // co MÁ být v zásuvce
+}
+
 interface KasaStore {
   menu: MenuPolozka[];
   prodejky: Prodejka[];
   // Provedené denní uzávěrky — den (YYYY-MM-DD) → kdy uzavřeno (ISO).
   // Slouží k notifikaci „včera byl prodej, ale uzávěrka se neudělala".
   uzaverky: Record<string, string>;
+  // Pohyby hotovosti v zásuvce (počáteční vklad, ruční vklad/výběr).
+  pohybyHotovosti: PohybHotovosti[];
 
   // Správa menu
   addMenuPolozka: (p: Omit<MenuPolozka, "id">) => void;
@@ -121,7 +147,7 @@ interface KasaStore {
 
   // Prodej — zapíše účtenku a AUTOMATICKY odečte ze skladu (provozStore).
   // Vrací id nové prodejky, nebo null když je košík prázdný.
-  prodat: (cart: CartItem[], platba?: ZpusobPlatby) => string | null;
+  prodat: (cart: CartItem[], platba?: ZpusobPlatby, rozpisPlatby?: { hotovost: number; karta: number }) => string | null;
   stornoProdejka: (id: string) => void; // smaže účtenku a vrátí zboží na sklad
   // Částečné vrácení: vrátí VYBRANÉ řádky z účtenky (množství po kusech).
   // Vytvoří samostatný doklad o vrácení (záporné částky), zboží vrátí na sklad,
@@ -138,6 +164,12 @@ interface KasaStore {
   uzavritDen: (isoDate: string) => void;          // označí den za uzavřený
   jeDenUzavren: (isoDate: string) => boolean;     // byl den už uzavřen?
   prumernaTrzba: (dniZpet: number) => number;     // průměrná denní tržba za N dní (jen dny s prodejem)
+
+  // Hotovost v zásuvce
+  pridejPohybHotovosti: (typ: TypPohybu, castka: number, poznamka?: string) => void;
+  smazPohybHotovosti: (id: string) => void;
+  // Očekávaný stav zásuvky pro daný den (počáteční + hotovost tržby − vrácení + vklady − výběry).
+  getStavZasuvky: (isoDate: string) => StavZasuvky;
 }
 
 // Dnešní datum jako YYYY-MM-DD (lokální).
@@ -217,6 +249,7 @@ export const useKasaStore = create<KasaStore>()(
       menu: [],
       prodejky: [],
       uzaverky: {},
+      pohybyHotovosti: [],
 
       addMenuPolozka: (p) =>
         set((s) => ({
@@ -249,7 +282,7 @@ export const useKasaStore = create<KasaStore>()(
       removeMenuPolozka: (id) =>
         set((s) => ({ menu: s.menu.filter((m) => m.id !== id) })),
 
-      prodat: (cart, platba = "hotovost") => {
+      prodat: (cart, platba = "hotovost", rozpisPlatby) => {
         const items = cart.filter((c) => c.mnozstvi > 0);
         if (items.length === 0) return null;
         const menu = get().menu;
@@ -296,9 +329,10 @@ export const useKasaStore = create<KasaStore>()(
         const prodanoPorci: Record<string, number> = {};
         radky.forEach((r) => { if (r.menuId) prodanoPorci[r.menuId] = (prodanoPorci[r.menuId] ?? 0) + r.mnozstvi; });
         const cislo = generujCisloUctenky(get().prodejky);
+        const obsluha = useStaffStore.getState().aktivniJmeno() || undefined;
         set((s) => ({
           prodejky: [
-            { id, cislo, datum: new Date().toISOString(), radky, celkem, platba },
+            { id, cislo, datum: new Date().toISOString(), radky, celkem, platba, obsluha, ...(rozpisPlatby ? { rozpisPlatby } : {}) },
             ...s.prodejky,
           ],
           // Navýš denní počítadlo prodaných porcí (reset, když je nový den).
@@ -352,9 +386,10 @@ export const useKasaStore = create<KasaStore>()(
         const dnes = dnesLocal();
         const vratPorci: Record<string, number> = {};
         radky.forEach((r) => { if (r.menuId) vratPorci[r.menuId] = (vratPorci[r.menuId] ?? 0) + r.mnozstvi; });
+        const obsluha = useStaffStore.getState().aktivniJmeno() || undefined;
         set((s) => ({
           prodejky: [
-            { id, cislo, datum: new Date().toISOString(), radky, celkem, platba: orig.platba, vraceno: true, puvodniCislo: orig.cislo },
+            { id, cislo, datum: new Date().toISOString(), radky, celkem, platba: orig.platba, vraceno: true, puvodniCislo: orig.cislo, obsluha },
             ...s.prodejky,
           ],
           menu: s.menu.map((m) => {
@@ -389,7 +424,15 @@ export const useKasaStore = create<KasaStore>()(
 
         vObdobi.forEach((p) => {
           trzba += p.celkem;
-          if (p.platba === "karta") karta += p.celkem; else hotovost += p.celkem;
+          // Dělená platba: rozpočítej přesně. Jinak celá částka podle způsobu.
+          if (p.rozpisPlatby) {
+            hotovost += p.rozpisPlatby.hotovost;
+            karta += p.rozpisPlatby.karta;
+          } else if (p.platba === "karta") {
+            karta += p.celkem;
+          } else {
+            hotovost += p.celkem;
+          }
           p.radky.forEach((r) => {
             const brutto = r.cena * r.mnozstvi;
             const sazba = r.dphSazba ?? 21;
@@ -447,6 +490,42 @@ export const useKasaStore = create<KasaStore>()(
           }
         }
         return pocet > 0 ? soucet / pocet : 0;
+      },
+
+      // ---- Hotovost v zásuvce ----
+      pridejPohybHotovosti: (typ, castka, poznamka) =>
+        set((s) => ({
+          pohybyHotovosti: [
+            { id: crypto.randomUUID(), datum: new Date().toISOString(), typ, castka: Math.abs(castka), poznamka },
+            ...s.pohybyHotovosti,
+          ],
+        })),
+
+      smazPohybHotovosti: (id) =>
+        set((s) => ({ pohybyHotovosti: s.pohybyHotovosti.filter((p) => p.id !== id) })),
+
+      getStavZasuvky: (isoDate) => {
+        const pohyby = get().pohybyHotovosti.filter((p) => p.datum.slice(0, 10) === isoDate);
+        // Poslední (nejnovější) počáteční vklad dne bereme jako výchozí stav.
+        const pocatecni = pohyby.filter((p) => p.typ === "pocatecni").reduce((a, p) => a + p.castka, 0);
+        const vklady = pohyby.filter((p) => p.typ === "vklad").reduce((a, p) => a + p.castka, 0);
+        const vybery = pohyby.filter((p) => p.typ === "vyber").reduce((a, p) => a + p.castka, 0);
+        // Hotovostní tržby a vrácení dne z účtenek (vrácenky mají záporný celkem).
+        let trzbaHotovost = 0, vraceniHotovost = 0;
+        for (const pr of get().prodejky) {
+          if (pr.datum.slice(0, 10) !== isoDate) continue;
+          // Dělená platba: do zásuvky jde jen hotovostní část.
+          if (pr.rozpisPlatby) {
+            if (pr.rozpisPlatby.hotovost > 0) trzbaHotovost += pr.rozpisPlatby.hotovost;
+            else if (pr.rozpisPlatby.hotovost < 0) vraceniHotovost += -pr.rozpisPlatby.hotovost;
+            continue;
+          }
+          if (pr.platba && pr.platba !== "hotovost") continue; // jen hotovost (default = hotovost)
+          if (pr.celkem >= 0) trzbaHotovost += pr.celkem;
+          else vraceniHotovost += -pr.celkem;
+        }
+        const ocekavano = pocatecni + trzbaHotovost - vraceniHotovost + vklady - vybery;
+        return { pocatecni, trzbaHotovost, vraceniHotovost, vklady, vybery, ocekavano };
       },
     }),
     {

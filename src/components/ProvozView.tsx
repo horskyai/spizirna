@@ -960,6 +960,7 @@ function UctenkaDetail({ prodejka, onClose }: { prodejka: Prodejka; onClose: () 
               <p style={{ fontSize: 12, color: "var(--text-secondary)" }}>
                 {new Date(prodejka.datum).toLocaleString(dateLocale, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                 {jeVracenka && prodejka.puvodniCislo && ` · ${t("uctenky.kUctence")} #${formatCisloUctenky(prodejka.puvodniCislo)}`}
+                {prodejka.obsluha && ` · ${t("kasa.obsluha.stitek")}: ${prodejka.obsluha}`}
               </p>
             </div>
             <button onClick={onClose} className="w-8 h-8 rounded-full flex items-center justify-center" style={{ background: "var(--border)" }}>

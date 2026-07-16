@@ -20,6 +20,23 @@ export const ucetnictvi: Record<string, Translation> = {
   "ucto.uctenek": { cs: "Účtenek", sk: "Účteniek" },
   "ucto.uzavritDen": { cs: "Uzavřít den", sk: "Uzavrieť deň" },
   "ucto.denUzavren": { cs: "Den uzavřen ✓", sk: "Deň uzavretý ✓" },
+
+  // Pokladní zásuvka (hotovost)
+  "ucto.zasuvka.titul": { cs: "Pokladní zásuvka", sk: "Pokladničná zásuvka" },
+  "ucto.zasuvka.ocekavano": { cs: "Má být:", sk: "Má byť:" },
+  "ucto.zasuvka.pocatecni": { cs: "Počáteční vklad", sk: "Počiatočný vklad" },
+  "ucto.zasuvka.pocatecniBtn": { cs: "Ranní vklad", sk: "Ranný vklad" },
+  "ucto.zasuvka.trzbaHot": { cs: "Tržby hotově", sk: "Tržby hotovo" },
+  "ucto.zasuvka.vraceni": { cs: "Vrácení hotově", sk: "Vrátené hotovo" },
+  "ucto.zasuvka.vklad": { cs: "Vklad", sk: "Vklad" },
+  "ucto.zasuvka.vyber": { cs: "Výběr", sk: "Výber" },
+  "ucto.zasuvka.vklady": { cs: "Vklady", sk: "Vklady" },
+  "ucto.zasuvka.vybery": { cs: "Výběry", sk: "Výbery" },
+  "ucto.zasuvka.napocitano": { cs: "Napočítáno v zásuvce", sk: "Napočítané v zásuvke" },
+  "ucto.zasuvka.sedi": { cs: "Sedí ✓", sk: "Sedí ✓" },
+  "ucto.zasuvka.prebytek": { cs: "Přebytek", sk: "Prebytok" },
+  "ucto.zasuvka.manko": { cs: "Manko", sk: "Manko" },
+
   "ucto.hotovost": { cs: "Hotovost", sk: "Hotovosť" },
   "ucto.karta": { cs: "Kartou", sk: "Kartou" },
   "ucto.zadneProdeje": { cs: "V tomto období žádný prodej", sk: "V tomto období žiadny predaj" },
