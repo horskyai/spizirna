@@ -322,7 +322,7 @@ function buildProvozSmartPlan(): SmartNotif[] {
 }
 
 export default function Home() {
-  const { activeTab, activeSheet, scannedProduct, closeSheet, settingsOpen, openSettings, closeSettings } = useUIStore();
+  const { activeTab, activeSheet, scannedProduct, closeSheet, settingsOpen, openSettings, closeSettings, setTab } = useUIStore();
   const calorieTracking = useFeaturesStore((s) => s.calorieTracking);
   // Deník jídla je dostupný jen se zapnutým sledováním kalorií; jinak fallback na spižírnu.
   const showFoodLog = activeTab === "jidlo" && calorieTracking;
@@ -347,6 +347,14 @@ export default function Home() {
       setMode(profile.mode);
     }
   }, [profile?.mode, mode, setMode]);
+
+  // V provozu je hlavní obrazovka KASA, ne domácí "Spižírna". Výchozí activeTab
+  // z uiStore je "spizirna" (dobré pro domácnost) — v provozu ho překlopíme na
+  // "provoz" (kasa). Do skladu/účta se pak jde přes postranní menu. Provoz nemá
+  // "spizirna" tab v menu, takže se tam uživatel schválně nedostane.
+  useEffect(() => {
+    if (mode === "provoz" && activeTab === "spizirna") setTab("provoz");
+  }, [mode, activeTab, setTab]);
 
   // Zaznamenej první vstup přihlášeného uživatele — od něj běží 7 dní do kola.
   useEffect(() => {
