@@ -17,7 +17,9 @@ import { RecurringView } from "@/components/RecurringView";
 import { ProvozView } from "@/components/ProvozView";
 import { ProductSheet } from "@/components/ProductSheet";
 import { ModeSelect } from "@/components/ModeSelect";
-import { LanguageSelect } from "@/components/LanguageSelect";
+// LanguageSelect je dočasně vypnutý (appka je zatím jen česky) — až se SK
+// vrátí, vrať i tento import a použití v render bloku.
+// import { LanguageSelect } from "@/components/LanguageSelect";
 import { AuthScreen } from "@/components/AuthScreen";
 import { DeviceLimitScreen } from "@/components/DeviceLimitScreen";
 import { BusinessTypeSelect } from "@/components/BusinessTypeSelect";
@@ -29,7 +31,7 @@ import { scheduleDailyNudges, scheduleSmartNotifications, SmartNotif } from "@/l
 import { useRecipeStore } from "@/store/recipeStore";
 import { bestRecipeFromStock, bestRecipeUsingExpiring, StockItem } from "@/lib/recipeMatch";
 import { daysUntil } from "@/lib/dateUtils";
-import { getCurrentLocale } from "@/store/localeStore";
+import { getCurrentLocale, useLocaleStore } from "@/store/localeStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { isNotifEnabled } from "@/store/notifPrefsStore";
 import { usePantryStore } from "@/store/pantryStore";
@@ -450,12 +452,17 @@ export default function Home() {
     }
   }, []);
 
-  // Výběr jazyka — úplně první obrazovka po instalaci, ještě před onboardingem
-  const [localeSelected, setLocaleSelected] = useState(() => {
-    if (typeof window === "undefined") return true;
-    const savedLocale = localStorage.getItem("app-locale");
-    return !!(savedLocale && JSON.parse(savedLocale)?.state?.locale);
-  });
+  // Výběr jazyka — DOČASNĚ VYPNUTO (appka je zatím jen česky). Bereme ho vždy
+  // jako „hotový", takže se obrazovka výběru jazyka nikdy nezobrazí.
+  const [localeSelected] = useState(true);
+
+  // Zamkni jazyk na češtinu — dokud běží jen CZ verze. Přepíše i případný
+  // dřív uložený "sk". Až se SK vrátí, tento efekt odeber.
+  useEffect(() => {
+    if (useLocaleStore.getState().locale !== "cs") {
+      useLocaleStore.getState().setLocale("cs");
+    }
+  }, []);
 
   // Zobraz ModeSelect (onboarding + výběr plánu) jen pokud plán ještě nebyl vybrán
   const [modeSelected, setModeSelected] = useState(() => {
@@ -476,14 +483,11 @@ export default function Home() {
     );
   }
 
-  // 1) Výběr jazyka (čeština / slovenština) — jen v appce
-  if (JE_APP && !localeSelected) {
-    return (
-      <ErrorBoundary>
-        <LanguageSelect onDone={() => setLocaleSelected(true)} />
-      </ErrorBoundary>
-    );
-  }
+  // 1) Výběr jazyka — DOČASNĚ VYPNUTO. Aplikace je zatím jen v češtině, takže
+  // obrazovku výběru jazyka nezobrazujeme. Locale se natvrdo drží na "cs"
+  // (viz efekt níže). Až se SK znovu spustí, vrať původní blok:
+  //   if (JE_APP && !localeSelected) { return <LanguageSelect .../> }
+  // a odeber ten efekt.
 
   // 2) Výběr režimu — první spuštění (jen jednou), jen v appce
   if (JE_APP && (!modeSelected || mode === null)) {
