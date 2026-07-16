@@ -524,10 +524,10 @@ a { text-decoration: none; color: inherit; }
     max-height: 86dvh !important;
   }
 
-  /* ===== SEZNAMY na PC do 2 sloupců (Spížírna, Recepty) — využít šířku ===== */
-  .pantry-grid, .recipes-grid {
+  /* ===== SEZNAMY na PC do 2 sloupců (Spížírna, Recepty, Kuchyně/Bar) ===== */
+  .pantry-grid, .recipes-grid, .priprava-grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
     gap: 10px;
     align-items: start;
   }

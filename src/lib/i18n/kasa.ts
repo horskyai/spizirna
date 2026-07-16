@@ -136,6 +136,11 @@ export const kasa: Record<string, Translation> = {
   // Rychlé bankovky u platby hotově
   "kasa.presne": { cs: "Přesně", sk: "Presne" },
 
+  // Objednávka na přípravu — bar / kuchyně (restaurace)
+  "kasa.ticket.odeslat": { cs: "Odeslat na přípravu", sk: "Odoslať na prípravu" },
+  "kasa.ticket.odeslanoBtn": { cs: "Odesláno na bar / kuchyni ✓", sk: "Odoslané na bar / kuchyňu ✓" },
+  "kasa.ticket.odeslano": { cs: "Objednávka odeslána: pití na bar, jídlo do kuchyně", sk: "Objednávka odoslaná: pitie na bar, jedlo do kuchyne" },
+
   // Dělení účtu (restaurace)
   "kasa.rozdelit.titul": { cs: "Rozdělit účet", sk: "Rozdeliť účet" },
   "kasa.rozdelit.naOsoby": { cs: "Rozpočítat na osoby", sk: "Rozpočítať na osoby" },

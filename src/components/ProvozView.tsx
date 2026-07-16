@@ -5,7 +5,7 @@ import {
   ClipboardList, Plus, X, ChevronRight,
   AlertTriangle, Check, Truck, Package, BarChart3, Trash2, ScanLine, Keyboard,
   FileText, Download, FileSpreadsheet, Pencil, Share2, Mic, MicOff, Loader, Search,
-  Camera, Image as ImageIcon, TrendingDown, ChefHat, Receipt, RotateCcw, Printer, Mail
+  Camera, Image as ImageIcon, TrendingDown, ChefHat, Receipt, RotateCcw, Printer, Mail, Beer, Clock
 } from "lucide-react";
 import { parseSpokenText } from "@/components/VoiceInput";
 import {
@@ -28,6 +28,7 @@ import { RecipesView } from "@/components/RecipesView";
 import { useShoppingStore } from "@/store/shoppingStore";
 import { useGamificationStore } from "@/store/gamificationStore";
 import { useUIStore, type ProvozSubTab } from "@/store/uiStore";
+import { useTicketStore, type Pracoviste } from "@/store/ticketStore";
 import { useBusinessStore } from "@/store/businessStore";
 import { useJeZamestnanec } from "@/store/employeeStore";
 import { useT, useLocale } from "@/lib/i18n";
@@ -2029,8 +2030,77 @@ function CoDokoupit() {
   );
 }
 
+// ── Obrazovka přípravy (Kuchyně / Bar) ─────────────────────────────────────────
+// Sem padají objednávky odeslané z kasy tlačítkem „Odeslat na přípravu".
+// Kuchař/barman vidí, co má připravit, a odškrtne hotové.
+function PripravaView({ pracoviste }: { pracoviste: Pracoviste }) {
+  const t = useT();
+  const locale = useLocale();
+  const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
+  const tickets = useTicketStore((s) => s.tickets);
+  const oznacHotovo = useTicketStore((s) => s.oznacHotovo);
+  const aktivni = tickets
+    .filter((tk) => tk.pracoviste === pracoviste && !tk.hotovo)
+    .sort((a, b) => a.datum.localeCompare(b.datum));
+
+  return (
+    <div>
+      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14 }}>
+        {pracoviste === "kuchyne" ? <ChefHat size={20} style={{ color: "var(--green-primary)" }} /> : <Beer size={20} style={{ color: "var(--green-primary)" }} />}
+        <h2 style={{ fontSize: 18, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>
+          {pracoviste === "kuchyne" ? t("provoz.tab.kuchyne") : t("provoz.tab.bar")}
+        </h2>
+        {aktivni.length > 0 && (
+          <span style={{ marginLeft: "auto", fontSize: 13, fontWeight: 700, color: "white", background: "var(--green-primary)", borderRadius: 999, padding: "2px 10px" }}>
+            {aktivni.length}
+          </span>
+        )}
+      </div>
+
+      {aktivni.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-3">
+          <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
+            {pracoviste === "kuchyne" ? <ChefHat size={28} style={{ color: "var(--green-primary)" }} /> : <Beer size={28} style={{ color: "var(--green-primary)" }} />}
+          </div>
+          <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>{t("provoz.priprava.prazdno")}</p>
+        </div>
+      ) : (
+        <div className="priprava-grid" style={{ display: "grid", gap: 12 }}>
+          {aktivni.map((tk) => {
+            const cas = new Date(tk.datum).toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" });
+            const min = Math.floor((Date.now() - new Date(tk.datum).getTime()) / 60000);
+            const stary = min >= 10; // 10+ min čeká → zvýrazni
+            return (
+              <div key={tk.id} className="card" style={{ padding: 14, border: stary ? "1.5px solid #E65100" : "1px solid var(--border)" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
+                  <span style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>{tk.oznaceni}</span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 12, color: stary ? "#E65100" : "var(--text-tertiary)", fontWeight: stary ? 700 : 500 }}>
+                    <Clock size={12} /> {cas}{min > 0 ? ` · ${min} min` : ""}
+                  </span>
+                </div>
+                <ul style={{ margin: "0 0 12px", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
+                  {tk.polozky.map((p, i) => (
+                    <li key={i} style={{ display: "flex", gap: 8, fontSize: 15, color: "var(--text-primary)" }}>
+                      <span style={{ fontWeight: 800, color: "var(--green-dark)", minWidth: 28 }}>{p.mnozstvi}×</span>
+                      <span>{p.nazev}</span>
+                    </li>
+                  ))}
+                </ul>
+                <button onClick={() => oznacHotovo(tk.id)}
+                  style={{ width: "100%", padding: "10px", borderRadius: 12, fontSize: 14, fontWeight: 700, background: "var(--green-primary)", color: "white", border: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                  <Check size={16} /> {t("provoz.priprava.hotovo")}
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Hlavní view ───────────────────────────────────────────────────────────────
-type ProvozTab = "kasa" | "ucetnictvi" | "inventura" | "sklad" | "recepty" | "historie" | "odpisy" | "dodavatele" | "uctenky";
+type ProvozTab = "kasa" | "ucetnictvi" | "inventura" | "sklad" | "recepty" | "historie" | "odpisy" | "dodavatele" | "uctenky" | "kuchyne" | "bar";
 
 export function ProvozView() {
   const t = useT();
@@ -2083,7 +2153,12 @@ export function ProvozView() {
   // Sekce pod tlačítkem „Víc" (spodní lišta). Hlavní 4 (Kasa/Sklad/Inventura/
   // Účto) jsou přímo ve spodní liště, tady nejsou. Recepty jen restaurace.
   const VIC_TABS: { id: ProvozTab; labelKey: string; icon: React.ReactNode }[] = [
-    ...(jeObchod ? [] : [{ id: "recepty" as ProvozTab, labelKey: "provoz.tab.recepty", icon: <ChefHat size={15} /> }]),
+    // Kuchyně + Bar jen v restauraci — sem padají odeslané objednávky.
+    ...(jeObchod ? [] : [
+      { id: "kuchyne" as ProvozTab, labelKey: "provoz.tab.kuchyne", icon: <ChefHat size={15} /> },
+      { id: "bar" as ProvozTab, labelKey: "provoz.tab.bar", icon: <Beer size={15} /> },
+      { id: "recepty" as ProvozTab, labelKey: "provoz.tab.recepty", icon: <ChefHat size={15} /> },
+    ]),
     { id: "uctenky", labelKey: "provoz.tab.uctenky", icon: <Receipt size={15} /> },
     { id: "dodavatele", labelKey: "provoz.tab.dodavatele", icon: <Truck size={15} /> },
     { id: "odpisy", labelKey: "provoz.tab.odpisy", icon: <TrendingDown size={15} /> },
@@ -2214,6 +2289,8 @@ export function ProvozView() {
         {tab === "recepty" && <RecipesView />}
         {tab === "historie" && <HistorieInventur />}
         {tab === "uctenky" && <UctenkyView />}
+        {tab === "kuchyne" && <PripravaView pracoviste="kuchyne" />}
+        {tab === "bar" && <PripravaView pracoviste="bar" />}
         {tab === "odpisy" && <OdpisyView />}
         {tab === "dodavatele" && <DodavateleView />}
       </div>

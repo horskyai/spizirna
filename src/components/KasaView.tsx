@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import {
   Plus, X, Minus, Trash2, ShoppingCart, Check, Pencil,
   Settings2, Receipt, RotateCcw, Package, Soup, Ban, ScanLine, EyeOff, Eye, Calculator,
-  Banknote, CreditCard, UtensilsCrossed, GraduationCap, UserRound, SplitSquareHorizontal,
+  Banknote, CreditCard, UtensilsCrossed, GraduationCap, UserRound, SplitSquareHorizontal, ChefHat,
 } from "lucide-react";
 import {
   useKasaStore, MenuPolozka, MenuVazbaTyp, CartItem, ZpusobPlatby, formatCisloUctenky,
@@ -21,6 +21,7 @@ import { Capacitor } from "@capacitor/core";
 import { najdiTiskarny, najdiSitoveTiskarny, tiskUctenky, TiskarnaTyp } from "@/lib/tiskUctenky";
 import { skenZvuk } from "@/lib/skenZvuk";
 import { useStaffStore, useAktivniJmeno } from "@/store/staffStore";
+import { useTicketStore, hadejPracoviste } from "@/store/ticketStore";
 
 // Dnešní datum jako YYYY-MM-DD (lokální, ne UTC — ať tržba sedí na den obsluhy).
 function dnesISO(): string {
@@ -819,6 +820,8 @@ export function KasaView() {
   const [showObsluha, setShowObsluha] = useState(false); // modál přihlášení obsluhy na směnu
   const aktivniObsluha = useAktivniJmeno(); // jméno přihlášené obsluhy (odpovědnost)
   const [showRozdelit, setShowRozdelit] = useState(false); // modál dělení účtu (platba / na osoby)
+  const odeslatTickety = useTicketStore((s) => s.odeslat); // odeslání objednávky na bar/kuchyni
+  const [odeslano, setOdeslano] = useState(false); // aktuální košík už poslán na přípravu?
   const [nasobic, setNasobic] = useState(1); // množství, které se přidá k dalšímu kliknutému zboží
   const [prijato, setPrijato] = useState(""); // kolik zákazník dal hotově (volitelné → počítá vrácení)
   const [toast, setToast] = useState<string | null>(null);
@@ -1001,6 +1004,29 @@ export function KasaView() {
     setTimeout(() => setToast(null), 2500);
   };
 
+  // Restaurace: odeslat objednávku na přípravu (bar/kuchyně) BEZ platby.
+  // Roztřídí košík podle pracoviště menu položky (nebo hádá dle kategorie).
+  const odeslatNaPripravu = () => {
+    const radky: { nazev: string; mnozstvi: number; pracoviste: "kuchyne" | "bar" }[] = [];
+    Object.entries(cart).forEach(([key, mnozstvi]) => {
+      const [typ, id] = key.split(":");
+      if (typ === "menu") {
+        const m = menu.find((x) => x.id === id);
+        if (m) radky.push({ nazev: m.nazev, mnozstvi, pracoviste: m.pracoviste ?? hadejPracoviste(m.kategorie, m.nazev) });
+      } else {
+        // skladová dlaždice (nápoj ze skladu) → hádej podle názvu, typicky bar
+        const pol = polozky.find((x) => x.id === id);
+        if (pol) radky.push({ nazev: pol.nazev, mnozstvi, pracoviste: hadejPracoviste(pol.kategorie, pol.nazev) });
+      }
+    });
+    volne.forEach((v) => radky.push({ nazev: v.nazev, mnozstvi: v.mnozstvi, pracoviste: hadejPracoviste(undefined, v.nazev) }));
+    if (radky.length === 0) return;
+    odeslatTickety(radky);
+    setOdeslano(true);
+    setToast(t("kasa.ticket.odeslano"));
+    setTimeout(() => setToast(null), 2500);
+  };
+
   const zaplatit = (platba: ZpusobPlatby, rozpisPlatby?: { hotovost: number; karta: number }) => {
     const items: CartItem[] = Object.entries(cart).map(([key, mnozstvi]) => {
       const [typ, id] = key.split(":");
@@ -1018,6 +1044,7 @@ export function KasaView() {
       setNasobic(1);
       setPrijato("");
       setShowRozdelit(false);
+      setOdeslano(false);
       setToast(t("kasa.treninkProdej").replace("{n}", castka.toLocaleString(dateLocale)));
       setTimeout(() => setToast(null), 2500);
       return;
@@ -1030,6 +1057,7 @@ export function KasaView() {
       setNasobic(1);
       setPrijato("");
       setShowRozdelit(false);
+      setOdeslano(false);
       setToast(t("kasa.zaplaceno").replace("{n}", castka.toLocaleString(dateLocale)));
       setTimeout(() => setToast(null), 2500);
       // V appce nabídni tisk účtenky (BETA). Na webu tisk není.
@@ -1363,8 +1391,18 @@ export function KasaView() {
             );
           })()}
 
+          {/* Odeslat na přípravu (bar/kuchyně) — jen restaurace. Pošle objednávku
+              před platbou; jídlo jde do kuchyně, pití na bar. */}
+          {!jeObchod && (
+            <button onClick={odeslatNaPripravu} disabled={odeslano}
+              style={{ width: "100%", height: 46, borderRadius: 14, marginBottom: 8, fontSize: 14, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 8, border: "1.5px solid var(--green-primary)",
+                background: odeslano ? "var(--green-light)" : "white", color: "var(--green-dark)", opacity: odeslano ? 0.7 : 1 }}>
+              <ChefHat size={17} /> {odeslano ? t("kasa.ticket.odeslanoBtn") : t("kasa.ticket.odeslat")}
+            </button>
+          )}
+
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <button onClick={() => { setCart({}); setVolne([]); setNasobic(1); }} style={{ width: 46, height: 50, borderRadius: 14, background: "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+            <button onClick={() => { setCart({}); setVolne([]); setNasobic(1); setOdeslano(false); }} style={{ width: 46, height: 50, borderRadius: 14, background: "var(--border)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
               <Trash2 size={18} style={{ color: "var(--text-secondary)" }} />
             </button>
             {/* Rozdělit účet — jen restaurace (u obchodu se lidi nedělí o účet). */}

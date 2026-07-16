@@ -31,6 +31,10 @@ export const provoz: Record<string, Translation> = {
   "provoz.tab.recepty": { cs: "Recepty", sk: "Recepty" },
   "provoz.tab.historie": { cs: "Historie", sk: "História" },
   "provoz.tab.uctenky": { cs: "Účtenky", sk: "Účtenky" },
+  "provoz.tab.kuchyne": { cs: "Kuchyně", sk: "Kuchyňa" },
+  "provoz.tab.bar": { cs: "Bar", sk: "Bar" },
+  "provoz.priprava.prazdno": { cs: "Žádné objednávky na přípravu", sk: "Žiadne objednávky na prípravu" },
+  "provoz.priprava.hotovo": { cs: "Hotovo — vydat", sk: "Hotovo — vydať" },
   "provoz.tab.odpisy": { cs: "Odpisy", sk: "Odpisy" },
   "provoz.tab.dodavatele": { cs: "Dodavatelé", sk: "Dodávatelia" },
 

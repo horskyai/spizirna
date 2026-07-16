@@ -39,6 +39,9 @@ export interface MenuPolozka {
   navarenoDatum?: string;  // YYYY-MM-DD dne, ke kterému navareno/prodano platí
   prodanoDnes?: number;    // kolik porcí se dnes prodalo (reset po dni)
   aktivni?: boolean;       // false = dočasně skryté z pultu (default true)
+  // Restaurace: kam objednávka jde na přípravu — jídlo do kuchyně, pití na bar.
+  // Prázdné = neurčeno (na ticket nepůjde). Default hádáme z kategorie.
+  pracoviste?: "kuchyne" | "bar";
 }
 
 // Prodejní řádek pochází z jednoho ze dvou zdrojů dlaždic:
