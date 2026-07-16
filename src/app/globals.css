@@ -524,16 +524,16 @@ a { text-decoration: none; color: inherit; }
     max-height: 86dvh !important;
   }
 
-  /* ===== SPÍŽÍRNA na PC: seznam potravin do 2 sloupců (využít šířku) ===== */
-  .pantry-grid {
+  /* ===== SEZNAMY na PC do 2 sloupců (Spížírna, Recepty) — využít šířku ===== */
+  .pantry-grid, .recipes-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
     align-items: start;
   }
-  /* Karty mají mb-2 (spodní margin) pro svislý seznam na mobilu — v gridu ho
-     nahrazuje gap, tak ho na PC zrušíme, ať nejsou dvojité mezery. */
-  .pantry-grid > .card { margin-bottom: 0 !important; }
+  /* Karty mají mb-2/mb-3 (spodní margin) pro svislý seznam na mobilu — v gridu
+     ho nahrazuje gap, tak ho na PC zrušíme, ať nejsou dvojité mezery. */
+  .pantry-grid > .card, .recipes-grid > .card { margin-bottom: 0 !important; }
 
   /* ===== KASA na PC: dva sloupce — produkty vlevo | košík vpravo ===== */
   .kasa-root {

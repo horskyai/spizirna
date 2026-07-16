@@ -892,10 +892,13 @@ export function RecipesView() {
           </div>
         )}
 
-        {/* Recipe cards — zobrazí se v aktuálním jazyce (lokalizace až tady) */}
-        {filtered.map((recipe) => (
-          <RecipeCard key={recipe.id} recipe={localizeRecipe(recipe, locale)} onDelete={() => deleteRecipe(recipe.id)} />
-        ))}
+        {/* Recipe cards — zobrazí se v aktuálním jazyce (lokalizace až tady).
+            Na PC 2 sloupce (recipes-grid), na mobilu 1 (beze změny). */}
+        <div className="recipes-grid">
+          {filtered.map((recipe) => (
+            <RecipeCard key={recipe.id} recipe={localizeRecipe(recipe, locale)} onDelete={() => deleteRecipe(recipe.id)} />
+          ))}
+        </div>
 
         {recipes.length > 0 && filtered.length === 0 && (
           <div className="text-center py-12">
