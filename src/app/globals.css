@@ -528,6 +528,10 @@ a { text-decoration: none; color: inherit; }
   .settings-sheet > .settings-card,
   .provoz-modal > .provoz-modal-card { max-width: 640px !important; }
 
+  /* Domácí obsah, který nemá vlastní zúžení (Opakování) — vycentrovat na PC,
+     ať se řádky netáhnou přes celý monitor. */
+  .dom-obsah { max-width: 860px; margin-left: auto; margin-right: auto; }
+
   /* ===== SEZNAMY na PC do 2 sloupců (Spížírna, Recepty, Kuchyně/Bar) ===== */
   .pantry-grid, .recipes-grid, .priprava-grid {
     display: grid;

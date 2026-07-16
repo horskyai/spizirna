@@ -389,7 +389,7 @@ export function RecurringView() {
 
   return (
     <div className="relative flex-1 overflow-y-auto">
-      <div className="px-5 pt-2 pb-24 space-y-4">
+      <div className="px-5 pt-2 pb-24 space-y-4 dom-obsah">
 
         {items.length > 0 && (
           <div style={{ padding: "8px 4px 4px" }}>
