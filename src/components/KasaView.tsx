@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, lazy, Suspense } from "react";
 import {
   Plus, X, Minus, Trash2, ShoppingCart, Check, Pencil,
   Settings2, Receipt, RotateCcw, Package, Soup, Ban, ScanLine, EyeOff, Eye, Calculator,
-  Banknote, CreditCard, UtensilsCrossed, GraduationCap, UserRound, SplitSquareHorizontal, ChefHat,
+  Banknote, CreditCard, UtensilsCrossed, GraduationCap, UserRound, SplitSquareHorizontal, ChefHat, ChevronRight,
 } from "lucide-react";
 import {
   useKasaStore, MenuPolozka, MenuVazbaTyp, CartItem, ZpusobPlatby, formatCisloUctenky,
@@ -22,6 +22,9 @@ import { najdiTiskarny, najdiSitoveTiskarny, tiskUctenky, TiskarnaTyp } from "@/
 import { skenZvuk } from "@/lib/skenZvuk";
 import { useStaffStore, useAktivniJmeno } from "@/store/staffStore";
 import { useTicketStore, hadejPracoviste } from "@/store/ticketStore";
+// UctenkaDetail žije v ProvozView; načteme ho lazy, ať se předejde cyklickému
+// importu (ProvozView importuje KasaView). Otevře se až po kliku na účtenku.
+const UctenkaDetailLazy = lazy(() => import("@/components/ProvozView").then((m) => ({ default: m.UctenkaDetail })));
 
 // Dnešní datum jako YYYY-MM-DD (lokální, ne UTC — ať tržba sedí na den obsluhy).
 function dnesISO(): string {
@@ -855,6 +858,7 @@ export function KasaView() {
   const nazevFirmy = useBusinessStore((s) => s.name);
   const jeNativni = Capacitor.isNativePlatform();
   const [tiskProdejkaId, setTiskProdejkaId] = useState<string | null>(null);
+  const [detailProdejkaId, setDetailProdejkaId] = useState<string | null>(null); // otevřená účtenka v detailu
   const [tiskStav, setTiskStav] = useState<"idle" | "hledam" | "tisknu">("idle");
   const [tiskarny, setTiskarny] = useState<{ name: string; address: string }[]>([]);
   // Typ tiskárny: bluetooth / wifi / pdf (uloží se pro příště).
@@ -1291,21 +1295,22 @@ export function KasaView() {
             ) : (
               <div className="card overflow-hidden">
                 {prodejeDnes.map((p, idx) => (
-                  <div key={p.id} style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderBottom: idx < prodejeDnes.length - 1 ? "1px solid var(--border)" : "none" }}>
+                  <div key={p.id} role="button" tabIndex={0}
+                    onClick={() => setDetailProdejkaId(p.id)}
+                    onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setDetailProdejkaId(p.id); } }}
+                    style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 16px", borderBottom: idx < prodejeDnes.length - 1 ? "1px solid var(--border)" : "none", cursor: "pointer" }}>
                     <Receipt size={16} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>
                         {new Date(p.datum).toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" })} · {p.celkem.toLocaleString(dateLocale)} Kč
                         {p.cislo && <span style={{ fontSize: 11, fontWeight: 700, color: "var(--text-tertiary)", marginLeft: 6, fontVariantNumeric: "tabular-nums" }}>#{formatCisloUctenky(p.cislo)}</span>}
+                        {p.obsluha && <span style={{ fontSize: 11, color: "var(--text-tertiary)", marginLeft: 6 }}>· {p.obsluha}</span>}
                       </p>
                       <p style={{ fontSize: 11, color: "var(--text-secondary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {p.radky.map((r) => `${r.mnozstvi}× ${r.nazev}`).join(", ")}
                       </p>
                     </div>
-                    <button onClick={() => { if (confirm(t("kasa.stornoQ"))) stornoProdejka(p.id); }}
-                      style={{ display: "flex", alignItems: "center", gap: 4, padding: "5px 9px", borderRadius: 9, fontSize: 11, fontWeight: 600, color: "#C0392B", background: "#FDE8E8", flexShrink: 0 }}>
-                      <RotateCcw size={12} /> {t("kasa.storno")}
-                    </button>
+                    <ChevronRight size={16} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
                   </div>
                 ))}
               </div>
@@ -1467,6 +1472,18 @@ export function KasaView() {
 
       {/* Přihlášení obsluhy na směnu + správa zaměstnanců */}
       {showObsluha && <ObsluhaModal onClose={() => setShowObsluha(false)} zamestnanec={zamestnanec} t={t} />}
+
+      {/* Detail účtenky (klik na řádek v Dnešních prodejích) — položky, obsluha,
+          tisk, e-mail, vrácení. Stejný jako v historii (Provoz → Víc → Účtenky). */}
+      {detailProdejkaId && (() => {
+        const pr = prodejky.find((x) => x.id === detailProdejkaId);
+        if (!pr) return null;
+        return (
+          <Suspense fallback={null}>
+            <UctenkaDetailLazy prodejka={pr} onClose={() => setDetailProdejkaId(null)} />
+          </Suspense>
+        );
+      })()}
 
       {/* Dělení účtu — platba hotovost+karta nebo rozpočet na N osob */}
       {showRozdelit && cartPocet > 0 && (

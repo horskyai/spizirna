@@ -899,7 +899,7 @@ function UctenkyView() {
 }
 
 // Detail účtenky: tisk (rolička/A4) + částečné vrácení.
-function UctenkaDetail({ prodejka, onClose }: { prodejka: Prodejka; onClose: () => void }) {
+export function UctenkaDetail({ prodejka, onClose }: { prodejka: Prodejka; onClose: () => void }) {
   const t = useT();
   const locale = useLocale();
   const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
