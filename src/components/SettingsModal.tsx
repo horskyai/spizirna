@@ -121,10 +121,10 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const email = profile?.email || user?.email || "";
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+    <div className="settings-sheet" style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} />
       <div
-        className="relative animate-slide-up"
+        className="relative animate-slide-up settings-card"
         style={{
           background: "var(--bg-primary)",
           borderRadius: "24px 24px 0 0",

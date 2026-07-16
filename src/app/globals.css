@@ -509,6 +509,21 @@ a { text-decoration: none; color: inherit; }
     display: none;
   }
 
+  /* ===== NASTAVENÍ na PC: vycentrovaný panel, ne přes celou šířku =====
+     SettingsModal má vlastní backdrop (ne .sheet-overlay), proto ho řešíme
+     zvlášť přes vlastní třídy settings-sheet / settings-card. */
+  .settings-sheet {
+    justify-content: center !important;
+    align-items: center;
+    padding: 32px 20px;
+  }
+  .settings-sheet .settings-card {
+    max-width: 640px;
+    width: 100%;
+    border-radius: 24px !important;
+    max-height: 86dvh !important;
+  }
+
   /* ===== KASA na PC: dva sloupce — produkty vlevo | košík vpravo ===== */
   .kasa-root {
     display: grid;
