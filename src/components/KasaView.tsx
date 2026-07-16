@@ -101,9 +101,9 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
   const vazby = jeObchod ? vsechnyVazby.filter((v) => v.id === "sklad" || v.id === "zadna") : vsechnyVazby;
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+    <div className="provoz-modal" style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
-      <div className="relative rounded-t-3xl px-5 pt-5 pb-8 space-y-4 animate-slide-up"
+      <div className="relative rounded-t-3xl px-5 pt-5 pb-8 space-y-4 animate-slide-up provoz-modal-card"
         style={{ background: "var(--bg-primary)", paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))", maxHeight: "92dvh", overflowY: "auto" }}>
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
@@ -200,6 +200,12 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
 
         {/* Detail vazby: sklad */}
         {vazbaTyp === "sklad" && (
+          polozky.length === 0 ? (
+            <div className="animate-fade-in" style={{ padding: "12px 14px", borderRadius: 12, background: "#FFF3D6", border: "1.5px solid #F0C24B" }}>
+              <p style={{ fontSize: 13, color: "#7a4f00", fontWeight: 700, margin: 0 }}>{t("kasa.skladPrazdnyVazba")}</p>
+              <p style={{ fontSize: 12, color: "#9a6a1a", margin: "3px 0 0", lineHeight: 1.4 }}>{t("kasa.skladPrazdnyVazbaHint")}</p>
+            </div>
+          ) : (
           <div className="flex gap-3 animate-fade-in">
             <div style={{ flex: 2, minWidth: 0 }}>
               <label className="text-xs font-medium mb-1 block" style={{ color: "var(--text-tertiary)" }}>{t("kasa.vyberSklad")}</label>
@@ -207,7 +213,7 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
                 className="w-full px-3 py-2.5 rounded-2xl text-sm outline-none"
                 style={{ border: "1.5px solid var(--border)", background: "white", color: polozkaId ? "var(--text-primary)" : "var(--text-tertiary)" }}>
                 <option value="">{t("kasa.vyberSkladPrazdno")}</option>
-                {polozky.map((p) => <option key={p.id} value={p.id}>{p.nazev} ({p.jednotka})</option>)}
+                {polozky.map((p) => <option key={p.id} value={p.id}>{p.nazev} ({p.jednotka}) · skladem {p.aktualniStav}</option>)}
               </select>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
@@ -217,6 +223,7 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
                 style={{ border: "1.5px solid var(--border)", background: "white", color: "var(--text-primary)" }} />
             </div>
           </div>
+          )
         )}
 
         {/* Detail vazby: recept */}

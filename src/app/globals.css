@@ -491,38 +491,33 @@ a { text-decoration: none; color: inherit; }
   .provoz-inner.provoz-tab-sklad,
   .provoz-inner.provoz-tab-inventura { max-width: 920px !important; }
 
-  /* Spodní listy (bottom-sheet) na PC → vycentrovaný dialog uprostřed obrazovky,
-     ne přilepený přes celou šířku dole. Cílíme na fixed wrapper, který obsahuje
-     .sheet-overlay (tak poznáme sheet), a jeho vnitřní kartu (.rounded-t-3xl). */
-  div:has(> .sheet-overlay) {
+  /* ===== VŠECHNY MODÁLY / BOTTOM-SHEETY na PC → vycentrovaný dialog =====
+     Na mobilu jsou to spodní listy přes celou šířku (fixed inset-0 +
+     justify-content: flex-end). Na PC je NECHCEME roztažené — vycentrujeme je
+     doprostřed a omezíme šířku. Cílíme UNIVERZÁLNĚ na inline styl, který mají
+     všechny (React renderuje `justify-content: flex-end`), ať nemusíme sahat
+     do každé z ~35 komponent zvlášť. */
+  div[style*="position: fixed"][style*="justify-content: flex-end"] {
     justify-content: center !important;
-    align-items: center;
+    align-items: center !important;
+    padding: 28px 20px;
   }
-  div:has(> .sheet-overlay) > .rounded-t-3xl {
+  /* Karta uvnitř = přímý potomek, který NENÍ absolutní backdrop. Dáme jí
+     max-šířku, plné zaoblení a rozumnou výšku. (Backdrop má position:absolute,
+     tak ho `:not([style*="position: absolute"])` vynechá.) */
+  div[style*="position: fixed"][style*="justify-content: flex-end"] > div:not([style*="position: absolute"]) {
+    max-width: 560px !important;
+    width: 100% !important;
     border-radius: 24px !important;
-    max-width: 520px;
-    width: 100%;
     max-height: 88dvh !important;
   }
   /* Táhlo (drag handle) nahoře nedává na PC dialogu smysl — schováme ho. */
-  div:has(> .sheet-overlay) > .rounded-t-3xl > .flex.justify-center:first-child {
+  div[style*="position: fixed"][style*="justify-content: flex-end"] > div > .flex.justify-center:first-child {
     display: none;
   }
-
-  /* ===== NASTAVENÍ na PC: vycentrovaný panel, ne přes celou šířku =====
-     SettingsModal má vlastní backdrop (ne .sheet-overlay), proto ho řešíme
-     zvlášť přes vlastní třídy settings-sheet / settings-card. */
-  .settings-sheet {
-    justify-content: center !important;
-    align-items: center;
-    padding: 32px 20px;
-  }
-  .settings-sheet .settings-card {
-    max-width: 640px;
-    width: 100%;
-    border-radius: 24px !important;
-    max-height: 86dvh !important;
-  }
+  /* Výjimky s vlastní (širší) šířkou — obsah potřebuje víc místa. */
+  .settings-sheet > .settings-card,
+  .provoz-modal > .provoz-modal-card { max-width: 640px !important; }
 
   /* ===== SEZNAMY na PC do 2 sloupců (Spížírna, Recepty, Kuchyně/Bar) ===== */
   .pantry-grid, .recipes-grid, .priprava-grid {

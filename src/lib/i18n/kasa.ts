@@ -82,6 +82,8 @@ export const kasa: Record<string, Translation> = {
 
   "kasa.vyberSklad": { cs: "Skladová položka", sk: "Skladová položka" },
   "kasa.vyberSkladPrazdno": { cs: "— vyber ze skladu —", sk: "— vyber zo skladu —" },
+  "kasa.skladPrazdnyVazba": { cs: "Sklad je zatím prázdný", sk: "Sklad je zatiaľ prázdny" },
+  "kasa.skladPrazdnyVazbaHint": { cs: "Nejdřív přidej zboží/surovinu v sekci Zboží (obchod) nebo Suroviny (restaurace) v levém menu. Pak ji tady napojíš.", sk: "Najprv pridaj tovar/surovinu v sekcii Tovar (obchod) alebo Suroviny (reštaurácia) v ľavom menu. Potom ju tu napojíš." },
   "kasa.odbet": { cs: "Kolik odečíst za 1 prodej", sk: "Koľko odčítať za 1 predaj" },
   "kasa.vyberRecept": { cs: "Recept", sk: "Recept" },
   "kasa.vyberReceptPrazdno": { cs: "— vyber recept —", sk: "— vyber recept —" },

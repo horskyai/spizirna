@@ -404,9 +404,9 @@ function AddPolozkaModal({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+    <div className="provoz-modal" style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
-      <div className="relative rounded-t-3xl px-5 pt-5 pb-8 space-y-4 animate-slide-up"
+      <div className="relative rounded-t-3xl px-5 pt-5 pb-8 space-y-4 animate-slide-up provoz-modal-card"
         style={{ background: "var(--bg-primary)", paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))", maxHeight: "90dvh", overflowY: "auto" }}>
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("provoz.novaPolozka")}</h3>
@@ -1441,9 +1441,9 @@ function EditPolozkaModal({ polozka, onClose }: { polozka: InventuraPolozka; onC
   };
 
   return (
-    <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+    <div className="provoz-modal" style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
       <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.4)" }} />
-      <div className="relative rounded-t-3xl px-5 pt-5 pb-8 space-y-4 animate-slide-up"
+      <div className="relative rounded-t-3xl px-5 pt-5 pb-8 space-y-4 animate-slide-up provoz-modal-card"
         style={{ background: "var(--bg-primary)", paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))", maxHeight: "90dvh", overflowY: "auto" }}>
         <div className="flex items-center justify-between">
           <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>{t("provoz.upravitPolozku")}</h3>
