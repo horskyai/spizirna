@@ -53,6 +53,10 @@ interface AuthStore {
   deleteAccount: () => Promise<string | null>;
   isTrialActive: () => boolean;
   isPaidPlan: () => boolean;
+  // DEV: přepnutí režimu účtu (domacnost/provoz) rovnou v appce — zapíše do DB
+  // i lokálně, ať se po reloadu nevrátí zpět. Jen pro vývojáře (viz DEV sekce
+  // v Nastavení, skrytá za dev e-mailem).
+  devSetMode: (mode: "domacnost" | "provoz") => Promise<void>;
 }
 
 // Trvalé ID tohoto zařízení — uložené v localStorage, přežije odhlášení.
@@ -211,6 +215,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       window.location.replace("/");
     }
     return null;
+  },
+
+  // DEV: přepni režim účtu rovnou v appce. Zapíše profiles.mode do DB (ať to
+  // po reloadu page.tsx nevrátí zpět) + aktualizuje lokální profile, pak přepne
+  // modeStore (což reloadne — každý režim má vlastní persist klíče stores).
+  devSetMode: async (mode) => {
+    const { user, profile } = get();
+    if (!user) return;
+    await supabase.from("profiles").update({ mode }).eq("id", user.id);
+    set({ profile: profile ? { ...profile, mode } : profile });
+    const { useModeStore } = await import("@/store/modeStore");
+    useModeStore.getState().setMode(mode); // reloadne stránku
   },
 
   // Trial zrušen — funkce zůstává kvůli kompatibilitě, ale bez data vrací false.

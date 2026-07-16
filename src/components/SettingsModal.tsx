@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus, Download, BarChart3, Lock, Users, Copy, Check, Sparkles } from "lucide-react";
+import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus, Download, BarChart3, Lock, Users, Copy, Check, Sparkles, Wrench } from "lucide-react";
 import { useNotifPrefsStore, NOTIF_META, NotifType } from "@/store/notifPrefsStore";
 import { exportHouseholdJSON, exportPantryCSV } from "@/lib/exportData";
 import { StatsModal } from "@/components/StatsModal";
@@ -63,6 +63,14 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const deleteAccount = useAuthStore((s) => s.deleteAccount);
+  const devSetMode = useAuthStore((s) => s.devSetMode);
+  // DEV nástroje jen pro vývojářský účet (skryté běžným uživatelům).
+  const DEV_EMAILY = ["horsky.jiri@post.cz", "jiri.horsky@dius.ai"];
+  const jeDev = DEV_EMAILY.includes((profile?.email || user?.email || "").toLowerCase());
+  const devPrepni = async (cilMode: "domacnost" | "provoz", typ?: "obchod" | "restaurace") => {
+    if (typ) setTypProvozu(typ); // nastav typ provozu PŘED přepnutím (přežije reload)
+    await devSetMode(cilMode);   // zapíše DB + lokálně, pak reloadne
+  };
 
   const handleDeleteAccount = async () => {
     setDeleting(true);
@@ -591,6 +599,35 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             <LinkRow icon={<Shield size={16} />} label={t("settings.privacy")} href="/soukromi" />
             <LinkRow icon={<FileText size={16} />} label={t("settings.terms")} href="/podminky" last />
           </Section>
+
+          {/* ── DEV: přepínač režimu (jen vývojářský účet) ── */}
+          {jeDev && (
+            <Section icon={<Wrench size={15} />} title="DEV — přepnout režim">
+              <p style={{ fontSize: 12, color: "var(--text-tertiary)", margin: "0 2px 10px", lineHeight: 1.4 }}>
+                Rychlé přepnutí účtu mezi režimy pro testování. Appka se po kliknutí znovu načte.
+              </p>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: 8 }}>
+                {([
+                  { lbl: "🏠 Domácnost", m: "domacnost" as const, typ: undefined, active: mode === "domacnost" },
+                  { lbl: "🛒 Obchod s potravinami", m: "provoz" as const, typ: "obchod" as const, active: mode === "provoz" && typProvozu === "obchod" },
+                  { lbl: "🍽️ Restaurace / jídelna", m: "provoz" as const, typ: "restaurace" as const, active: mode === "provoz" && typProvozu === "restaurace" },
+                ]).map((o) => (
+                  <button key={o.lbl} onClick={() => devPrepni(o.m, o.typ)} disabled={o.active}
+                    style={{
+                      display: "flex", alignItems: "center", justifyContent: "space-between",
+                      padding: "12px 14px", borderRadius: 12, fontSize: 14, fontWeight: 700, textAlign: "left",
+                      background: o.active ? "var(--green-light)" : "white",
+                      border: `1.5px solid ${o.active ? "var(--green-primary)" : "var(--border)"}`,
+                      color: o.active ? "var(--green-dark)" : "var(--text-primary)",
+                      cursor: o.active ? "default" : "pointer", opacity: o.active ? 0.9 : 1,
+                    }}>
+                    <span>{o.lbl}</span>
+                    {o.active && <span style={{ fontSize: 12, fontWeight: 700 }}>aktivní ✓</span>}
+                  </button>
+                ))}
+              </div>
+            </Section>
+          )}
 
           {/* ── O aplikaci ── */}
           <Section icon={<Info size={15} />} title={t("settings.about")}>
