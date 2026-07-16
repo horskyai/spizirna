@@ -504,15 +504,17 @@ export function PantryView() {
           );
         })()}
 
-        {/* Items */}
+        {/* Items — na PC 2 sloupce (pantry-grid), na mobilu 1 (beze změny) */}
         {filtered.length === 0 ? (
           <div className="text-center py-12">
             <p className="text-sm" style={{ color: "var(--text-tertiary)" }}>{t("pantry.list.empty")}</p>
           </div>
         ) : (
-          filtered.map((item) => (
-            <PantryItemCard key={item.id} item={item} onRemove={() => handleRemove(item)} />
-          ))
+          <div className="pantry-grid">
+            {filtered.map((item) => (
+              <PantryItemCard key={item.id} item={item} onRemove={() => handleRemove(item)} />
+            ))}
+          </div>
         )}
 
       </div>
