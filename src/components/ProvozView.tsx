@@ -914,6 +914,30 @@ function UctenkaDetail({ prodejka, onClose }: { prodejka: Prodejka; onClose: () 
 
   const jeVracenka = !!prodejka.vraceno;
 
+  // Poslat účtenku e-mailem přes mailto: — otevře mailovou appku obsluhy s
+  // předvyplněným textem (bez serveru). Plné odesílání s PDF přílohou = Play fáze.
+  const poslatEmail = () => {
+    const radkyText = prodejka.radky
+      .map((r) => `${r.mnozstvi}× ${r.nazev} … ${(r.cena * r.mnozstvi).toLocaleString(dateLocale)} Kč`)
+      .join("\n");
+    const predmet = `${nazevFirmy || "Účtenka"} — #${formatCisloUctenky(prodejka.cislo)}`;
+    const telo = [
+      nazevFirmy || "",
+      firma.ico ? `IČO: ${firma.ico}` : "",
+      firma.dic ? `DIČ: ${firma.dic}` : "",
+      "",
+      `Účtenka #${formatCisloUctenky(prodejka.cislo)}`,
+      new Date(prodejka.datum).toLocaleString(dateLocale),
+      "─────────────",
+      radkyText,
+      "─────────────",
+      `Celkem: ${prodejka.celkem.toLocaleString(dateLocale)} Kč`,
+      firma.patickaUctenky ? `\n${firma.patickaUctenky}` : "",
+    ].filter(Boolean).join("\n");
+    const url = `mailto:?subject=${encodeURIComponent(predmet)}&body=${encodeURIComponent(telo)}`;
+    if (typeof window !== "undefined") window.location.href = url;
+  };
+
   const tisk = async (typ: TiskarnaTyp) => {
     await tiskUctenky(
       {
@@ -1038,6 +1062,9 @@ function UctenkaDetail({ prodejka, onClose }: { prodejka: Prodejka; onClose: () 
                   </button>
                 )}
               </div>
+              <button onClick={poslatEmail} className="btn-secondary">
+                <Mail size={16} /> {t("uctenky.poslatEmail")}
+              </button>
               {!jeVracenka && (
                 <button onClick={() => setRezimVraceni(true)} className="btn-secondary" style={{ color: "#C0392B", borderColor: "#F0B4B4" }}>
                   <RotateCcw size={16} /> {t("uctenky.vratitZbozi")}

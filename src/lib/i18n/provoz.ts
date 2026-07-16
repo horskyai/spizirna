@@ -47,6 +47,7 @@ export const provoz: Record<string, Translation> = {
   "uctenky.kUctence": { cs: "k účtence", sk: "k účtenke" },
   "uctenky.tiskA4": { cs: "Tisk A4 / PDF", sk: "Tlač A4 / PDF" },
   "uctenky.tiskRolicka": { cs: "Roličková", sk: "Rolková" },
+  "uctenky.poslatEmail": { cs: "Poslat e-mailem", sk: "Poslať e-mailom" },
   "uctenky.vratitZbozi": { cs: "Vrátit zboží / peníze", sk: "Vrátiť tovar / peniaze" },
   "uctenky.kVraceni": { cs: "K vrácení", sk: "Na vrátenie" },
   "uctenky.zrusit": { cs: "Zrušit", sk: "Zrušiť" },
