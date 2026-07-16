@@ -920,18 +920,35 @@ export function UctenkaDetail({ prodejka, onClose }: { prodejka: Prodejka; onClo
     const radkyText = prodejka.radky
       .map((r) => `${r.mnozstvi}× ${r.nazev} … ${(r.cena * r.mnozstvi).toLocaleString(dateLocale)} Kč`)
       .join("\n");
+    // Rozpad DPH do e-mailu — jen plátce. Ceny jsou vč. DPH → dopočítáme daň.
+    let dphText = "";
+    if (firma.platceDph) {
+      const map = new Map<number, { zaklad: number; dan: number }>();
+      prodejka.radky.forEach((r) => {
+        const sazba = r.dphSazba ?? 21;
+        const brutto = r.cena * r.mnozstvi;
+        const zaklad = brutto / (1 + sazba / 100);
+        const cur = map.get(sazba) ?? { zaklad: 0, dan: 0 };
+        cur.zaklad += zaklad; cur.dan += brutto - zaklad;
+        map.set(sazba, cur);
+      });
+      const radky = [...map.entries()].sort((a, b) => b[0] - a[0])
+        .map(([s, v]) => `DPH ${s}%: základ ${v.zaklad.toLocaleString(dateLocale, { maximumFractionDigits: 2 })} Kč, daň ${v.dan.toLocaleString(dateLocale, { maximumFractionDigits: 2 })} Kč`);
+      dphText = ["", "Rozpad DPH:", ...radky].join("\n");
+    }
     const predmet = `${nazevFirmy || "Účtenka"} — #${formatCisloUctenky(prodejka.cislo)}`;
     const telo = [
       nazevFirmy || "",
       firma.ico ? `IČO: ${firma.ico}` : "",
       firma.dic ? `DIČ: ${firma.dic}` : "",
       "",
-      `Účtenka #${formatCisloUctenky(prodejka.cislo)}`,
+      firma.platceDph ? `Zjednodušený daňový doklad #${formatCisloUctenky(prodejka.cislo)}` : `Účtenka #${formatCisloUctenky(prodejka.cislo)}`,
       new Date(prodejka.datum).toLocaleString(dateLocale),
       "─────────────",
       radkyText,
       "─────────────",
       `Celkem: ${prodejka.celkem.toLocaleString(dateLocale)} Kč`,
+      dphText,
       firma.patickaUctenky ? `\n${firma.patickaUctenky}` : "",
     ].filter(Boolean).join("\n");
     const url = `mailto:?subject=${encodeURIComponent(predmet)}&body=${encodeURIComponent(telo)}`;
@@ -943,12 +960,13 @@ export function UctenkaDetail({ prodejka, onClose }: { prodejka: Prodejka; onClo
       {
         nazevFirmy: nazevFirmy || "",
         firma: { ico: firma.ico, dic: firma.dic, adresa: firma.adresa, telefon: firma.telefon, patickaUctenky: firma.patickaUctenky },
-        radky: prodejka.radky.map((r) => ({ nazev: r.nazev, mnozstvi: r.mnozstvi, cena: r.cena })),
+        radky: prodejka.radky.map((r) => ({ nazev: r.nazev, mnozstvi: r.mnozstvi, cena: r.cena, dphSazba: r.dphSazba })),
         celkem: prodejka.celkem,
         platba: prodejka.platba,
         datum: prodejka.datum,
         cislo: formatCisloUctenky(prodejka.cislo),
         vraceno: prodejka.vraceno,
+        platceDph: firma.platceDph,
       },
       typ,
     );

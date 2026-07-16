@@ -50,6 +50,8 @@ export const settings: Record<string, Translation> = {
   "settings.firmaEmail": { cs: "E-mail", sk: "E-mail" },
   "settings.firmaPaticka": { cs: "Text dole na účtence", sk: "Text dole na účtenke" },
   "settings.firmaPatickaPh": { cs: "např. Děkujeme za návštěvu", sk: "napr. Ďakujeme za návštevu" },
+  "settings.firmaPlatceDph": { cs: "Jsme plátce DPH", sk: "Sme platca DPH" },
+  "settings.firmaPlatceDphPozn": { cs: "Zapni, pokud jsi plátce DPH — na doklad se pak tiskne sazba a rozpad DPH (zjednodušený daňový doklad). Neplátce nechá vypnuté.", sk: "Zapni, ak si platca DPH — na doklad sa potom tlačí sadzba a rozpis DPH (zjednodušený daňový doklad). Neplatca nechá vypnuté." },
   "settings.dokladFormat": { cs: "Formát dokladu pro zákazníka", sk: "Formát dokladu pre zákazníka" },
   "settings.dokladUctenka": { cs: "🧾 Účtenka", sk: "🧾 Účtenka" },
   "settings.dokladUctenkaDesc": { cs: "Úzká 58/80 mm (Bluetooth tiskárna)", sk: "Úzka 58/80 mm (Bluetooth tlačiareň)" },

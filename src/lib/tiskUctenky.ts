@@ -19,12 +19,34 @@ export interface UctenkaData {
     telefon?: string;
     patickaUctenky?: string;
   };
-  radky: { nazev: string; mnozstvi: number; cena: number }[];
+  // Řádky prodeje. dphSazba je % (21|12|0); cena je JEDNOTKOVÁ, VČETNĚ DPH.
+  radky: { nazev: string; mnozstvi: number; cena: number; dphSazba?: number }[];
   celkem: number;
   platba?: string;      // "hotovost" | "karta"
   datum: string;        // ISO
   cislo?: string;       // lidský kód účtenky pro tisk, např. "26-000042"
   vraceno?: boolean;    // doklad o vrácení (na účtence odlišíme nadpisem)
+  // Plátce DPH? true → na doklad patří rozpad DPH (zjednodušený daňový doklad).
+  // false/undefined → neplátce, DPH se NEuvádí (ze zákona nesmí).
+  platceDph?: boolean;
+}
+
+// Rozpad DPH podle sazeb. Ceny jsou VČETNĚ daně → základ = brutto/(1+s/100),
+// daň = brutto − základ. Vrací řádky seřazené od nejvyšší sazby.
+interface DphRozpadRadek { sazba: number; zaklad: number; dan: number; brutto: number; }
+function rozpadDph(radky: UctenkaData["radky"]): DphRozpadRadek[] {
+  const map = new Map<number, DphRozpadRadek>();
+  for (const r of radky) {
+    const sazba = r.dphSazba ?? 21;
+    const brutto = r.cena * r.mnozstvi;
+    const zaklad = brutto / (1 + sazba / 100);
+    const cur = map.get(sazba) ?? { sazba, zaklad: 0, dan: 0, brutto: 0 };
+    cur.zaklad += zaklad;
+    cur.dan += brutto - zaklad;
+    cur.brutto += brutto;
+    map.set(sazba, cur);
+  }
+  return [...map.values()].sort((a, b) => b.sazba - a.sazba);
 }
 
 export type TiskVysledek =
@@ -87,13 +109,29 @@ async function tiskBluetooth(data: UctenkaData, printerAddress: string): Promise
     if (data.vraceno) p = p.align("center").bold(true).text("*** VRACENI ***\n").bold(false).align("left");
     p = p.align("left").text(`${CARA}\n`);
     if (data.cislo) p = p.text(`Uctenka c. ${data.cislo}\n`);
-    p = p.text(`${datumStr}\n${CARA}\n`);
+    // DUZP = datum uskutečnění zdanitelného plnění (u hotovostního prodeje = datum vystavení).
+    p = p.text(`${datumStr}\n`);
+    if (data.platceDph) p = p.text(`DUZP: ${datumStr.split(" ")[0]}\n`);
+    p = p.text(`${CARA}\n`);
     for (const r of data.radky) {
       const soucet = r.cena * r.mnozstvi;
       p = p.text(`${bezDiakritiky(r.nazev)}\n`);
-      p = p.align("right").text(`${r.mnozstvi} x ${kc(r.cena)} = ${kc(soucet)}\n`).align("left");
+      // U plátce DPH ukážeme u řádku i sazbu (náležitost dokladu).
+      const sazbaTxt = data.platceDph ? ` (${r.dphSazba ?? 21}%)` : "";
+      p = p.align("right").text(`${r.mnozstvi} x ${kc(r.cena)} = ${kc(soucet)}${sazbaTxt}\n`).align("left");
     }
     p = p.text(`${CARA}\n`);
+    // Rozpad DPH — jen plátce. Sazba | základ | daň | vč. DPH.
+    if (data.platceDph) {
+      p = p.text("Rozpad DPH:\n");
+      let danCelkem = 0;
+      for (const d of rozpadDph(data.radky)) {
+        danCelkem += d.dan;
+        p = p.text(`${d.sazba}%: zaklad ${kc(d.zaklad)}, DPH ${kc(d.dan)}\n`);
+      }
+      p = p.bold(true).text(`DPH celkem: ${kc(danCelkem)}\n`).bold(false);
+      p = p.text(`${CARA}\n`);
+    }
     p = p.align("right").bold(true).text(`CELKEM: ${kc(data.celkem)}\n`).bold(false).align("left");
     if (data.platba) p = p.text(`Platba: ${data.platba === "karta" ? "Kartou" : "Hotove"}\n`);
     p = p.align("center").text(`\n${bezDiakritiky(data.firma.patickaUctenky || "Dekujeme za nakup!")}\n`);
@@ -130,12 +168,25 @@ function escposBajty(data: UctenkaData): number[] {
   if (data.vraceno) { align(1); bold(true); line("*** VRACENI ***"); bold(false); }
   align(0); line(CARA);
   if (data.cislo) line(`Uctenka c. ${data.cislo}`);
-  line(datumText(data.datum)); line(CARA);
+  line(datumText(data.datum));
+  if (data.platceDph) line(`DUZP: ${datumText(data.datum).split(" ")[0]}`);
+  line(CARA);
   for (const r of data.radky) {
     line(r.nazev);
-    align(2); line(`${r.mnozstvi} x ${kc(r.cena)} = ${kc(r.cena * r.mnozstvi)}`); align(0);
+    const sazbaTxt = data.platceDph ? ` (${r.dphSazba ?? 21}%)` : "";
+    align(2); line(`${r.mnozstvi} x ${kc(r.cena)} = ${kc(r.cena * r.mnozstvi)}${sazbaTxt}`); align(0);
   }
   line(CARA);
+  if (data.platceDph) {
+    line("Rozpad DPH:");
+    let danCelkem = 0;
+    for (const d of rozpadDph(data.radky)) {
+      danCelkem += d.dan;
+      line(`${d.sazba}%: zaklad ${kc(d.zaklad)}, DPH ${kc(d.dan)}`);
+    }
+    bold(true); line(`DPH celkem: ${kc(danCelkem)}`); bold(false);
+    line(CARA);
+  }
   align(2); bold(true); line(`CELKEM: ${kc(data.celkem)}`); bold(false); align(0);
   if (data.platba) line(`Platba: ${data.platba === "karta" ? "Kartou" : "Hotove"}`);
   align(1); line(); line(data.firma.patickaUctenky || "Dekujeme za nakup!");
@@ -213,27 +264,46 @@ async function tiskPdf(data: UctenkaData): Promise<TiskVysledek> {
   try {
     const radkyHtml = data.radky.map((r) => {
       const soucet = (r.cena * r.mnozstvi).toFixed(2);
-      return `<tr><td>${escapeHtml(r.nazev)}</td><td style="text-align:right">${r.mnozstvi}× ${r.cena.toFixed(2)} Kč</td><td style="text-align:right">${soucet} Kč</td></tr>`;
+      const sazbaCol = data.platceDph ? `<td style="text-align:right;color:#555">${r.dphSazba ?? 21}%</td>` : "";
+      return `<tr><td>${escapeHtml(r.nazev)}</td><td style="text-align:right">${r.mnozstvi}× ${r.cena.toFixed(2)} Kč</td>${sazbaCol}<td style="text-align:right">${soucet} Kč</td></tr>`;
     }).join("");
+    // Rozpad DPH (jen plátce) — samostatná tabulka nad celkovou částkou.
+    let dphHtml = "";
+    if (data.platceDph) {
+      const rozpad = rozpadDph(data.radky);
+      const danCelkem = rozpad.reduce((s, d) => s + d.dan, 0);
+      const rows = rozpad.map((d) =>
+        `<tr><td>DPH ${d.sazba}%</td><td style="text-align:right">základ ${d.zaklad.toFixed(2)} Kč</td><td style="text-align:right">daň ${d.dan.toFixed(2)} Kč</td></tr>`
+      ).join("");
+      dphHtml = `<table class="dph">${rows}
+        <tr><td colspan="2"><b>DPH celkem</b></td><td style="text-align:right"><b>${danCelkem.toFixed(2)} Kč</b></td></tr>
+      </table>`;
+    }
     const html = `<!doctype html><html><head><meta charset="utf-8"><style>
       body{font-family:system-ui,sans-serif;max-width:480px;margin:0 auto;padding:24px;color:#111}
       h1{font-size:20px;text-align:center;margin:0 0 4px}
       .meta{text-align:center;color:#555;font-size:12px;margin-bottom:12px}
       table{width:100%;border-collapse:collapse;font-size:14px}
       td{padding:4px 0;border-bottom:1px solid #eee}
+      .dph{margin-top:10px;font-size:13px;color:#333}
+      .dph td{border-bottom:none;padding:2px 0}
       .celkem{font-size:18px;font-weight:800;text-align:right;margin-top:12px}
       .paticka{text-align:center;color:#555;margin-top:20px;font-size:13px}
+      .doklad-typ{text-align:center;color:#777;font-size:12px;margin-bottom:10px}
     </style></head><body>
       <h1>${escapeHtml(data.nazevFirmy || "Účtenka")}</h1>
       ${data.vraceno ? `<div style="text-align:center;font-weight:800;color:#C0392B;margin-bottom:8px">DOKLAD O VRÁCENÍ</div>` : ""}
+      <div class="doklad-typ">${data.platceDph ? "Zjednodušený daňový doklad" : "Prodejní doklad"}</div>
       <div class="meta">
         ${data.firma.adresa ? escapeHtml(data.firma.adresa) + "<br>" : ""}
         ${data.firma.ico ? "IČO: " + escapeHtml(data.firma.ico) + " " : ""}
         ${data.firma.dic ? "DIČ: " + escapeHtml(data.firma.dic) : ""}<br>
         ${data.cislo ? `<b>Účtenka č. ${escapeHtml(data.cislo)}</b><br>` : ""}
         ${datumText(data.datum)}
+        ${data.platceDph ? `<br>DUZP: ${datumText(data.datum).split(" ")[0]}` : ""}
       </div>
       <table>${radkyHtml}</table>
+      ${dphHtml}
       <div class="celkem">Celkem: ${data.celkem.toFixed(2)} Kč</div>
       ${data.platba ? `<div style="text-align:right;color:#555">Platba: ${data.platba === "karta" ? "Kartou" : "Hotově"}</div>` : ""}
       <div class="paticka">${escapeHtml(data.firma.patickaUctenky || "Děkujeme za nákup!")}</div>

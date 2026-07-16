@@ -24,6 +24,13 @@ export interface FirmaUdaje {
   email?: string;
   logoUrl?: string;  // data URL loga (z galerie)
   patickaUctenky?: string; // volitelný text dole na účtence (např. „Děkujeme za návštěvu")
+  // Plátce DPH? Rozhoduje, co smí být na daňovém dokladu:
+  //   • true  → doklad je „zjednodušený daňový doklad": u položek se uvádí sazba
+  //             a v souhrnu rozpad DPH (základ + daň); účetnictví ukazuje DPH.
+  //   • false → NEplátce: na dokladu ani v účetnictví se DPH neuvádí vůbec
+  //             (ze zákona nesmí). Doklad je jen „prodejní účtenka".
+  // Default false (neplátce) — bezpečnější, malý provoz DPH obvykle neřeší.
+  platceDph?: boolean;
 }
 
 // Název provozovny — používá se v provozním režimu pro oslovení v hlavičce

@@ -37,19 +37,20 @@ const zbtn: React.CSSProperties = {
 };
 
 // ── Export CSV — jeden řádek na prodejní řádek účtenky ──────────────────────────
-function exportCSV(prodejky: Prodejka[], odISO: string, doISO: string) {
-  const head = ["Datum", "Čas", "Položka", "Množství", "Cena/ks", "Celkem", "DPH %", "Platba"];
+function exportCSV(prodejky: Prodejka[], odISO: string, doISO: string, platceDph: boolean) {
+  // Sloupec „DPH %" jen pro plátce (neplátce DPH neeviduje).
+  const head = platceDph
+    ? ["Datum", "Čas", "Položka", "Množství", "Cena/ks", "Celkem", "DPH %", "Platba"]
+    : ["Datum", "Čas", "Položka", "Množství", "Cena/ks", "Celkem", "Platba"];
   const rows = [head];
   prodejky.forEach((p) => {
     const d = new Date(p.datum);
     const datum = d.toLocaleDateString("cs-CZ");
     const cas = d.toLocaleTimeString("cs-CZ", { hour: "2-digit", minute: "2-digit" });
     p.radky.forEach((r) => {
-      rows.push([
-        datum, cas, r.nazev, String(r.mnozstvi),
-        String(r.cena), String(r.cena * r.mnozstvi),
-        String(r.dphSazba ?? 21), p.platba === "karta" ? "karta" : "hotovost",
-      ]);
+      const platba = p.platba === "karta" ? "karta" : "hotovost";
+      const base = [datum, cas, r.nazev, String(r.mnozstvi), String(r.cena), String(r.cena * r.mnozstvi)];
+      rows.push(platceDph ? [...base, String(r.dphSazba ?? 21), platba] : [...base, platba]);
     });
   });
   const csv = rows.map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";")).join("\n");
@@ -123,6 +124,7 @@ async function exportPDF(s: UcetniSouhrn, odISO: string, doISO: string, t: TFn, 
       </div>
     </div>
 
+    ${firma.platceDph ? `
     <p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#333">${t("ucto.dph")}</p>
     <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:6px">
       <thead><tr style="background:#2d2d2d;color:#fff">
@@ -134,6 +136,7 @@ async function exportPDF(s: UcetniSouhrn, odISO: string, doISO: string, t: TFn, 
       <tbody>${dphRows}</tbody>
     </table>
     <p style="margin:0 0 20px;font-size:12px;color:#333;text-align:right">${t("ucto.dphCelkem")}: <b>${fmt(s.dphCelkem, dateLocale)} Kč</b></p>
+    ` : ""}
 
     ${topRows ? `<p style="margin:0 0 8px;font-size:13px;font-weight:700;color:#333">${t("ucto.top")}</p>
     <table style="width:100%;border-collapse:collapse;font-size:12px">${topRows}</table>` : ""}
@@ -350,7 +353,8 @@ export function UcetnictviView() {
               podnadpis={`${t("ucto.nakup")}: ${fmt(s.nakup, dateLocale)} Kč`} />
           </div>
 
-          {/* DPH rozpad */}
+          {/* DPH rozpad — jen pro plátce DPH (neplátce DPH neeviduje) */}
+          {firma.platceDph && (
           <div className="card overflow-hidden" style={{ marginBottom: 16 }}>
             <div style={{ padding: "12px 16px", borderBottom: "1px solid var(--border)" }}>
               <p style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{t("ucto.dph")}</p>
@@ -382,6 +386,7 @@ export function UcetnictviView() {
               </table>
             </div>
           </div>
+          )}
 
           {/* Top produkty */}
           {s.topProdukty.length > 0 && (
@@ -408,7 +413,7 @@ export function UcetnictviView() {
               style={{ flex: "1 1 140px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 0", borderRadius: 14, fontSize: 14, fontWeight: 700, background: "var(--green-primary)", color: "white", border: "none" }}>
               <FileText size={16} /> {t("ucto.exportPdf")}
             </button>
-            <button onClick={() => exportCSV(prodejeVObdobi, odISO, doISO)}
+            <button onClick={() => exportCSV(prodejeVObdobi, odISO, doISO, !!firma.platceDph)}
               style={{ flex: "1 1 140px", display: "flex", alignItems: "center", justifyContent: "center", gap: 8, padding: "12px 0", borderRadius: 14, fontSize: 14, fontWeight: 700, background: "white", color: "var(--text-primary)", border: "1.5px solid var(--border)" }}>
               <FileSpreadsheet size={16} /> {t("ucto.exportCsv")}
             </button>

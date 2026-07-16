@@ -374,6 +374,19 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                   />
                 </div>
               ))}
+              {/* Plátce DPH? — rozhoduje, jestli je na dokladu rozpad DPH */}
+              <label style={{ display: "flex", alignItems: "flex-start", gap: 10, padding: "10px 0", cursor: "pointer" }}>
+                <input
+                  type="checkbox"
+                  checked={!!firma.platceDph}
+                  onChange={(e) => setFirma({ platceDph: e.target.checked })}
+                  style={{ width: 18, height: 18, marginTop: 1, accentColor: "var(--green-dark, #006d40)", flexShrink: 0 }}
+                />
+                <span>
+                  <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)", display: "block" }}>{t("settings.firmaPlatceDph")}</span>
+                  <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{t("settings.firmaPlatceDphPozn")}</span>
+                </span>
+              </label>
             </div>
           </Section>
           )}
