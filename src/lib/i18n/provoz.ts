@@ -97,6 +97,8 @@ export const provoz: Record<string, Translation> = {
   "provoz.minZasoba": { cs: "Min. zásoba", sk: "Min. zásoba" },
   "provoz.aktualniStav": { cs: "Stav skladu", sk: "Stav skladu" },
   "provoz.skladem": { cs: "Skladem", sk: "Skladom" },
+  "provoz.dojdeZa": { cs: "Dojde za ~{n} dní", sk: "Dôjde za ~{n} dní" },
+  "provoz.dojdeDnes": { cs: "Dojde dnes!", sk: "Dôjde dnes!" },
   "provoz.dodavatelZadny": { cs: "— žádný —", sk: "— žiadny —" },
   "provoz.cenaJedn": { cs: "Nákup/jedn. (Kč)", sk: "Nákup/jedn. (Kč)" },
   "provoz.prodejniCena": { cs: "Prodej/jedn. (Kč)", sk: "Predaj/jedn. (Kč)" },

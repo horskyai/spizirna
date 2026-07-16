@@ -77,9 +77,18 @@ export const useRecurringStore = create<RecurringStore>()(
         set((s) => ({
           items: s.items.map((i) => {
             if (i.id !== id) return i;
-            const now = new Date().toISOString();
-            const next = addDays(new Date(), i.interval_days);
-            return { ...i, last_purchased: now, next_reminder: next.toISOString() };
+            const nowDate = new Date();
+            const now = nowDate.toISOString();
+            // AUTO-INTERVAL: skutečný odstup od minulého nákupu ladí interval, ať
+            // se opakování samo přizpůsobí realitě (místo napořád fixního čísla).
+            // Klouzavý průměr 70 % starý / 30 % nový, ať jeden výkyv nerozhodí.
+            let interval = i.interval_days;
+            const skutecnyOdstup = Math.round((nowDate.getTime() - new Date(i.last_purchased).getTime()) / 86_400_000);
+            if (skutecnyOdstup >= 1 && skutecnyOdstup <= 120) {
+              interval = Math.max(1, Math.round(i.interval_days * 0.7 + skutecnyOdstup * 0.3));
+            }
+            const next = addDays(nowDate, interval);
+            return { ...i, interval_days: interval, last_purchased: now, next_reminder: next.toISOString() };
           }),
         }));
       },

@@ -165,6 +165,13 @@ interface KasaStore {
   jeDenUzavren: (isoDate: string) => boolean;     // byl den už uzavřen?
   prumernaTrzba: (dniZpet: number) => number;     // průměrná denní tržba za N dní (jen dny s prodejem)
 
+  // Prediktivní dokup (provoz): kolik kusů položky se prodá za den (průměr za
+  // posledních N dní, jen prodejní dny) a odhad za kolik dní zásoba dojde.
+  // Páruje řádky prodejek podle polozkaId (skladové zboží). Vrací null když
+  // není dost dat (< 2 prodejní dny) nebo se položka neprodává.
+  getRychlostOdbytu: (polozkaId: string, dniZpet?: number) => number | null; // ks/den
+  predikceDoprodeje: (polozkaId: string, aktualniStav: number, dniZpet?: number) => number | null; // dní do vyčerpání
+
   // Hotovost v zásuvce
   pridejPohybHotovosti: (typ: TypPohybu, castka: number, poznamka?: string) => void;
   smazPohybHotovosti: (id: string) => void;
@@ -490,6 +497,45 @@ export const useKasaStore = create<KasaStore>()(
           }
         }
         return pocet > 0 ? soucet / pocet : 0;
+      },
+
+      // ---- Prediktivní dokup (provoz) ----
+      getRychlostOdbytu: (polozkaId, dniZpet = 30) => {
+        const dnes = new Date();
+        const hranice = new Date(dnes);
+        hranice.setDate(dnes.getDate() - dniZpet);
+        const hraniceStr = hranice.toISOString().slice(0, 10);
+        const dnesStr = dnes.toISOString().slice(0, 10);
+        // Sečti prodané kusy této položky per den (prodej +, vrácení −).
+        const perDen = new Map<string, number>();
+        for (const p of get().prodejky) {
+          const den = p.datum.slice(0, 10);
+          if (den < hraniceStr || den > dnesStr) continue;
+          for (const r of p.radky) {
+            if (r.polozkaId !== polozkaId) continue;
+            // Prodej má kladné mnozstvi; doklad o vrácení má celkem<0 → odečti.
+            const ks = p.vraceno ? -r.mnozstvi : r.mnozstvi;
+            perDen.set(den, (perDen.get(den) ?? 0) + ks);
+          }
+        }
+        if (perDen.size < 2) return null; // málo dat na spolehlivý odhad
+        let soucet = 0;
+        for (const v of perDen.values()) soucet += v;
+        if (soucet <= 0) return null;
+        // Rychlost = celkem prodáno / počet DNÍ v okně (ne jen prodejní dny),
+        // ať víkendy/zavíračky sníží průměr realisticky. Okno = od prvního
+        // prodejního dne po dnešek (max dniZpet).
+        const dny = [...perDen.keys()].sort();
+        const prvni = new Date(dny[0]);
+        const rozpetiDni = Math.max(1, Math.round((dnes.getTime() - prvni.getTime()) / 86_400_000));
+        return soucet / rozpetiDni;
+      },
+
+      predikceDoprodeje: (polozkaId, aktualniStav, dniZpet = 30) => {
+        if (aktualniStav <= 0) return 0;
+        const rate = get().getRychlostOdbytu(polozkaId, dniZpet);
+        if (!rate || rate <= 0) return null;
+        return Math.floor(aktualniStav / rate);
       },
 
       // ---- Hotovost v zásuvce ----

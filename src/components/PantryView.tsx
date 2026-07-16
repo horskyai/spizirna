@@ -143,10 +143,14 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
   const { consumeItem } = usePantryStore();
   const { recordSaved, recordActivity } = useGamificationStore();
   const recordConsumption = useRecurringStore((s) => s.recordConsumption);
+  const predictDaysLeft = useRecurringStore((s) => s.predictDaysLeft);
   const setTab = useUIStore((s) => s.setTab);
   const loc = LOCATION_LABELS[item.location];
   // Brzy expirující (≤3 dny) — nabídneme "uvařit z toho, než to vyhodíš".
   const expiringSoon = item.expires_at != null && daysUntil(item.expires_at) <= 3;
+  // Burn-down: odhad, za kolik dní podle spotřeby dojde (jen když ≤7 dní).
+  const dniDoDojiti = predictDaysLeft(item.product.product_name, item.quantity);
+  const brzyDojde = dniDoDojiti != null && dniDoDojiti <= 7;
 
   const handleQuickConsume = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -208,6 +212,11 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
             {item.product.brand && `${item.product.brand} · `}
             {item.quantity} {item.unit} · {t(loc.labelKey)}
           </p>
+          {brzyDojde && (
+            <p className="text-xs font-semibold mt-0.5" style={{ color: dniDoDojiti! <= 2 ? "#C0392B" : dniDoDojiti! <= 4 ? "#E65100" : "#8a6d1f" }}>
+              📉 {dniDoDojiti! <= 0 ? t("pantry.dojdeDnes") : t("pantry.dojdeZa").replace("{n}", String(dniDoDojiti))}
+            </p>
+          )}
         </div>
 
         {/* Right */}
@@ -288,10 +297,15 @@ function PantryItemCard({ item, onRemove }: { item: PantryItem; onRemove: () => 
 
 export function PantryView() {
   const t = useT();
-  const { items, removeItem } = usePantryStore();
+  const { items, removeItem, consumeItem } = usePantryStore();
   const recordWasted = useGamificationStore((s) => s.recordWasted);
+  const predictDaysLeft = useRecurringStore((s) => s.predictDaysLeft);
+  const recordConsumption = useRecurringStore((s) => s.recordConsumption);
   const { setTab, pantryFilter, setPantryFilter } = useUIStore();
   const mode = useModeStore((s) => s.mode);
+  // Mikrootázka „ještě máš …?" — jedna položka, u které odhad spotřeby říká, že
+  // už měla dojít (dni ≤ 0), ale pořád je ve spíži. Odpověď dolaďuje evidenci.
+  const [mikroSkryto, setMikroSkryto] = useState<Set<string>>(new Set());
 
   // Vyhození položky ze spižírny. Prošlou/brzy expirující počítáme jako plýtvání
   // (symetrie k recordSaved). Mazání čerstvé položky je spíš úklid, neplýtvá se.
@@ -448,6 +462,47 @@ export function PantryView() {
             </button>
           </div>
         )}
+
+        {/* Mikrootázka „ještě máš …?" — jen na výchozím pohledu (bez filtru/hledání),
+            jedna položka, kterou odhad spotřeby označil za „už měla dojít". */}
+        {(() => {
+          if (pantryFilter || search.trim() || filter !== "vse") return null;
+          const kandidat = items.find((i) => {
+            if (i.quantity <= 0 || mikroSkryto.has(i.id)) return false;
+            const dni = predictDaysLeft(i.product.product_name, i.quantity);
+            return dni != null && dni <= 0;
+          });
+          if (!kandidat) return null;
+          const skryj = () => setMikroSkryto((s) => new Set(s).add(kandidat.id));
+          return (
+            <div className="card overflow-hidden mb-3" style={{ border: "1.5px solid var(--green-primary)", background: "var(--green-light)" }}>
+              <div className="p-3.5">
+                <p className="text-sm font-bold" style={{ color: "var(--green-dark)" }}>
+                  🤔 {t("pantry.mikro.otazka").replace("{n}", kandidat.product.product_name)}
+                </p>
+                <p className="text-xs mt-0.5 mb-2.5" style={{ color: "var(--green-dark)", opacity: 0.8 }}>
+                  {t("pantry.mikro.popis")}
+                </p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => { recordConsumption(kandidat.product.product_name, 0.001); skryj(); }}
+                    className="flex-1 py-2 rounded-xl text-sm font-semibold"
+                    style={{ background: "white", color: "var(--green-dark)", border: "1.5px solid var(--green-primary)" }}
+                  >
+                    {t("pantry.mikro.mam")}
+                  </button>
+                  <button
+                    onClick={() => { consumeItem(kandidat.id, kandidat.quantity); skryj(); }}
+                    className="flex-1 py-2 rounded-xl text-sm font-semibold"
+                    style={{ background: "var(--green-primary)", color: "white" }}
+                  >
+                    {t("pantry.mikro.doslo")}
+                  </button>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Items */}
         {filtered.length === 0 ? (

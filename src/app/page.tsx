@@ -264,6 +264,29 @@ function buildProvozSmartPlan(): SmartNotif[] {
     });
   }
 
+  // 1b) PREDIKTIVNÍ DOKUP (8:30) — zboží, které podle rychlosti odbytu dojde
+  // do ~3 dnů (a není už hlášené jako pod minimem). Z reálných prodejů.
+  if (isNotifEnabled("provozDokup")) {
+    const kritickeNazvy = new Set(lowStock);
+    const dojde: { nazev: string; dni: number }[] = [];
+    for (const p of provoz.polozky) {
+      if (p.aktualniStav <= 0 || kritickeNazvy.has(p.nazev)) continue;
+      const dni = kasa.predikceDoprodeje(p.id, p.aktualniStav);
+      if (dni != null && dni <= 3) dojde.push({ nazev: p.nazev, dni });
+    }
+    dojde.sort((a, b) => a.dni - b.dni);
+    if (dojde.length > 0) {
+      const seznam = dojde.slice(0, 3).map((d) => d.dni <= 0 ? `${d.nazev} (dnes!)` : `${d.nazev} (~${d.dni} d)`).join(", ");
+      out.push({
+        daysFromNow: 1, hour: 8, minute: 30,
+        title: locale === "sk" ? "Čoskoro dôjde 📉" : "Brzy dojde 📉",
+        body: locale === "sk"
+          ? `Podľa predaja čoskoro dôjde: ${seznam}. Zváž doobjednanie.`
+          : `Podle prodeje brzy dojde: ${seznam}. Zvaž doobjednání.`,
+      });
+    }
+  }
+
   // 2) VEČERNÍ SOUHRN (20:00) — tržba + porovnání s průměrem (slabší/silný den).
   if (isNotifEnabled("provozSouhrn") && uctenekDnes > 0) {
     const prumer = kasa.prumernaTrzba(14); // průměr za 14 dní (jen dny s prodejem)

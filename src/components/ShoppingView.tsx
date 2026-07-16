@@ -363,6 +363,7 @@ function shoppingItemToProduct(item: ShoppingItem): ProductInfo {
 function SmartSuggestionsWidget({ mode }: { mode: ShoppingMode }) {
   const t = useT();
   const recurringItems = useRecurringStore((s) => s.items);
+  const predictDaysLeft = useRecurringStore((s) => s.predictDaysLeft);
   const pantryItems = usePantryStore((s) => s.items);
   const { recipes } = useRecipeStore();
   const addItems = useShoppingStore((s) => s.addItems);
@@ -390,13 +391,19 @@ function SmartSuggestionsWidget({ mode }: { mode: ShoppingMode }) {
     });
 
     pantryItems.forEach((item) => {
-      if (item.quantity <= 1) {
+      // Navrhni když (a) zbývá málo kusů, NEBO (b) podle spotřeby brzy dojde.
+      const dniDoDojiti = predictDaysLeft(item.product.product_name, item.quantity);
+      const brzyDojde = dniDoDojiti != null && dniDoDojiti <= 3;
+      if (item.quantity <= 1 || brzyDojde) {
         const alreadySuggested = results.some(r => r.name.toLowerCase().includes(item.product.product_name.toLowerCase().slice(0, 5)));
         if (!alreadySuggested) {
+          const reason = brzyDojde
+            ? (dniDoDojiti! <= 0 ? t("shopping.suggest.willRunOutToday") : t("shopping.suggest.willRunOut").replace("{n}", String(dniDoDojiti)))
+            : t("shopping.suggest.remaining").replace("{q}", String(item.quantity)).replace("{u}", item.unit);
           results.push({
             id: `pantry-low-${item.id}`,
             name: item.product.product_name,
-            reason: t("shopping.suggest.remaining").replace("{q}", String(item.quantity)).replace("{u}", item.unit),
+            reason,
             quantity: 1,
             unit: item.unit === "ks" ? "ks" : item.unit,
             category: "ostatni",
@@ -438,7 +445,7 @@ function SmartSuggestionsWidget({ mode }: { mode: ShoppingMode }) {
     });
 
     return results.slice(0, 6);
-  }, [recurringItems, pantryItems, recipes]);
+  }, [recurringItems, pantryItems, recipes, predictDaysLeft, t]);
 
   if (suggestions.length === 0) return null;
 

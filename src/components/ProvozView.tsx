@@ -1683,6 +1683,7 @@ function SpravaSkladu() {
   const t = useT();
   const locale = useLocale();
   const { polozky, removePolozka, getPolozkyCritical, addPolozka, dodavatele } = useProvozStore();
+  const predikceDoprodeje = useKasaStore((s) => s.predikceDoprodeje);
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -1797,6 +1798,19 @@ function SpravaSkladu() {
                             <p className="text-xs font-semibold mt-0.5" style={{ color: s.color }}>
                               🗓 {s.label}
                             </p>
+                          );
+                        })()}
+                        {(() => {
+                          // Prediktivní dokup: odhad z rychlosti prodeje. Ukážeme
+                          // jen když dojde do ~7 dní (jinak nezajímavé).
+                          const dni = predikceDoprodeje(p.id, p.aktualniStav);
+                          if (dni == null || dni > 7) return null;
+                          const barva = dni <= 2 ? "#C0392B" : dni <= 4 ? "#E65100" : "#8a6d1f";
+                          const txt = dni <= 0
+                            ? t("provoz.dojdeDnes")
+                            : t("provoz.dojdeZa").replace("{n}", String(dni));
+                          return (
+                            <p className="text-xs font-semibold mt-0.5" style={{ color: barva }}>📉 {txt}</p>
                           );
                         })()}
                       </div>

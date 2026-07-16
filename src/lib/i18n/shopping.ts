@@ -39,6 +39,8 @@ export const shopping: Record<string, Translation> = {
   "shopping.suggest.outOfStock": { cs: "Zásoby došly", sk: "Zásoby sa minuli" },
   "shopping.suggest.soon": { cs: "Brzy dojde", sk: "Čoskoro sa minie" },
   "shopping.suggest.remaining": { cs: "Zbývá jen {q} {u}", sk: "Zostáva len {q} {u}" },
+  "shopping.suggest.willRunOut": { cs: "Dojde za ~{n} dní", sk: "Dôjde za ~{n} dní" },
+  "shopping.suggest.willRunOutToday": { cs: "Dnes dojde", sk: "Dnes dôjde" },
   "shopping.suggest.missingForRecipes": { cs: "Chybí k receptům", sk: "Chýba k receptom" },
   "shopping.suggest.added": { cs: "✓ Přidáno", sk: "✓ Pridané" },
   "shopping.suggest.addAll": { cs: "+ Přidat vše ({n} položek)", sk: "+ Pridať všetko ({n} položiek)" },

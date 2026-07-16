@@ -18,6 +18,7 @@ export type NotifType =
   | "plytvaniTyden"
   // Provoz
   | "provozRannePriprava"
+  | "provozDokup"
   | "provozSouhrn"
   | "provozUzaverka";
 
@@ -60,6 +61,7 @@ export const NOTIF_META: {
   ],
   provoz: [
     { key: "provozRannePriprava", cs: "Ranní příprava skladu", sk: "Ranná príprava skladu" },
+    { key: "provozDokup", cs: "Brzy dojde — dokup (dle prodeje)", sk: "Čoskoro dôjde — dokúp (podľa predaja)" },
     { key: "provozSouhrn", cs: "Večerní souhrn tržby", sk: "Večerné zhrnutie tržby" },
     { key: "provozUzaverka", cs: "Připomínka uzávěrky", sk: "Pripomienka uzávierky" },
   ],

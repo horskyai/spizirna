@@ -26,6 +26,12 @@ export const pantry: Record<string, Translation> = {
   "pantry.item.consumeOne": { cs: "Spotřebovat 1", sk: "Spotrebovať 1" },
   "pantry.item.price": { cs: "Cena", sk: "Cena" },
   "pantry.item.expires": { cs: "Expiruje", sk: "Spotrebovať do" },
+  "pantry.dojdeZa": { cs: "Dojde za ~{n} dní", sk: "Dôjde za ~{n} dní" },
+  "pantry.dojdeDnes": { cs: "Dnes dojde", sk: "Dnes dôjde" },
+  "pantry.mikro.otazka": { cs: "Ještě máš {n}?", sk: "Ešte máš {n}?" },
+  "pantry.mikro.popis": { cs: "Podle spotřeby už mělo dojít — sedí to?", sk: "Podľa spotreby už malo dôjsť — sedí to?" },
+  "pantry.mikro.mam": { cs: "Ještě mám", sk: "Ešte mám" },
+  "pantry.mikro.doslo": { cs: "Došlo", sk: "Došlo" },
   "pantry.item.cookBeforeExpiry": { cs: "Uvařit z toho, než to vyhodíš", sk: "Uvariť z toho, než to vyhodíš" },
 
   // Prázdný stav
