@@ -34,8 +34,10 @@ export const kasa: Record<string, Translation> = {
 
   // Správa menu
   "kasa.spravaMenu": { cs: "Upravit nabídku", sk: "Upraviť ponuku" },
+  "kasa.spravaMenu.obchod": { cs: "Upravit zboží", sk: "Upraviť tovar" },
   "kasa.zpetNaProdej": { cs: "Zpět na prodej", sk: "Späť na predaj" },
   "kasa.novaMenuPolozka": { cs: "Nová položka nabídky", sk: "Nová položka ponuky" },
+  "kasa.novaMenuPolozka.obchod": { cs: "Nové zboží", sk: "Nový tovar" },
   "kasa.upravitMenuPolozku": { cs: "Upravit položku", sk: "Upraviť položku" },
   "kasa.nazev": { cs: "Název", sk: "Názov" },
   "kasa.nazevPlaceholder": { cs: "např. Guláš, Pepsi 0,5 l", sk: "napr. Guláš, Pepsi 0,5 l" },
@@ -60,8 +62,10 @@ export const kasa: Record<string, Translation> = {
   "kasa.skup.sladke": { cs: "Sladkosti", sk: "Sladkosti" },
   "kasa.skup.drogerie": { cs: "Drogerie", sk: "Drogéria" },
   "kasa.pridat": { cs: "Přidat do nabídky", sk: "Pridať do ponuky" },
+  "kasa.pridat.obchod": { cs: "Přidat zboží", sk: "Pridať tovar" },
   "kasa.ulozit": { cs: "Uložit", sk: "Uložiť" },
   "kasa.smazat": { cs: "Smazat z nabídky", sk: "Zmazať z ponuky" },
+  "kasa.smazat.obchod": { cs: "Smazat zboží", sk: "Zmazať tovar" },
   "kasa.aktivni": { cs: "V nabídce", sk: "V ponuke" },
 
   // Vazba na sklad

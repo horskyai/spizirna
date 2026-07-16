@@ -115,7 +115,7 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
         style={{ background: "var(--bg-primary)", paddingBottom: "max(32px, env(safe-area-inset-bottom, 32px))", maxHeight: "92dvh", overflowY: "auto" }}>
         <div className="flex items-center justify-between mb-1">
           <h3 className="text-lg font-bold" style={{ color: "var(--text-primary)" }}>
-            {edit ? t("kasa.upravitMenuPolozku") : t("kasa.novaMenuPolozka")}
+            {edit ? t("kasa.upravitMenuPolozku") : t(jeObchod ? "kasa.novaMenuPolozka.obchod" : "kasa.novaMenuPolozka")}
           </h3>
           <button onClick={onClose}><X size={20} style={{ color: "var(--text-tertiary)" }} /></button>
         </div>
@@ -269,13 +269,13 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
         )}
 
         <button onClick={save} className="btn-primary" disabled={!nazev.trim() || isNaN(parseFloat(cena))}>
-          <Check size={16} /> {edit ? t("kasa.ulozit") : t("kasa.pridat")}
+          <Check size={16} /> {edit ? t("kasa.ulozit") : t(jeObchod ? "kasa.pridat.obchod" : "kasa.pridat")}
         </button>
 
         {edit && (
           <button onClick={() => { removeMenuPolozka(edit.id); onClose(); }}
             style={{ width: "100%", padding: "10px 0", borderRadius: 14, fontSize: 13, fontWeight: 700, color: "#C0392B", background: "#FDE8E8", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-            <Trash2 size={15} /> {t("kasa.smazat")}
+            <Trash2 size={15} /> {t(jeObchod ? "kasa.smazat.obchod" : "kasa.smazat")}
           </button>
         )}
       </div>
@@ -293,6 +293,7 @@ function SpravaMenu({ onClose }: { onClose: () => void }) {
   const getZbyvaPorci = useKasaStore((s) => s.getZbyvaPorci);
   const polozky = useProvozStore((s) => s.polozky);
   const updatePolozka = useProvozStore((s) => s.updatePolozka);
+  const jeObchod = useBusinessStore((s) => s.typProvozu) === "obchod";
   const [edit, setEdit] = useState<MenuPolozka | null>(null);
   const [showAdd, setShowAdd] = useState(false);
 
@@ -305,7 +306,7 @@ function SpravaMenu({ onClose }: { onClose: () => void }) {
       </div>
 
       <button className="btn-primary mb-4" onClick={() => setShowAdd(true)}>
-        <Plus size={16} /> {t("kasa.novaMenuPolozka")}
+        <Plus size={16} /> {t(jeObchod ? "kasa.novaMenuPolozka.obchod" : "kasa.novaMenuPolozka")}
       </button>
 
       {/* Nabídka (jídla/recepty/ruční) */}
@@ -1170,7 +1171,7 @@ export function KasaView() {
             ) : (
               <button onClick={() => setShowSprava(true)}
                 style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 12, fontSize: 12, fontWeight: 600, color: "white", background: "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)" }}>
-                <Settings2 size={14} /> {t("kasa.spravaMenu")}
+                <Settings2 size={14} /> {t(jeObchod ? "kasa.spravaMenu.obchod" : "kasa.spravaMenu")}
               </button>
             )}
             {/* Přepínač tréninkového režimu — jen majitel (ne zaměstnanec). */}
