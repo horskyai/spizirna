@@ -52,6 +52,13 @@ export const kasa: Record<string, Translation> = {
   "kasa.skup.dezerty": { cs: "Dezerty", sk: "Dezerty" },
   "kasa.skup.napoje": { cs: "Nápoje", sk: "Nápoje" },
   "kasa.skup.alkohol": { cs: "Alkohol", sk: "Alkohol" },
+  // Skupiny pro OBCHOD (potravinové kategorie, ne jídelníček)
+  "kasa.skup.pecivo": { cs: "Pečivo", sk: "Pečivo" },
+  "kasa.skup.mlecne": { cs: "Mléčné", sk: "Mliečne" },
+  "kasa.skup.ovoceZel": { cs: "Ovoce a zelenina", sk: "Ovocie a zelenina" },
+  "kasa.skup.maso": { cs: "Maso a uzeniny", sk: "Mäso a údeniny" },
+  "kasa.skup.sladke": { cs: "Sladkosti", sk: "Sladkosti" },
+  "kasa.skup.drogerie": { cs: "Drogerie", sk: "Drogéria" },
   "kasa.pridat": { cs: "Přidat do nabídky", sk: "Pridať do ponuky" },
   "kasa.ulozit": { cs: "Uložit", sk: "Uložiť" },
   "kasa.smazat": { cs: "Smazat z nabídky", sk: "Zmazať z ponuky" },

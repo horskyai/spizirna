@@ -50,10 +50,18 @@ function MenuModal({ edit, onClose }: { edit: MenuPolozka | null; onClose: () =>
   const [dphSazba, setDphSazba] = useState(edit?.dphSazba ?? 21);
   const [plu, setPlu] = useState(edit?.plu ?? "");
   // Přednastavené skupiny jídel (restaurace) — klik místo psaní.
-  const SKUPINY = [
-    t("kasa.skup.polevky"), t("kasa.skup.predkrmy"), t("kasa.skup.hlavni"),
-    t("kasa.skup.priloha"), t("kasa.skup.dezerty"), t("kasa.skup.napoje"), t("kasa.skup.alkohol"),
-  ];
+  // Skupiny dlaždic podle typu provozu: restaurace = jídelníček (Polévky,
+  // Hlavní jídla…), obchod = potravinové kategorie (Pečivo, Nápoje, Mléčné…).
+  const SKUPINY = jeObchod
+    ? [
+        t("kasa.skup.pecivo"), t("kasa.skup.napoje"), t("kasa.skup.mlecne"),
+        t("kasa.skup.ovoceZel"), t("kasa.skup.maso"), t("kasa.skup.sladke"),
+        t("kasa.skup.alkohol"), t("kasa.skup.drogerie"),
+      ]
+    : [
+        t("kasa.skup.polevky"), t("kasa.skup.predkrmy"), t("kasa.skup.hlavni"),
+        t("kasa.skup.priloha"), t("kasa.skup.dezerty"), t("kasa.skup.napoje"), t("kasa.skup.alkohol"),
+      ];
   // Vlastní režim = položka má skupinu, která není mezi přednastavenými.
   const [vlastniSkup, setVlastniSkup] = useState(!!edit?.kategorie && !SKUPINY.includes(edit.kategorie));
 
