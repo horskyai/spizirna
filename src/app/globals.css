@@ -484,12 +484,12 @@ a { text-decoration: none; color: inherit; }
     padding-right: max(24px, calc((100% - var(--pc-content-max, 860px)) / 2));
   }
 
-  /* Provozní obsah: kasa potřebuje širší plochu (dvousloupcový layout),
-     ostatní taby (sklad/inventura/účto) stačí užší a vycentrované. */
-  .provoz-inner { max-width: 1080px !important; }
-  .provoz-inner.provoz-tab-ucetnictvi,
-  .provoz-inner.provoz-tab-sklad,
-  .provoz-inner.provoz-tab-inventura { max-width: 920px !important; }
+  /* Provozní obsah: KASA potřebuje širší plochu (dvousloupcový layout produkty|
+     košík). VŠECHNY OSTATNÍ taby (účto, sklad, inventura, účtenky, odpisy,
+     dodavatelé, historie, kuchyně, bar, recepty) jsou seznamy → užší a
+     vycentrované jako domácí obrazovky, ať se netáhnou přes celý monitor. */
+  .provoz-inner { max-width: 880px !important; }
+  .provoz-inner.provoz-tab-kasa { max-width: 1080px !important; }
 
   /* ===== VŠECHNY MODÁLY / BOTTOM-SHEETY na PC → vycentrovaný dialog =====
      Na mobilu jsou to spodní listy přes celou šířku (fixed inset-0 +

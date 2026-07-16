@@ -2073,10 +2073,13 @@ function PripravaView({ pracoviste }: { pracoviste: Pracoviste }) {
   const locale = useLocale();
   const dateLocale = locale === "sk" ? "sk-SK" : "cs-CZ";
   const tickets = useTicketStore((s) => s.tickets);
-  const oznacHotovo = useTicketStore((s) => s.oznacHotovo);
+  // Bonovací displej: ukážeme VŠECHNY dnešní lístky pracoviště, nejnovější
+  // nahoře. Nic se neodškrtává — starší (10+ min) jen ztlumíme, ať kuchař vidí
+  // celou směnu a nové poznatky nahoře. Namarkuje → vyjede → servírka si vezme.
+  const dnes = new Date().toISOString().slice(0, 10);
   const aktivni = tickets
-    .filter((tk) => tk.pracoviste === pracoviste && !tk.hotovo)
-    .sort((a, b) => a.datum.localeCompare(b.datum));
+    .filter((tk) => tk.pracoviste === pracoviste && tk.datum.slice(0, 10) === dnes)
+    .sort((a, b) => b.datum.localeCompare(a.datum)); // nejnovější první
 
   return (
     <div>
@@ -2092,6 +2095,12 @@ function PripravaView({ pracoviste }: { pracoviste: Pracoviste }) {
         )}
       </div>
 
+      {/* Info: jak lístky fungují + že tisk na bonovací tiskárnu je až v appce */}
+      <div style={{ display: "flex", alignItems: "flex-start", gap: 8, padding: "10px 14px", borderRadius: 12, background: "var(--blue-wash, #E4EEF3)", marginBottom: 14 }}>
+        <Printer size={15} style={{ color: "#2f6d8c", flexShrink: 0, marginTop: 1 }} />
+        <p style={{ fontSize: 12.5, color: "#2f6d8c", margin: 0, lineHeight: 1.45 }}>{t("provoz.priprava.info")}</p>
+      </div>
+
       {aktivni.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 gap-3">
           <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
@@ -2104,16 +2113,21 @@ function PripravaView({ pracoviste }: { pracoviste: Pracoviste }) {
           {aktivni.map((tk) => {
             const cas = new Date(tk.datum).toLocaleTimeString(dateLocale, { hour: "2-digit", minute: "2-digit" });
             const min = Math.floor((Date.now() - new Date(tk.datum).getTime()) / 60000);
-            const stary = min >= 10; // 10+ min čeká → zvýrazni
+            // Nový lístek (< 10 min) = jasný, zvýrazněný. Starší = ztlumený
+            // (obsloužený, jen historie). Žádné odškrtávání — vyjelo, vzalo se.
+            const novy = min < 10;
             return (
-              <div key={tk.id} className="card" style={{ padding: 14, border: stary ? "1.5px solid #E65100" : "1px solid var(--border)" }}>
+              <div key={tk.id} className="card" style={{ padding: 14, opacity: novy ? 1 : 0.55,
+                border: novy ? "1.5px solid var(--green-primary)" : "1px solid var(--border)",
+                background: novy ? "var(--green-light)" : "var(--bg-secondary, white)" }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 8 }}>
                   <span style={{ fontSize: 16, fontWeight: 800, color: "var(--text-primary)" }}>{tk.oznaceni}</span>
-                  <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 12, color: stary ? "#E65100" : "var(--text-tertiary)", fontWeight: stary ? 700 : 500 }}>
-                    <Clock size={12} /> {cas}{min > 0 ? ` · ${min} min` : ""}
+                  {novy && <span style={{ fontSize: 10, fontWeight: 800, color: "white", background: "var(--green-primary)", borderRadius: 99, padding: "2px 8px", letterSpacing: "0.04em" }}>{t("provoz.priprava.novy")}</span>}
+                  <span style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 12, color: "var(--text-tertiary)", fontWeight: 500, marginLeft: "auto" }}>
+                    <Clock size={12} /> {cas}{min > 0 ? ` · před ${min} min` : ""}
                   </span>
                 </div>
-                <ul style={{ margin: "0 0 12px", padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
+                <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 5 }}>
                   {tk.polozky.map((p, i) => (
                     <li key={i} style={{ display: "flex", gap: 8, fontSize: 15, color: "var(--text-primary)" }}>
                       <span style={{ fontWeight: 800, color: "var(--green-dark)", minWidth: 28 }}>{p.mnozstvi}×</span>
@@ -2121,10 +2135,6 @@ function PripravaView({ pracoviste }: { pracoviste: Pracoviste }) {
                     </li>
                   ))}
                 </ul>
-                <button onClick={() => oznacHotovo(tk.id)}
-                  style={{ width: "100%", padding: "10px", borderRadius: 12, fontSize: 14, fontWeight: 700, background: "var(--green-primary)", color: "white", border: "none", display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
-                  <Check size={16} /> {t("provoz.priprava.hotovo")}
-                </button>
               </div>
             );
           })}

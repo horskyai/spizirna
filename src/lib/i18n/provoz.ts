@@ -35,6 +35,8 @@ export const provoz: Record<string, Translation> = {
   "provoz.tab.bar": { cs: "Bar", sk: "Bar" },
   "provoz.priprava.prazdno": { cs: "Žádné objednávky na přípravu", sk: "Žiadne objednávky na prípravu" },
   "provoz.priprava.hotovo": { cs: "Hotovo — vydat", sk: "Hotovo — vydať" },
+  "provoz.priprava.novy": { cs: "NOVÉ", sk: "NOVÉ" },
+  "provoz.priprava.info": { cs: "Objednávky sem naskakují automaticky, jak je namarkuješ na kase — nic nepotvrzuješ. Nové jsou nahoře zeleně, starší se ztlumí. Tisk lístku na bonovací tiskárnu bude v mobilní aplikaci.", sk: "Objednávky sem naskakujú automaticky, ako ich namarkuješ na pokladni — nič nepotvrdzuješ. Nové sú hore zelené, staršie sa stlmia. Tlač lístka na bonovaciu tlačiareň bude v mobilnej aplikácii." },
   "provoz.tab.odpisy": { cs: "Odpisy", sk: "Odpisy" },
   "provoz.tab.dodavatele": { cs: "Dodavatelé", sk: "Dodávatelia" },
 
