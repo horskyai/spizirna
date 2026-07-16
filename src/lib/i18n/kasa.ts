@@ -125,6 +125,21 @@ export const kasa: Record<string, Translation> = {
   "kasa.skenNenalezen": { cs: "Kód {n} není ve skladu", sk: "Kód {n} nie je v sklade" },
   "kasa.skenPridano": { cs: "{n} přidáno do košíku", sk: "{n} pridané do košíka" },
 
+  // Tréninkový režim — nácvik prodeje bez zápisu do tržby a skladu
+  "kasa.trenink": { cs: "Trénink", sk: "Tréning" },
+  "kasa.treninkBanner": { cs: "Tréninkový režim — nácvik", sk: "Tréningový režim — nácvik" },
+  "kasa.treninkBannerDesc": { cs: "Nic se nezapíše do tržby ani neodečte ze skladu. Můžeš klidně zkoušet.", sk: "Nič sa nezapíše do tržby ani neodčíta zo skladu. Môžeš pokojne skúšať." },
+  "kasa.treninkKonec": { cs: "Ukončit", sk: "Ukončiť" },
+  "kasa.treninkProdej": { cs: "Nácvik: „prodej“ {n} Kč (nezapsáno)", sk: "Nácvik: „predaj“ {n} € (nezapísané)" },
+  "kasa.treninkZbozi": { cs: "Nácvik: {n} přidáno do košíku (bez skladu)", sk: "Nácvik: {n} pridané do košíka (bez skladu)" },
+
+  // Rychlé bankovky u platby hotově
+  "kasa.presne": { cs: "Přesně", sk: "Presne" },
+
+  // „To samé znovu" — zopakování poslední účtenky do košíku
+  "kasa.opakovatPosledni": { cs: "Poslední účet znovu", sk: "Posledný účet znova" },
+  "kasa.opakovanoToast": { cs: "Poslední účet vložen do košíku", sk: "Posledný účet vložený do košíka" },
+
   // Rychlé založení nového zboží přímo z kasy (když kód/PLU není ve skladu)
   "kasa.nove.titul": { cs: "Založit nové zboží", sk: "Založiť nový tovar" },
   "kasa.nove.popis": { cs: "Není ve skladu. Vyplň a rovnou se přidá do skladu i na účtenku.", sk: "Nie je v sklade. Vyplň a rovno sa pridá do skladu aj na účtenku." },

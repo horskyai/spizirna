@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import {
   Plus, X, Minus, Trash2, ShoppingCart, Check, Pencil,
   Settings2, Receipt, RotateCcw, Package, Soup, Ban, ScanLine, EyeOff, Eye, Calculator,
-  Banknote, CreditCard, UtensilsCrossed,
+  Banknote, CreditCard, UtensilsCrossed, GraduationCap,
 } from "lucide-react";
 import {
   useKasaStore, MenuPolozka, MenuVazbaTyp, CartItem, ZpusobPlatby, formatCisloUctenky,
@@ -19,6 +19,7 @@ import { lookupProductByEAN } from "@/lib/productLookup";
 import { useT, useLocale } from "@/lib/i18n";
 import { Capacitor } from "@capacitor/core";
 import { najdiTiskarny, najdiSitoveTiskarny, tiskUctenky, TiskarnaTyp } from "@/lib/tiskUctenky";
+import { skenZvuk } from "@/lib/skenZvuk";
 
 // Dnešní datum jako YYYY-MM-DD (lokální, ne UTC — ať tržba sedí na den obsluhy).
 function dnesISO(): string {
@@ -655,6 +656,15 @@ export function KasaView() {
   const [nasobic, setNasobic] = useState(1); // množství, které se přidá k dalšímu kliknutému zboží
   const [prijato, setPrijato] = useState(""); // kolik zákazník dal hotově (volitelné → počítá vrácení)
   const [toast, setToast] = useState<string | null>(null);
+  // Tréninkový režim: obsluha si nacvičí prodej, ale NIC se nezapíše do tržby
+  // ani neodečte ze skladu. Uloženo v localStorage, ať přežije reload.
+  const [trenink, setTreninkState] = useState<boolean>(() => {
+    try { return localStorage.getItem("kasa-trenink") === "1"; } catch { return false; }
+  });
+  const setTrenink = (v: boolean) => {
+    setTreninkState(v);
+    try { localStorage.setItem("kasa-trenink", v ? "1" : "0"); } catch {}
+  };
   // Tisk účtenky (BETA, jen v appce) — po prodeji nabídneme vytisknout.
   const firma = useBusinessStore((s) => s.firma);
   const nazevFirmy = useBusinessStore((s) => s.name);
@@ -728,11 +738,12 @@ export function KasaView() {
     const k = kod.trim();
     if (!k) return false;
     const p = polozky.find((x) => x.plu === k || x.ean === k);
-    if (p) { pridat(`sklad:${p.id}`); setToast(t("kasa.skenPridano").replace("{n}", p.nazev)); setTimeout(() => setToast(null), 2000); return true; }
+    if (p) { pridat(`sklad:${p.id}`); skenZvuk("ok"); setToast(t("kasa.skenPridano").replace("{n}", p.nazev)); setTimeout(() => setToast(null), 2000); return true; }
     const m = menu.find((x) => x.plu === k);
-    if (m) { pridat(`menu:${m.id}`); setToast(t("kasa.skenPridano").replace("{n}", m.nazev)); setTimeout(() => setToast(null), 2000); return true; }
-    // Kód není ve skladu ani v nabídce → nabídni založit nové zboží.
+    if (m) { pridat(`menu:${m.id}`); skenZvuk("ok"); setToast(t("kasa.skenPridano").replace("{n}", m.nazev)); setTimeout(() => setToast(null), 2000); return true; }
+    // Kód není ve skladu ani v nabídce → chybový tón + nabídni založit nové zboží.
     // Delší číselné kódy bývají EAN (předvyplníme), krátké spíš PLU (nepředvyplňujeme).
+    skenZvuk("chyba");
     setNovaPolozka({ nazev: "", ean: k.length >= 8 ? k : undefined });
     return true;
   };
@@ -744,6 +755,26 @@ export function KasaView() {
     const id = `volna-${volne.length}-${castka}-${kolik}`;
     setVolne((v) => [...v, { id, nazev: t("kasa.volnaNazev"), cena: castka, mnozstvi: kolik }]);
     if (nasobic !== 1) setNasobic(1);
+  };
+
+  // „To samé znovu" — naplní košík poslední (nejnovější) běžnou účtenkou.
+  // Fronta u pekárny/kavárny je z velké části stejné objednávky, tak ať to
+  // obsluha nemusí naklikávat znovu. Vrácenky (záporné) ignorujeme.
+  const posledniUctenka = prodejky.find((p) => !p.vraceno && p.radky.length > 0);
+  const opakovatPosledni = () => {
+    if (!posledniUctenka) return;
+    const novyCart: Record<string, number> = {};
+    const novaVolna: { id: string; nazev: string; cena: number; mnozstvi: number }[] = [];
+    posledniUctenka.radky.forEach((r, i) => {
+      if (r.polozkaId) novyCart[`sklad:${r.polozkaId}`] = (novyCart[`sklad:${r.polozkaId}`] ?? 0) + r.mnozstvi;
+      else if (r.menuId) novyCart[`menu:${r.menuId}`] = (novyCart[`menu:${r.menuId}`] ?? 0) + r.mnozstvi;
+      else novaVolna.push({ id: `op-${i}-${r.nazev}`, nazev: r.nazev, cena: r.cena, mnozstvi: r.mnozstvi });
+    });
+    setCart(novyCart);
+    setVolne(novaVolna);
+    setPrijato("");
+    setToast(t("kasa.opakovanoToast"));
+    setTimeout(() => setToast(null), 2000);
   };
 
   // Sken v kase: najdi skladovou položku podle EAN → přidej do košíku.
@@ -760,10 +791,12 @@ export function KasaView() {
     }
     if (p) {
       pridat(`sklad:${p.id}`);
+      skenZvuk("ok");
       setToast(t("kasa.skenPridano").replace("{n}", p.nazev));
       setTimeout(() => setToast(null), 2500);
     } else {
-      // Není ve skladu → otevři rychlé založení.
+      // Není ve skladu → chybový tón + otevři rychlé založení.
+      skenZvuk("chyba");
       setNovaPolozka({ nazev: katalogNazev ?? "", ean });
     }
   };
@@ -774,6 +807,15 @@ export function KasaView() {
   const zalozitNove = (data: { nazev: string; cena: number; pocet: number; kategorie: string; ean?: string }) => {
     const nazev = data.nazev.trim();
     if (!nazev) return;
+    // TRÉNINK: nezakládat do skladu. Přidej jen jako volnou položku do košíku,
+    // ať si obsluha nácvik odbavení vyzkouší, ale sklad zůstane nedotčený.
+    if (trenink) {
+      setVolne((v) => [...v, { id: `trenink-${v.length}-${nazev}`, nazev, cena: data.cena > 0 ? data.cena : 0, mnozstvi: data.pocet > 0 ? data.pocet : 1 }]);
+      setNovaPolozka(null);
+      setToast(t("kasa.treninkZbozi").replace("{n}", nazev));
+      setTimeout(() => setToast(null), 2500);
+      return;
+    }
     addPolozka({
       nazev,
       kategorie: data.kategorie as (typeof INVENTURA_KATEGORIE)[number]["id"],
@@ -800,6 +842,20 @@ export function KasaView() {
     });
     volne.forEach((v) => items.push({ volnaCena: v.cena, volnaNazev: v.nazev, mnozstvi: v.mnozstvi }));
     const castka = cartCelkem;
+
+    // TRÉNINK: nic se nezapíše ani neodečte ze skladu — jen vyčisti košík a
+    // potvrď, že to byl nácvik. prodat() se vůbec nezavolá.
+    if (trenink) {
+      if (castka <= 0 && items.length === 0) return;
+      setCart({});
+      setVolne([]);
+      setNasobic(1);
+      setPrijato("");
+      setToast(t("kasa.treninkProdej").replace("{n}", castka.toLocaleString(dateLocale)));
+      setTimeout(() => setToast(null), 2500);
+      return;
+    }
+
     const id = prodat(items, platba);
     if (id) {
       setCart({});
@@ -906,9 +962,31 @@ export function KasaView() {
                 <Settings2 size={14} /> {t("kasa.spravaMenu")}
               </button>
             )}
+            {/* Přepínač tréninkového režimu — jen majitel (ne zaměstnanec). */}
+            {!zamestnanec && (
+              <button onClick={() => setTrenink(!trenink)}
+                style={{ display: "flex", alignItems: "center", gap: 6, padding: "8px 12px", borderRadius: 12, fontSize: 12, fontWeight: 700, color: trenink ? "#8a5a00" : "white", background: trenink ? "#FFD98A" : "rgba(255,255,255,0.2)", border: "1px solid rgba(255,255,255,0.3)" }}>
+                <GraduationCap size={14} /> {t("kasa.trenink")}
+              </button>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Banner tréninkového režimu — jasně viditelný, ať se prodej neplete s ostrým */}
+      {trenink && (
+        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 12, background: "#FFF3D6", border: "1.5px solid #F0C24B", marginBottom: 16 }}>
+          <GraduationCap size={18} style={{ color: "#8a5a00", flexShrink: 0 }} />
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ fontSize: 13, fontWeight: 800, color: "#7a4f00", margin: 0 }}>{t("kasa.treninkBanner")}</p>
+            <p style={{ fontSize: 11.5, color: "#9a6a1a", margin: "1px 0 0" }}>{t("kasa.treninkBannerDesc")}</p>
+          </div>
+          <button onClick={() => setTrenink(false)}
+            style={{ flexShrink: 0, padding: "6px 12px", borderRadius: 9, fontSize: 12, fontWeight: 700, background: "#8a5a00", color: "white", border: "none" }}>
+            {t("kasa.treninkKonec")}
+          </button>
+        </div>
+      )}
 
       {/* Nic k prodeji → onboarding */}
       {nicKProdeji ? (
@@ -926,6 +1004,18 @@ export function KasaView() {
         </div>
       ) : (
         <>
+          {/* „To samé znovu" — jen když je košík prázdný a existuje poslední účet.
+              Šetří klikání u opakujících se objednávek (pekárna, kavárna). */}
+          {cartPocet === 0 && posledniUctenka && (
+            <button onClick={opakovatPosledni}
+              style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8, width: "100%", padding: "13px 16px", borderRadius: 14, marginBottom: 14, fontSize: 15, fontWeight: 700, color: "var(--green-dark)", background: "var(--green-light)", border: "1.5px solid var(--green-primary)" }}>
+              <RotateCcw size={17} /> {t("kasa.opakovatPosledni")}
+              <span style={{ fontSize: 12.5, fontWeight: 600, color: "var(--green-primary)", opacity: 0.85 }}>
+                · {posledniUctenka.celkem.toLocaleString(dateLocale)} Kč
+              </span>
+            </button>
+          )}
+
           {/* Pult — dlaždice ze skladu (obchod) + z nabídky (restaurace), po kategoriích */}
           <div style={{ marginBottom: cartPocet > 0 ? 180 : 24 }}>
             <DlazdiceSekce
@@ -1063,6 +1153,22 @@ export function KasaView() {
             />
             <span style={{ fontSize: 13, color: "var(--text-tertiary)" }}>Kč</span>
           </div>
+
+          {/* Rychlé bankovky — zákazník dal 200/500/1000… → jeden tap, kasa
+              rovnou dopočítá vrácení. Nabídneme jen bankovky ≥ částka + „Přesně". */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 8 }}>
+            <button onClick={() => setPrijato(String(Math.ceil(cartCelkem)))}
+              style={{ flex: "1 1 60px", padding: "8px 6px", borderRadius: 10, fontSize: 13, fontWeight: 700, background: "var(--green-light)", color: "var(--green-dark)", border: "1.5px solid var(--green-primary)" }}>
+              {t("kasa.presne")}
+            </button>
+            {[100, 200, 500, 1000, 2000].filter((b) => b >= cartCelkem).slice(0, 4).map((b) => (
+              <button key={b} onClick={() => setPrijato(String(b))}
+                style={{ flex: "1 1 60px", padding: "8px 6px", borderRadius: 10, fontSize: 13, fontWeight: 700, background: "white", color: "var(--text-primary)", border: "1.5px solid var(--border)" }}>
+                {b}
+              </button>
+            ))}
+          </div>
+
           {(() => {
             const p = parseFloat(prijato);
             if (isNaN(p) || prijato.trim() === "") return null;
