@@ -178,6 +178,8 @@ export const provoz: Record<string, Translation> = {
   "provoz.nicNenalezeno": { cs: "Nic nenalezeno pro „{q}“", sk: "Nič nenájdené pre „{q}“" },
   "provoz.skladPrazdny": { cs: "Sklad je prázdný", sk: "Sklad je prázdny" },
   "provoz.skladPrazdnyDesc": { cs: "Přidejte položky které chcete inventarizovat.", sk: "Pridajte položky, ktoré chcete inventarizovať." },
+  "provoz.skladSurovinNadpis": { cs: "Tady jsou SUROVINY, ne jídla", sk: "Tu sú SUROVINY, nie jedlá" },
+  "provoz.skladSurovinHint": { cs: "Do skladu patří suroviny (maso, mouka, láhve). Hotová jídla, porce a dezerty přidáš v Kase → Upravit nabídku.", sk: "Do skladu patria suroviny (mäso, múka, fľaše). Hotové jedlá, porcie a dezerty pridáš v Pokladni → Upraviť ponuku." },
   "provoz.min": { cs: "Min.", sk: "Min." },
   "provoz.pridanoDoSkladu": { cs: "{n} přidáno do skladu", sk: "{n} pridané do skladu" },
   "provoz.polozkyPridany": { cs: "{n} položky přidány do skladu", sk: "{n} položky pridané do skladu" },

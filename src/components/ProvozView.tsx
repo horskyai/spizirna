@@ -1685,6 +1685,7 @@ function SpravaSkladu() {
   const locale = useLocale();
   const { polozky, removePolozka, getPolozkyCritical, addPolozka, dodavatele } = useProvozStore();
   const predikceDoprodeje = useKasaStore((s) => s.predikceDoprodeje);
+  const jeObchod = useBusinessStore((s) => s.typProvozu) === "obchod";
   const [showAdd, setShowAdd] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
@@ -1763,10 +1764,17 @@ function SpravaSkladu() {
           <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
             <Package size={28} style={{ color: "var(--green-primary)" }} strokeWidth={1.5} />
           </div>
-          <div className="text-center">
+          <div className="text-center" style={{ maxWidth: 360 }}>
             <p className="font-bold text-base mb-1" style={{ color: "var(--text-primary)" }}>{t("provoz.skladPrazdny")}</p>
             <p className="text-sm" style={{ color: "var(--text-secondary)" }}>{t("provoz.skladPrazdnyDesc")}</p>
           </div>
+          {/* Restaurace: navedení, kam patří jídla vs. suroviny (častý zmatek). */}
+          {!jeObchod && (
+            <div style={{ maxWidth: 400, padding: "12px 16px", borderRadius: 14, background: "#FFF3D6", border: "1.5px solid #F0C24B" }}>
+              <p style={{ fontSize: 13, color: "#7a4f00", fontWeight: 700, margin: 0 }}>{t("provoz.skladSurovinNadpis")}</p>
+              <p style={{ fontSize: 12.5, color: "#9a6a1a", margin: "3px 0 0", lineHeight: 1.45 }}>{t("provoz.skladSurovinHint")}</p>
+            </div>
+          )}
           <button className="btn-primary" style={{ width: "auto", paddingLeft: 24, paddingRight: 24 }} onClick={() => setShowAdd(true)}>
             <Plus size={16} /> {t("provoz.pridatPolozku")}
           </button>

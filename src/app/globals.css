@@ -498,18 +498,27 @@ a { text-decoration: none; color: inherit; }
      všechny (React renderuje `justify-content: flex-end`), ať nemusíme sahat
      do každé z ~35 komponent zvlášť. */
   div[style*="position: fixed"][style*="justify-content: flex-end"] {
-    justify-content: center !important;
-    align-items: center !important;
+    justify-content: flex-start !important;   /* vyšší modál začne odshora... */
+    align-items: flex-start !important;
+    overflow-y: auto !important;              /* ...a scrolluje, nic se neořízne */
     padding: 28px 20px;
   }
-  /* Karta uvnitř = přímý potomek, který NENÍ absolutní backdrop. Dáme jí
-     max-šířku, plné zaoblení a rozumnou výšku. (Backdrop má position:absolute,
-     tak ho `:not([style*="position: absolute"])` vynechá.) */
+  /* Karta uvnitř = přímý potomek, který NENÍ absolutní backdrop. Vycentrujeme ji
+     přes margin: auto (horizontálně vždy, vertikálně jen když se vejde). Tím se
+     u vysokých modálů neořízne horní roh. (Backdrop má position:absolute →
+     `:not([style*="position: absolute"])` ho vynechá.) */
   div[style*="position: fixed"][style*="justify-content: flex-end"] > div:not([style*="position: absolute"]) {
     max-width: 560px !important;
     width: 100% !important;
     border-radius: 24px !important;
-    max-height: 88dvh !important;
+    max-height: none !important;              /* výšku řeší scroll kontejneru */
+    margin: auto !important;
+  }
+  /* Backdrop (absolutní potomek) — když kontejner scrolluje, ať zůstane přes
+     celou obrazovku (fixed), ne odscrollovaný s obsahem. */
+  div[style*="position: fixed"][style*="justify-content: flex-end"] > div[style*="position: absolute"] {
+    position: fixed !important;
+    inset: 0 !important;
   }
   /* Táhlo (drag handle) nahoře nedává na PC dialogu smysl — schováme ho. */
   div[style*="position: fixed"][style*="justify-content: flex-end"] > div > .flex.justify-center:first-child {
