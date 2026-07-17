@@ -29,14 +29,21 @@ export function AuthScreen() {
   const [view, setView] = useState<"auth" | "reset" | "resetSent">("auth");
   const { signIn, signUp, resetPassword, signInWithGoogle } = useAuthStore();
 
-  // Přihlášení přes Google — přesměruje na Google a zpět (session zachytí init).
-  // Používá se jen když GOOGLE_LOGIN_ENABLED = true (zapne se v Play fázi).
+  // Přihlášení přes Google. Na webu appka přesměruje pryč (loading necháváme).
+  // V appce se otevře systémový prohlížeč nad appkou — pokud ho uživatel zavře
+  // bez dokončení přihlášení, vrátíme loading zpět, ať tlačítko nezůstane navždy točit.
   const handleGoogle = async () => {
     setError(null);
     setLoading(true);
+    if (JE_APP) {
+      const { Browser } = await import("@capacitor/browser");
+      const sub = await Browser.addListener("browserFinished", () => {
+        setLoading(false);
+        sub.remove();
+      });
+    }
     const err = await signInWithGoogle();
     if (err) { setError(err); setLoading(false); }
-    // při úspěchu appka přesměruje na Google, loading necháváme (odejdeme ze stránky)
   };
 
   // Přeloží nejčastější anglické chyby ze Supabase do zvoleného jazyka.

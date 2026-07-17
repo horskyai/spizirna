@@ -1,8 +1,13 @@
 "use client";
 
 import { create } from "zustand";
+import { Capacitor } from "@capacitor/core";
 import { supabase } from "@/lib/supabase";
 import type { User, Session } from "@supabase/supabase-js";
+
+// Deep-link, na který appku po Google přihlášení pošleme zpět (viz intent-filter
+// v AndroidManifest.xml). Bez toho zůstane přihlášení otevřené v prohlížeči.
+const NATIVE_AUTH_REDIRECT = "cz.spizirna.app://auth-callback";
 
 interface Profile {
   id: string;
@@ -150,6 +155,25 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
         set({ user: null, session: null, profile: null, deviceLimitHit: null });
       }
     });
+
+    // Google přihlášení v appce běží v systémovém prohlížeči (Google WebView
+    // nedovolí) — po dokončení nás pošle zpět na NATIVE_AUTH_REDIRECT. Tady tenhle
+    // návrat zachytíme, vytáhneme tokeny z URL a prohlížeč zavřeme.
+    if (Capacitor.isNativePlatform()) {
+      const { App } = await import("@capacitor/app");
+      App.addListener("appUrlOpen", async ({ url }) => {
+        if (!url.startsWith(NATIVE_AUTH_REDIRECT)) return;
+        const hash = url.split("#")[1];
+        const params = new URLSearchParams(hash);
+        const access_token = params.get("access_token");
+        const refresh_token = params.get("refresh_token");
+        if (access_token && refresh_token) {
+          await supabase.auth.setSession({ access_token, refresh_token });
+        }
+        const { Browser } = await import("@capacitor/browser");
+        await Browser.close().catch(() => {});
+      });
+    }
   },
 
   signUp: async (email, password, name, mode) => {
@@ -171,9 +195,23 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   },
 
   signInWithGoogle: async () => {
-    // Přesměruje na Google a po přihlášení zpět na appku (stejný origin).
-    // Session pak zachytí onAuthStateChange v init(). Mód (domácnost/provoz)
-    // si uživatel dovybere jako u kohokoli, kdo ho ještě nemá v profilu.
+    // Na webu přesměruje rovnou v prohlížeči zpět na appku (stejný origin).
+    // V appce Google WebView odmítá (disallowed_useragent), proto tam přihlášení
+    // otevřeme v systémovém prohlížeči a čekáme na návrat přes deep-link
+    // (NATIVE_AUTH_REDIRECT, zachyceno v init() přes appUrlOpen).
+    if (Capacitor.isNativePlatform()) {
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: { redirectTo: NATIVE_AUTH_REDIRECT, skipBrowserRedirect: true },
+      });
+      if (error) return error.message;
+      if (data?.url) {
+        const { Browser } = await import("@capacitor/browser");
+        await Browser.open({ url: data.url });
+      }
+      return null;
+    }
+
     const redirectTo = typeof window !== "undefined" ? window.location.origin : undefined;
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
