@@ -513,6 +513,8 @@ const CATEGORIES: { value: string; labelKey: string }[] = [
   { value: "Ryby & mořské plody", labelKey: "recipes.cat.ryby" },
   { value: "Vegetariánské", labelKey: "recipes.cat.vegetarianske" },
   { value: "Veganské", labelKey: "recipes.cat.veganske" },
+  { value: "Bez cukru", labelKey: "recipes.cat.bezCukru" },
+  { value: "Bez laktózy", labelKey: "recipes.cat.bezLaktozy" },
   { value: "Snídaně", labelKey: "recipes.cat.snidane" },
   { value: "Saláty", labelKey: "recipes.cat.salaty" },
   { value: "Mezinárodní", labelKey: "recipes.cat.mezinarodni" },
@@ -525,12 +527,16 @@ function getCategory(recipe: Recipe): string {
   const t = recipe.tags.map(t => t.toLowerCase());
   if (t.some(t => ["slovenská kuchyně", "slovenská kuchyňa", "slovensky"].some(k => t.includes(k)))) return "Slovenská kuchyně";
   if (t.some(t => ["česká klasika", "česky", "knedlík", "svíčková", "guláš"].some(k => t.includes(k)))) return "Česká klasika";
+  // Dietní omezení mají přednost před typem jídla i před vegan/vege — kdo
+  // filtruje "bez cukru", chce vidět všechno bez cukru, ne jen zbytek.
+  if (t.some(t => ["bez cukru", "pro diabetiky"].some(k => t.includes(k)))) return "Bez cukru";
+  if (t.some(t => ["bez laktózy"].some(k => t.includes(k)))) return "Bez laktózy";
+  if (t.some(t => ["vegan", "veganský", "veganské"].some(k => t.includes(k)))) return "Veganské";
+  if (t.some(t => ["vegetariánský", "vegetariánské", "bez masa"].some(k => t.includes(k)))) return "Vegetariánské";
   if (t.some(t => ["polévka", "vývar", "soup"].some(k => t.includes(k)))) return "Polévky";
   if (t.some(t => ["těstoviny", "pasta", "špagety", "lasagne"].some(k => t.includes(k)))) return "Těstoviny";
   if (t.some(t => ["kuřecí", "kuře"].some(k => t.includes(k)))) return "Kuřecí";
   if (t.some(t => ["ryby", "losos", "treska", "krevety", "mořské"].some(k => t.includes(k)))) return "Ryby & mořské plody";
-  if (t.some(t => ["vegan", "veganský", "veganské"].some(k => t.includes(k)))) return "Veganské";
-  if (t.some(t => ["vegetariánský", "vegetariánské", "bez masa"].some(k => t.includes(k)))) return "Vegetariánské";
   if (t.some(t => ["snídaně", "breakfast"].some(k => t.includes(k)))) return "Snídaně";
   if (t.some(t => ["salát", "salad"].some(k => t.includes(k)))) return "Saláty";
   if (t.some(t => ["dezert", "sladké", "cake", "dort"].some(k => t.includes(k)))) return "Dezerty";

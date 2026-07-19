@@ -72,6 +72,8 @@ export const recipes: Record<string, Translation> = {
   "recipes.cat.ryby": { cs: "Ryby & mořské plody", sk: "Ryby & morské plody" },
   "recipes.cat.vegetarianske": { cs: "Vegetariánské", sk: "Vegetariánske" },
   "recipes.cat.veganske": { cs: "Veganské", sk: "Vegánske" },
+  "recipes.cat.bezCukru": { cs: "Bez cukru", sk: "Bez cukru" },
+  "recipes.cat.bezLaktozy": { cs: "Bez laktózy", sk: "Bez laktózy" },
   "recipes.cat.snidane": { cs: "Snídaně", sk: "Raňajky" },
   "recipes.cat.salaty": { cs: "Saláty", sk: "Šaláty" },
   "recipes.cat.mezinarodni": { cs: "Mezinárodní", sk: "Medzinárodné" },
