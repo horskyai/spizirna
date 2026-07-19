@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { genId } from "@/lib/uuid";
 import { FoodLogEntry, FoodLogItem, NutritionGoal } from "@/types";
 import { getCurrentMode } from "@/store/modeStore";
 
@@ -25,7 +26,7 @@ export const useFoodLogStore = create<FoodLogStore>()(
 
       addEntry: (entry) =>
         set((s) => ({
-          entries: [...s.entries, { ...entry, id: crypto.randomUUID() }],
+          entries: [...s.entries, { ...entry, id: genId() }],
         })),
 
       removeEntry: (id) =>

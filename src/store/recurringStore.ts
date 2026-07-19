@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { genId } from "@/lib/uuid";
 import { getCurrentMode } from "@/store/modeStore";
 
 export interface RecurringItem {
@@ -51,7 +52,7 @@ export const useRecurringStore = create<RecurringStore>()(
         set((s) => ({
           items: [
             ...s.items,
-            { ...item, id: crypto.randomUUID(), next_reminder: next.toISOString() },
+            { ...item, id: genId(), next_reminder: next.toISOString() },
           ],
         }));
       },

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { genId } from "@/lib/uuid";
 
 // Zaměstnanci provozovny — lokální seznam (jméno + PIN) a kdo je právě
 // přihlášený na směnu. Slouží k ODPOVĚDNOSTI: jméno obsluhy se zapíše ke každé
@@ -37,7 +38,7 @@ export const useStaffStore = create<StaffStore>()(
 
       pridej: (jmeno, pin, jeMajitel) =>
         set((s) => ({
-          zamestnanci: [...s.zamestnanci, { id: crypto.randomUUID(), jmeno: jmeno.trim(), pin, jeMajitel }],
+          zamestnanci: [...s.zamestnanci, { id: genId(), jmeno: jmeno.trim(), pin, jeMajitel }],
         })),
 
       uprav: (id, changes) =>

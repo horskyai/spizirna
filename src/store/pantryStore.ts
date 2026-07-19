@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { genId } from "@/lib/uuid";
 import { PantryItem, ProductInfo, StorageLocation } from "@/types";
 import { addDays } from "@/lib/dateUtils";
 import { getCurrentMode } from "@/store/modeStore";
@@ -25,7 +26,7 @@ export const usePantryStore = create<PantryStore>()(
 
       addItem: (product, quantity, location, price, store, tags, customImageUrl, expiresAt) => {
         const item: PantryItem = {
-          id: crypto.randomUUID(),
+          id: genId(),
           product,
           quantity,
           unit: product.unit,

@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { genId } from "@/lib/uuid";
 
 export type ShoppingMode = "domacnost" | "provoz";
 
@@ -57,7 +58,7 @@ export const useShoppingStore = create<ShoppingStore>()(
           }));
         } else {
           set((s) => ({
-            [key]: [...s[key], { ...item, id: crypto.randomUUID(), checked: false }],
+            [key]: [...s[key], { ...item, id: genId(), checked: false }],
           }));
         }
       },

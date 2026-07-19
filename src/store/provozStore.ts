@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { genId } from "@/lib/uuid";
 
 export type InventuraKategorie =
   // Nové jemnější kategorie (Tesco-styl)
@@ -169,7 +170,7 @@ export const useProvozStore = create<ProvozStore>()(
       aktivniInventuraId: null,
 
       addPolozka: (p) =>
-        set((s) => ({ polozky: [...s.polozky, { ...p, aktualniStav: p.aktualniStav ?? 0, id: crypto.randomUUID() }] })),
+        set((s) => ({ polozky: [...s.polozky, { ...p, aktualniStav: p.aktualniStav ?? 0, id: genId() }] })),
 
       updatePolozka: (id, changes) =>
         set((s) => ({ polozky: s.polozky.map((p) => p.id === id ? { ...p, ...changes } : p) })),
@@ -192,7 +193,7 @@ export const useProvozStore = create<ProvozStore>()(
           }
           return {
             polozky: [...s.polozky, {
-              id: crypto.randomUUID(),
+              id: genId(),
               nazev: nazev.trim(),
               kategorie: "ostatni" as InventuraKategorie,
               jednotka,
@@ -211,7 +212,7 @@ export const useProvozStore = create<ProvozStore>()(
         })),
 
       vytvorInventuru: (nazev, slepa = false) => {
-        const id = crypto.randomUUID();
+        const id = genId();
         const datum = new Date().toISOString().slice(0, 10);
         set((s) => ({
           inventury: [
@@ -253,7 +254,7 @@ export const useProvozStore = create<ProvozStore>()(
             if (inv.id !== inventuraId) return inv;
             const existing = inv.zaznamy.findIndex((z) => z.polozkaId === polozkaId);
             const zaznam: InventuraZaznam = {
-              id: existing >= 0 ? inv.zaznamy[existing].id : crypto.randomUUID(),
+              id: existing >= 0 ? inv.zaznamy[existing].id : genId(),
               polozkaId,
               datum: new Date().toISOString().slice(0, 10),
               skutecnyStav,
@@ -279,7 +280,7 @@ export const useProvozStore = create<ProvozStore>()(
         })),
 
       addDodavatel: (d) =>
-        set((s) => ({ dodavatele: [...s.dodavatele, { ...d, id: crypto.randomUUID() }] })),
+        set((s) => ({ dodavatele: [...s.dodavatele, { ...d, id: genId() }] })),
 
       removeDodavatel: (id) =>
         set((s) => ({ dodavatele: s.dodavatele.filter((d) => d.id !== id) })),
@@ -287,7 +288,7 @@ export const useProvozStore = create<ProvozStore>()(
       addOdpis: (o) =>
         set((s) => ({
           odpisy: [
-            { ...o, id: crypto.randomUUID(), datum: new Date().toISOString().slice(0, 10) },
+            { ...o, id: genId(), datum: new Date().toISOString().slice(0, 10) },
             ...s.odpisy,
           ],
           // Odpis snižuje živý stav skladu (vyhozené zboží už na skladě není).

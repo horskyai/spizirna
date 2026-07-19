@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { Capacitor } from "@capacitor/core";
+import { genId } from "@/lib/uuid";
 import { supabase } from "@/lib/supabase";
 import type { User, Session } from "@supabase/supabase-js";
 
@@ -70,7 +71,7 @@ function getDeviceId(): string {
   if (typeof window === "undefined") return "server";
   let id = localStorage.getItem(DEVICE_ID_KEY);
   if (!id) {
-    id = crypto.randomUUID();
+    id = genId();
     localStorage.setItem(DEVICE_ID_KEY, id);
   }
   return id;

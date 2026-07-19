@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { genId } from "@/lib/uuid";
 import { useProvozStore } from "@/store/provozStore";
 import { useRecipeStore } from "@/store/recipeStore";
 import { useStaffStore } from "@/store/staffStore";
@@ -263,7 +264,7 @@ export const useKasaStore = create<KasaStore>()(
 
       addMenuPolozka: (p) =>
         set((s) => ({
-          menu: [...s.menu, { aktivni: true, odbet: 1, ...p, id: crypto.randomUUID() }],
+          menu: [...s.menu, { aktivni: true, odbet: 1, ...p, id: genId() }],
         })),
 
       updateMenuPolozka: (id, changes) =>
@@ -333,7 +334,7 @@ export const useKasaStore = create<KasaStore>()(
         });
         if (radky.length === 0) return null;
         const celkem = radky.reduce((sum, r) => sum + r.cena * r.mnozstvi, 0);
-        const id = crypto.randomUUID();
+        const id = genId();
         const dnes = dnesLocal();
         // Kolik porcí se prodalo za každou menu položku (pro denní počítadlo).
         const prodanoPorci: Record<string, number> = {};
@@ -391,7 +392,7 @@ export const useKasaStore = create<KasaStore>()(
         if (radky.length === 0) return null;
         // Doklad o vrácení: záporná částka, vlastní kód, odkaz na původní účtenku.
         const celkem = -radky.reduce((sum, r) => sum + r.cena * r.mnozstvi, 0);
-        const id = crypto.randomUUID();
+        const id = genId();
         const cislo = generujCisloUctenky(get().prodejky);
         const dnes = dnesLocal();
         const vratPorci: Record<string, number> = {};
@@ -545,7 +546,7 @@ export const useKasaStore = create<KasaStore>()(
       pridejPohybHotovosti: (typ, castka, poznamka) =>
         set((s) => ({
           pohybyHotovosti: [
-            { id: crypto.randomUUID(), datum: new Date().toISOString(), typ, castka: Math.abs(castka), poznamka },
+            { id: genId(), datum: new Date().toISOString(), typ, castka: Math.abs(castka), poznamka },
             ...s.pohybyHotovosti,
           ],
         })),

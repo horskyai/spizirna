@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { genId } from "@/lib/uuid";
 
 // Objednávky odeslané na přípravu (restaurace). Číšník naťuká a klikne
 // „Odeslat na přípravu" → položky se roztřídí podle pracoviště: jídlo do
@@ -52,7 +53,7 @@ export const useTicketStore = create<TicketStore>()(
           const pro = cisti.filter((p) => p.pracoviste === prac);
           if (pro.length === 0) return;
           nove.push({
-            id: crypto.randomUUID(),
+            id: genId(),
             pracoviste: prac,
             polozky: pro.map((p) => ({ nazev: p.nazev, mnozstvi: p.mnozstvi })),
             datum: new Date().toISOString(),

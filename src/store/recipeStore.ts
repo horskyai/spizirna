@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { genId } from "@/lib/uuid";
 import { Recipe } from "@/types";
 import { DEFAULT_RECIPES } from "@/data/defaultRecipes";
 import { PROVOZ_RECIPES } from "@/data/provozRecipes";
@@ -24,12 +25,12 @@ interface RecipeStore {
 export const useRecipeStore = create<RecipeStore>()(
   persist(
     (set) => ({
-      recipes: seedRecipes().map((r) => ({ ...r, id: crypto.randomUUID() })),
+      recipes: seedRecipes().map((r) => ({ ...r, id: genId() })),
       seedVersion: SEED_VERSION,
 
       addRecipe: (recipe) =>
         set((s) => ({
-          recipes: [...s.recipes, { ...recipe, id: crypto.randomUUID() }],
+          recipes: [...s.recipes, { ...recipe, id: genId() }],
         })),
 
       updateRecipe: (id, recipe) =>
@@ -69,7 +70,7 @@ export const useRecipeStore = create<RecipeStore>()(
           const existing = new Set(state.recipes.map((r) => r.name));
           const newRecipes = seed
             .filter((r) => !existing.has(r.name))
-            .map((r) => ({ ...r, id: crypto.randomUUID() }));
+            .map((r) => ({ ...r, id: genId() }));
           state.recipes = [...state.recipes, ...newRecipes];
           state.seedVersion = SEED_VERSION;
         }
