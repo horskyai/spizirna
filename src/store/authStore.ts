@@ -38,6 +38,11 @@ interface AuthStore {
   // Když je účet přihlášený na max počtu zařízení a tohle je nové → blokace.
   // null = v pořádku; objekt = "plno", appka ukáže obrazovku Limit zařízení.
   deviceLimitHit: { limit: number; devices: DeviceRow[] } | null;
+  // Na webu se dá jen přihlásit, ne založit nový účet (registrace je jen v appce).
+  // Když se na webu objeví čerstvě založený účet (Google i e-mail/heslo), appku
+  // mu rovnou zase zabouchneme — true = appka právě takový pokus odmítla.
+  webSignupBlocked: boolean;
+  clearWebSignupBlocked: () => void;
   registerCurrentDevice: () => Promise<void>;
   removeDevice: (rowId: string) => Promise<void>;
   addDeviceSlot: () => Promise<void>;
@@ -100,6 +105,9 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   profile: null,
   loading: true,
   deviceLimitHit: null,
+  webSignupBlocked: false,
+
+  clearWebSignupBlocked: () => set({ webSignupBlocked: false }),
 
   registerCurrentDevice: async () => {
     const { data, error } = await supabase.rpc("register_device", {
@@ -138,8 +146,27 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   currentDeviceId: () => getDeviceId(),
 
   init: async () => {
+    // Na webu se dá jen přihlásit, ne založit nový účet (přes Google i přes
+    // e-mail/heslo — registrační UI je na webu skryté, ale tohle chytí i
+    // pokus mimo UI, např. přímé volání přes konzoli). Nový účet poznáme
+    // podle toho, že created_at a last_sign_in_at jsou skoro totožné
+    // (přihlášení == vznik účtu). Takový účet rovnou smažeme a odhlásíme.
+    // Vrací true, když zablokovala.
+    const blockIfNewWebSignup = async (session: Session): Promise<boolean> => {
+      if (Capacitor.isNativePlatform()) return false;
+      const createdAt = new Date(session.user.created_at).getTime();
+      const lastSignIn = session.user.last_sign_in_at ? new Date(session.user.last_sign_in_at).getTime() : createdAt;
+      if (Math.abs(lastSignIn - createdAt) >= 10000) return false; // starší účet, jen se přihlašuje
+      await supabase.functions.invoke("delete-account", {
+        headers: { Authorization: `Bearer ${session.access_token}` },
+      }).catch(() => {});
+      await supabase.auth.signOut();
+      set({ user: null, session: null, profile: null, webSignupBlocked: true });
+      return true;
+    };
+
     const { data: { session } } = await supabase.auth.getSession();
-    if (session?.user) {
+    if (session?.user && !(await blockIfNewWebSignup(session))) {
       const profile = await fetchProfile(session.user.id);
       set({ user: session.user, session, profile, loading: false });
       await get().registerCurrentDevice();
@@ -149,6 +176,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
 
     supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
+        if (await blockIfNewWebSignup(session)) return;
         const profile = await fetchProfile(session.user.id);
         set({ user: session.user, session, profile });
         await get().registerCurrentDevice();

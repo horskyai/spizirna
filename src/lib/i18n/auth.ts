@@ -41,6 +41,10 @@ export const auth: Record<string, Translation> = {
     cs: "Tento e-mail je už zaregistrovaný",
     sk: "Tento e-mail je už zaregistrovaný",
   },
+  "auth.errWebSignupBlocked": {
+    cs: "Přes web se dá jen přihlásit, ne založit nový účet. Stáhni si appku Spižírna z Google Play a zaregistruj se tam.",
+    sk: "Cez web sa dá len prihlásiť, nie založiť nový účet. Stiahni si appku Spižírna z Google Play a zaregistruj sa tam.",
+  },
 
   // ── Poznámka o zkušební době ──
   "auth.trialNote": { cs: "Po registraci máte", sk: "Po registrácii máte" },

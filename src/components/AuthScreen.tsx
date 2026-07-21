@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { getCurrentMode } from "@/store/modeStore";
 import { useT } from "@/lib/i18n";
@@ -28,6 +28,18 @@ export function AuthScreen() {
   // "auth" = login/registrace, "reset" = zadání e-mailu, "resetSent" = potvrzení
   const [view, setView] = useState<"auth" | "reset" | "resetSent">("auth");
   const { signIn, signUp, resetPassword, signInWithGoogle } = useAuthStore();
+  const webSignupBlocked = useAuthStore((s) => s.webSignupBlocked);
+  const clearWebSignupBlocked = useAuthStore((s) => s.clearWebSignupBlocked);
+
+  // Appka právě odmítla nově založený účet na webu (registrace jen v appce)
+  // — ukaž vysvětlení a ukonči "Načítám" stav tlačítka.
+  useEffect(() => {
+    if (webSignupBlocked) {
+      setError(t("auth.errWebSignupBlocked"));
+      setLoading(false);
+      clearWebSignupBlocked();
+    }
+  }, [webSignupBlocked, clearWebSignupBlocked, t]);
 
   // Přihlášení přes Google. Na webu appka přesměruje pryč (loading necháváme).
   // V appce se otevře systémový prohlížeč nad appkou — pokud ho uživatel zavře
