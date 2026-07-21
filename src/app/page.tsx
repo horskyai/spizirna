@@ -17,9 +17,7 @@ import { RecurringView } from "@/components/RecurringView";
 import { ProvozView } from "@/components/ProvozView";
 import { ProductSheet } from "@/components/ProductSheet";
 import { ModeSelect } from "@/components/ModeSelect";
-// LanguageSelect je dočasně vypnutý (appka je zatím jen česky) — až se SK
-// vrátí, vrať i tento import a použití v render bloku.
-// import { LanguageSelect } from "@/components/LanguageSelect";
+import { LanguageSelect } from "@/components/LanguageSelect";
 import { AuthScreen } from "@/components/AuthScreen";
 import { DeviceLimitScreen } from "@/components/DeviceLimitScreen";
 import { BusinessTypeSelect } from "@/components/BusinessTypeSelect";
@@ -452,17 +450,19 @@ export default function Home() {
     }
   }, []);
 
-  // Výběr jazyka — DOČASNĚ VYPNUTO (appka je zatím jen česky). Bereme ho vždy
-  // jako „hotový", takže se obrazovka výběru jazyka nikdy nezobrazí.
-  const [localeSelected] = useState(true);
+  // Výběr jazyka — nabízí se jen v domácnosti (provoz běží natvrdo česky).
+  const [localeSelected, setLocaleSelected] = useState(() => {
+    if (typeof window === "undefined") return true;
+    const savedLocale = localStorage.getItem("app-locale");
+    return !!(savedLocale && JSON.parse(savedLocale)?.state?.locale);
+  });
 
-  // Zamkni jazyk na češtinu — dokud běží jen CZ verze. Přepíše i případný
-  // dřív uložený "sk". Až se SK vrátí, tento efekt odeber.
+  // Provoz nemá výběr jazyka — zamkni na češtinu (přepíše i dřív uložené "sk").
   useEffect(() => {
-    if (useLocaleStore.getState().locale !== "cs") {
+    if (mode === "provoz" && useLocaleStore.getState().locale !== "cs") {
       useLocaleStore.getState().setLocale("cs");
     }
-  }, []);
+  }, [mode]);
 
   // Zobraz ModeSelect (onboarding + výběr plánu) jen pokud plán ještě nebyl vybrán
   const [modeSelected, setModeSelected] = useState(() => {
@@ -483,17 +483,21 @@ export default function Home() {
     );
   }
 
-  // 1) Výběr jazyka — DOČASNĚ VYPNUTO. Aplikace je zatím jen v češtině, takže
-  // obrazovku výběru jazyka nezobrazujeme. Locale se natvrdo drží na "cs"
-  // (viz efekt níže). Až se SK znovu spustí, vrať původní blok:
-  //   if (JE_APP && !localeSelected) { return <LanguageSelect .../> }
-  // a odeber ten efekt.
-
-  // 2) Výběr režimu — první spuštění (jen jednou), jen v appce
+  // 1) Výběr režimu — první spuštění (jen jednou), jen v appce
   if (JE_APP && (!modeSelected || mode === null)) {
     return (
       <ErrorBoundary>
         <ModeSelect onDone={() => setModeSelected(true)} />
+      </ErrorBoundary>
+    );
+  }
+
+  // 2) Výběr jazyka (čeština/slovenština) — jen v domácnosti, po výběru režimu.
+  // Provoz jazyk nevybírá, jede natvrdo česky (viz zamykací efekt výše).
+  if (JE_APP && mode === "domacnost" && !localeSelected) {
+    return (
+      <ErrorBoundary>
+        <LanguageSelect onDone={() => setLocaleSelected(true)} />
       </ErrorBoundary>
     );
   }
