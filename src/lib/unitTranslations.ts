@@ -14,6 +14,7 @@ const UNIT_SK: Record<string, string> = {
   "stroužky": "strúčiky",
   "svazek": "zväzok",
   "špetka": "štipka",
+  "stonek": "stonka",
 };
 
 export function translateUnit(unit: string): string {
