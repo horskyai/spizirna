@@ -209,6 +209,31 @@ const TAG_SK: Record<string, string> = {
   "úhoř": "úhor",
   "čínská kuchyně": "čínska kuchyňa",
   "špízy": "špízy",
+
+  // ── Doplněno pro kategorii kuřecí ──
+  "burger": "burger",
+  "celé kuře": "celé kura",
+  "citrusová omáčka": "citrusová omáčka",
+  "dušení": "dusenie",
+  "jamajská kuchyně": "jamajská kuchyňa",
+  "jeden hrnec": "jeden hrniec",
+  "jeden plech": "jeden plech",
+  "korejská kuchyně": "kórejská kuchyňa",
+  "krémová omáčka": "krémová omáčka",
+  "medová marináda": "medová marináda",
+  "mleté maso": "mleté mäso",
+  "moderní technika": "moderná technika",
+  "plněné maso": "plnené mäso",
+  "pomalé vaření": "pomalé varenie",
+  "pro děti": "pre deti",
+  "párty": "párty",
+  "sladkokyselé": "sladkokyslé",
+  "sladkoslaná omáčka": "sladkoslaná omáčka",
+  "smažení": "vyprážanie",
+  "street food": "street food",
+  "všední den": "všedný deň",
+  "wrap": "wrap",
+  "zdravá volba": "zdravá voľba",
 };
 
 export function translateTag(tag: string): string {
