@@ -259,6 +259,32 @@ const TAG_SK: Record<string, string> = {
   "turecká kuchyně": "turecká kuchyňa",
   "čočka": "šošovica",
   "špenát": "špenát",
+
+  // ── Doplněno pro kategorie veganské a saláty ──
+  "bez pečení": "bez pečenia",
+  "bez vajec": "bez vajec",
+  "bez vaření": "bez varenia",
+  "bezlepkové": "bezlepkové",
+  "bezlepkové možné": "bezlepkové možné",
+  "kuskus": "kuskus",
+  "křupavý": "chrumkavý",
+  "luštěninový": "strukovinový",
+  "nudle": "rezance",
+  "obal": "obal",
+  "obilninový": "obilninový",
+  "ovesné vločky": "ovsené vločky",
+  "ovocné": "ovocné",
+  "ovocný": "ovocný",
+  "polenta": "polenta",
+  "severská kuchyně": "severská kuchyňa",
+  "studený": "studený",
+  "syrová strava": "surová strava",
+  "sytý": "sýty",
+  "sýrový": "syrový",
+  "tempeh": "tempeh",
+  "teplý": "teplý",
+  "vegan": "vegán",
+  "vydatný": "výdatný",
 };
 
 export function translateTag(tag: string): string {
