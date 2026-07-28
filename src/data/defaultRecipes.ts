@@ -45076,7 +45076,7 @@ export const DEFAULT_RECIPES: Omit<Recipe, "id">[] = [
         name: "Citronová tráva",
         name_sk: "Citrónová tráva",
         quantity: 1,
-        unit: "stonka",
+        unit: "stonek",
       },
       {
         name: "Chilli paprička",
