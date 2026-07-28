@@ -234,6 +234,31 @@ const TAG_SK: Record<string, string> = {
   "všední den": "všedný deň",
   "wrap": "wrap",
   "zdravá volba": "zdravá voľba",
+
+  // ── Doplněno pro kategorii vegetariánské ──
+  "avokádo": "avokádo",
+  "batáty": "sladké zemiaky",
+  "belgická kuchyně": "belgická kuchyňa",
+  "bez tepelné úpravy": "bez tepelnej úpravy",
+  "brambory": "zemiaky",
+  "brokolice": "brokolica",
+  "brunch": "brunch",
+  "celer": "zeler",
+  "cizrna": "cícer",
+  "cuketa": "cuketa",
+  "dýně": "tekvica",
+  "feta": "feta",
+  "gratin": "gratin",
+  "karí": "kari",
+  "kokos": "kokos",
+  "lilek": "baklažán",
+  "paneer": "paneer",
+  "quinoa": "quinoa",
+  "smetana": "smotana",
+  "tofu": "tofu",
+  "turecká kuchyně": "turecká kuchyňa",
+  "čočka": "šošovica",
+  "špenát": "špenát",
 };
 
 export function translateTag(tag: string): string {
