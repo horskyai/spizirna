@@ -343,6 +343,12 @@ const TAG_SK: Record<string, string> = {
   "toast": "toast",
   "tortilla": "tortilla",
   "zbytky": "zvyšky",
+
+  // ── Doplněno pro kategorii snídaně ──
+  "latinskoamerická kuchyně": "latinskoamerická kuchyňa",
+  "německá kuchyně": "nemecká kuchyňa",
+  "smoothie": "smoothie",
+  "teplé": "teplé",
 };
 
 export function translateTag(tag: string): string {
