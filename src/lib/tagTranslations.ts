@@ -327,6 +327,22 @@ const TAG_SK: Record<string, string> = {
   "zmrzlina": "zmrzlina",
   "čokoláda": "čokoláda",
   "šlehačka": "šľahačka",
+
+  // ── Doplněno pro kategorii rychlá jídla ──
+  "20 minut": "20 minút",
+  "gril": "gril",
+  "jednoduché": "jednoduché",
+  "jednohrnec": "jeden hrniec",
+  "jednohubky": "jednohubky",
+  "mísa": "misa",
+  "pánvička": "panvička",
+  "quesadilla": "quesadilla",
+  "rychlé": "rýchle",
+  "sendvič": "sendvič",
+  "syté": "sýte",
+  "toast": "toast",
+  "tortilla": "tortilla",
+  "zbytky": "zvyšky",
 };
 
 export function translateTag(tag: string): string {
