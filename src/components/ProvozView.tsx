@@ -1300,10 +1300,15 @@ function HistorieInventur() {
 
         return (
           <div key={inv.id} className="card overflow-hidden">
-            {/* Hlavička — kliknutím rozklikne */}
-            <button
+            {/* Hlavička — kliknutím rozklikne. Div s role="button", ne <button>,
+                protože uvnitř jsou další klikatelná tlačítka (export/sdílet/smazat)
+                — vnořené <button> v <button> je neplatné HTML. */}
+            <div
+              role="button"
+              tabIndex={0}
               onClick={() => setOtevreneId(otevreno ? null : inv.id)}
-              style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, textAlign: "left" }}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setOtevreneId(otevreno ? null : inv.id); } }}
+              style={{ width: "100%", padding: "14px 16px", display: "flex", alignItems: "center", gap: 12, textAlign: "left", cursor: "pointer" }}
             >
               <div style={{ flex: 1, minWidth: 0 }}>
                 <p className="font-bold text-sm" style={{ color: "var(--text-primary)" }}>{inv.nazev}</p>
@@ -1349,7 +1354,7 @@ function HistorieInventur() {
                   <Trash2 size={14} style={{ color: "var(--text-tertiary)" }} />
                 </button>
               </div>
-            </button>
+            </div>
 
             {/* Detail položek */}
             {otevreno && (
