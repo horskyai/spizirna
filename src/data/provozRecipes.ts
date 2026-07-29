@@ -239,7 +239,7 @@ export const PROVOZ_RECIPES: Omit<Recipe, "id">[] = [
     instructions_sk: [
       "Údené mäso vlož do kotla, zalej 8 litrami vody, pridaj bobkový list a rascu. Var na miernom plameni 60 minút, kým mäso nezačne mäknúť.",
       "Mäso vyber, nakrájaj na kocky ~1,5 cm a vráť späť. Vývar nechaj v kotli.",
-      "Kyslú kapustu podľa kyslosti prepláchni, nahrubo naseкaj a pridaj do vývaru. Var ďalších 30 minút, kým nezmäkne.",
+      "Kyslú kapustu podľa kyslosti prepláchni, nahrubo nasekaj a pridaj do vývaru. Var ďalších 30 minút, kým nezmäkne.",
       "Zemiaky ošúp, nakrájaj na kocky ~1,5 cm a klobásu na kolieska ~1 cm. Oboje pridaj do polievky a var 20 minút, kým zemiaky nezmäknú.",
       "Cibuľu nakrájaj nadrobno, na panvici rozpusť masť a restuj cibuľu 8–10 minút dozlatista.",
       "Stiahni panvicu z plameňa, vsyp múku a papriku, krátko opraž na zápražku — papriku neprepáľ, zhorkla by. Rozšľahaj trochou vývaru a vlej do kotla.",
