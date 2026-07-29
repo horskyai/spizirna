@@ -432,6 +432,13 @@ const TAG_SK: Record<string, string> = {
   "strapačky": "strapačky",
   "velkovýroba": "veľkovýroba",
   "švestky": "slivky",
+  "kebab": "kebab",
+  "konvektomat": "konvektomat",
+  "party": "párty",
+  "pekáč": "pekáč",
+  "smetanová omáčka": "smotanová omáčka",
+  "studený bufet": "studený bufet",
+  "wings": "wings",
 };
 
 export function translateTag(tag: string): string {
