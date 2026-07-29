@@ -22,8 +22,10 @@ export function EmployeeUnlockButton() {
   );
 }
 
-// Modální numpad na zadání PINu.
-function PinDialog({ onClose }: { onClose: () => void }) {
+// Modální numpad na zadání PINu. `onUnlocked` (volitelný) se zavolá navíc
+// po úspěšném odemčení — použije se tam, kde má odemčení hned pokračovat
+// další akcí (např. otevřít Nastavení, na které zaměstnanec sáhl).
+export function PinDialog({ onClose, onUnlocked }: { onClose: () => void; onUnlocked?: () => void }) {
   const t = useT();
   const unlock = useEmployeeStore((s) => s.unlock);
   const [pin, setPin] = useState("");
@@ -35,7 +37,7 @@ function PinDialog({ onClose }: { onClose: () => void }) {
     setPin(next.slice(0, 6));
   };
   const odemkni = () => {
-    if (unlock(pin)) onClose();
+    if (unlock(pin)) { onClose(); onUnlocked?.(); }
     else { setChyba(true); setPin(""); }
   };
 

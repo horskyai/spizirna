@@ -11,6 +11,8 @@ import { Plus, Bell, AlertTriangle, ScanLine, PenLine, Settings, HelpCircle, Che
 import { AddProductManual } from "@/components/AddProductManual";
 import { AddRecipeModal } from "@/components/AddRecipeModal";
 import { ScreenGuide, useScreenGuide } from "@/components/ScreenGuide";
+import { useJeZamestnanec } from "@/store/employeeStore";
+import { PinDialog } from "@/components/EmployeeLock";
 import { daysUntil } from "@/lib/dateUtils";
 import { useT } from "@/lib/i18n";
 
@@ -72,6 +74,14 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
   const [showAddRecipe, setShowAddRecipe] = useState(false);
   const [showExpiry, setShowExpiry] = useState(false);
   const [remindedIds, setRemindedIds] = useState<string[]>([]);
+  // Zamčený zaměstnanec smí do Nastavení jen po zadání PINu majitele —
+  // gear ikona jinak vede rovnou dovnitř, kde by mohl ochranu i vypnout.
+  const zamestnanec = useJeZamestnanec();
+  const [showSettingsPin, setShowSettingsPin] = useState(false);
+  const handleOpenSettings = () => {
+    if (zamestnanec) setShowSettingsPin(true);
+    else onOpenSettings?.();
+  };
   const addRecurring = useRecurringStore((s) => s.addItem);
   // V provozu ukaž název provozovny (když je vyplněný), jinak „Provozovna".
   const title =
@@ -156,7 +166,7 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
               )}
               {HelpButton}
               <button
-                onClick={onOpenSettings}
+                onClick={handleOpenSettings}
                 className="w-10 h-10 rounded-full flex items-center justify-center"
                 style={{ background: "white", border: "1px solid var(--border)" }}
                 aria-label="Nastavení"
@@ -194,7 +204,7 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
             )}
             {HelpButton}
             <button
-              onClick={onOpenSettings}
+              onClick={handleOpenSettings}
               className="w-10 h-10 rounded-full flex items-center justify-center"
               style={{ background: "white", border: "1px solid var(--border)" }}
               aria-label="Nastavení"
@@ -206,6 +216,13 @@ export function AppHeader({ onOpenSettings }: { onOpenSettings?: () => void }) {
       )}
 
       {guideSheet}
+
+      {showSettingsPin && (
+        <PinDialog
+          onClose={() => setShowSettingsPin(false)}
+          onUnlocked={() => onOpenSettings?.()}
+        />
+      )}
 
       {/* Add menu sheet */}
       {showAddMenu && (
