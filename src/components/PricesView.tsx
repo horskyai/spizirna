@@ -1,10 +1,45 @@
 "use client";
 
-import { useState } from "react";
-import { TrendingDown, Store, BarChart2 } from "lucide-react";
+import { X, TrendingDown, Store, BarChart2 } from "lucide-react";
 import { usePriceStore } from "@/store/priceStore";
 import { formatDateShort } from "@/lib/dateUtils";
 import { useT } from "@/lib/i18n";
+
+// Bottom-sheet obálka kolem PricesView — otevírá se z Nastavení (viz
+// SettingsModal.tsx), appka pro ni nemá vlastní tab.
+export function PricesModal({ onClose }: { onClose: () => void }) {
+  const t = useT();
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 210, display: "flex", flexDirection: "column", justifyContent: "flex-end" }}>
+      <div onClick={onClose} style={{ position: "absolute", inset: 0, background: "rgba(0,0,0,0.45)" }} />
+      <div
+        className="relative animate-slide-up"
+        style={{
+          background: "var(--bg-primary)",
+          borderRadius: "24px 24px 0 0",
+          maxHeight: "90dvh",
+          display: "flex",
+          flexDirection: "column",
+          paddingBottom: "env(safe-area-inset-bottom, 16px)",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div style={{ display: "flex", justifyContent: "center", padding: "12px 0 4px" }}>
+          <div style={{ width: 40, height: 4, borderRadius: 99, background: "var(--border)" }} />
+        </div>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 20px 12px" }}>
+          <h2 style={{ fontSize: 20, fontWeight: 800, color: "var(--text-primary)", margin: 0 }}>{t("prices.title")}</h2>
+          <button onClick={onClose} style={{ width: 32, height: 32, borderRadius: "50%", background: "var(--border)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <X size={15} style={{ color: "var(--text-secondary)" }} />
+          </button>
+        </div>
+        <div style={{ flex: 1, overflowY: "auto" }}>
+          <PricesView />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function PricesView() {
   const t = useT();

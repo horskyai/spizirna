@@ -4,6 +4,19 @@ import type { Translation } from "./dict";
 export const settings: Record<string, Translation> = {
   "settings.title": { cs: "Nastavení", sk: "Nastavenia" },
 
+  // ── Jazyk appky (jen domácnost — provoz běží natvrdo česky) ──
+  "settings.language": { cs: "Jazyk aplikace", sk: "Jazyk aplikácie" },
+  "settings.languageCzech": { cs: "Čeština", sk: "Čeština" },
+  "settings.languageSlovak": { cs: "Slovenčina", sk: "Slovenčina" },
+
+  // ── Ceny (historie cen napříč obchody) ──
+  "settings.prices": { cs: "Ceny", sk: "Ceny" },
+  "settings.pricesOpen": { cs: "Zobrazit historii cen", sk: "Zobraziť históriu cien" },
+  "settings.pricesHint": {
+    cs: "Porovnání cen podle obchodu — sbírá se automaticky, když u skenovaného produktu zadáš cenu.",
+    sk: "Porovnanie cien podľa obchodu — zbiera sa automaticky, keď pri skenovanom produkte zadáš cenu.",
+  },
+
   // ── Účet ──
   "settings.account": { cs: "Účet", sk: "Účet" },
   "settings.signedInAs": { cs: "Přihlášen jako", sk: "Prihlásený ako" },

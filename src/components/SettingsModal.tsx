@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus, Download, BarChart3, Lock, Users, Copy, Check, Sparkles, Wrench } from "lucide-react";
+import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus, Download, BarChart3, Lock, Users, Copy, Check, Sparkles, Wrench, Languages } from "lucide-react";
 import { useNotifPrefsStore, NOTIF_META, NotifType } from "@/store/notifPrefsStore";
 import { exportHouseholdJSON, exportPantryCSV } from "@/lib/exportData";
 import { StatsModal } from "@/components/StatsModal";
+import { PricesModal } from "@/components/PricesView";
 import { useAuthStore, type DeviceRow } from "@/store/authStore";
 import { useModeStore } from "@/store/modeStore";
 import { useBusinessStore } from "@/store/businessStore";
@@ -13,6 +14,7 @@ import { useFoodLogStore } from "@/store/foodLogStore";
 import { useFeaturesStore } from "@/store/featuresStore";
 import { useGamificationStore, type BadgeState } from "@/store/gamificationStore";
 import { useT, useLocale } from "@/lib/i18n";
+import { useLocaleStore } from "@/store/localeStore";
 import { formatDateShort } from "@/lib/dateUtils";
 import { scheduleDailyNudges, cancelDailyNudges } from "@/lib/notifications";
 import { usePantryStore } from "@/store/pantryStore";
@@ -31,6 +33,7 @@ const EXPIRY_NOTIF_KEY = "expiry-notifications";
 export function SettingsModal({ onClose }: { onClose: () => void }) {
   const t = useT();
   const locale = useLocale();
+  const setLocale = useLocaleStore((s) => s.setLocale);
   const { profile, user, signOut, isTrialActive } = useAuthStore();
   const supportSubject = locale === "sk" ? "Špajza – podpora" : "Spižírna – podpora";
   const supportHref = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(supportSubject)}`;
@@ -57,6 +60,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
   const lockEmp = useEmployeeStore((s) => s.lock);
   const [empPin, setEmpPin] = useState("");
   const [showStats, setShowStats] = useState(false);
+  const [showPrices, setShowPrices] = useState(false);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [confirmReset, setConfirmReset] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -214,6 +218,33 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           )}
 
           {/* ══ 3. NASTAVENÍ REŽIMU ══ co se často ladí ══ */}
+
+          {/* ── Jazyk aplikace ── jen v domácnosti, provoz běží natvrdo
+              česky. Jde vybrat jen jednou při onboardingu (LanguageSelect),
+              tohle je jediná cesta, jak si to jazyk později rozmyslet. */}
+          {mode !== "provoz" && (
+            <Section icon={<Languages size={15} />} title={t("settings.language")}>
+              <div style={{ display: "flex", borderRadius: 12, padding: 3, background: "var(--bg-primary)", border: "1.5px solid var(--border)" }}>
+                {([
+                  { code: "cs" as const, label: t("settings.languageCzech") },
+                  { code: "sk" as const, label: t("settings.languageSlovak") },
+                ]).map(({ code, label }) => (
+                  <button
+                    key={code}
+                    onClick={() => setLocale(code)}
+                    style={{
+                      flex: 1, padding: "8px 0", borderRadius: 9, fontSize: 13, fontWeight: 700,
+                      background: locale === code ? "var(--green-primary)" : "transparent",
+                      color: locale === code ? "white" : "var(--text-secondary)",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </Section>
+          )}
 
           {/* ── Sledování kalorií ── volitelná funkce, jen v domácnosti.
               Zapnutím se zobrazí tab "Jídlo", kalorie u produktů a denní cíl. */}
@@ -500,6 +531,17 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             </Section>
           )}
 
+          {/* ── Ceny ── jen domácnost. Data se sbírají automaticky při skenování
+              (viz ProductSheet), tohle je jediné místo, kde je jde zobrazit. */}
+          {mode !== "provoz" && (
+            <Section icon={<BarChart3 size={15} />} title={t("settings.prices")}>
+              <button onClick={() => setShowPrices(true)} style={rowBtn("var(--green-light)", "var(--green-dark)")}>
+                <BarChart3 size={15} /> {t("settings.pricesOpen")}
+              </button>
+              <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.pricesHint")}</p>
+            </Section>
+          )}
+
           {/* ── Export dat ── jen domácnost (provoz exportuje ze své záložky). GDPR přenositelnost. */}
           {mode !== "provoz" && (
             <Section icon={<Download size={15} />} title={t("settings.export")}>
@@ -653,6 +695,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
       </div>
 
       {showStats && <StatsModal onClose={() => setShowStats(false)} />}
+      {showPrices && <PricesModal onClose={() => setShowPrices(false)} />}
     </div>
   );
 }

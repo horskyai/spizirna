@@ -2,6 +2,8 @@ import type { Translation } from "./dict";
 
 // Překlady pro PricesView (sledování cen). Prefix "prices.".
 export const prices: Record<string, Translation> = {
+  "prices.title": { cs: "Ceny", sk: "Ceny" },
+
   // ── Prázdný stav ──
   "prices.emptyTitle": { cs: "Žádná cenová data", sk: "Žiadne cenové dáta" },
   "prices.emptyDesc": {
