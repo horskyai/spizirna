@@ -75,12 +75,17 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
   // synchronně — stav by se mezi dvěma rychlými tapy nestihl aktualizovat.
   const savingRef = useRef(false);
 
-  // Přidá qty k množství první existující položky
+  // "qty" je počet balení (viz "2x 500g" text u stepperu) — k uložení
+  // množství v základní jednotce (g/ml/ks) ho násobíme velikostí balení,
+  // jinak by se 2 balení 500g uložila jako "2 g" místo "1000 g".
+  const packageSize = product.weight_g || product.volume_ml || product.pieces_count || 1;
+
+  // Přidá qty balení k množství první existující položky
   const handleAddToExisting = () => {
     if (savingRef.current) return;
     savingRef.current = true;
     const first = existingItems[0];
-    updateItem(first.id, { quantity: first.quantity + qty });
+    updateItem(first.id, { quantity: first.quantity + qty * packageSize });
     setAddedToExisting(true);
     setTimeout(onClose, 1200);
   };
@@ -114,7 +119,7 @@ export function ProductSheet({ product, onClose, fromScanner = false }: Props) {
       setTimeout(onClose, 1200);
       return;
     }
-    addItem(finalProduct, qty, location, price ? parseFloat(price) : undefined, store, undefined, undefined, expires || undefined);
+    addItem(finalProduct, qty * packageSize, location, price ? parseFloat(price) : undefined, store, undefined, undefined, expires || undefined);
     recordAdded();
     // Zapamatuj doplněné nutriční hodnoty do katalogu (jen u reálného EAN),
     // ať je příští sken téhož produktu už zná.

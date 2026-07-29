@@ -204,7 +204,16 @@ export function AddProductManual({ onClose, prefillEAN }: Props) {
     // Zapamatuj produkt podle EAN do lokálního i sdíleného katalogu —
     // příští sken ho najde okamžitě, i ostatním uživatelům
     rememberProduct(product);
-    addItem(product, qty, location, price ? parseFloat(price) : undefined, store, tags, photoUrl ?? undefined, expires || undefined);
+    // "Množství" v kroku Spižírna je počet BALENÍ (1, 2, 3...), ne rovnou
+    // výsledné množství v gramech/ml/ks — to by jinak zahodilo velikost
+    // balení zadanou o krok dřív (500g balení mrkve by se uložilo jako "1 g").
+    // Celkové množství = počet balení × velikost jednoho balení.
+    const packageSize =
+      (unit === "g" ? parseFloat(weightG)
+        : unit === "ml" ? parseFloat(volumeMl)
+        : unit === "l" ? parseFloat(liters) * 1000
+        : parseFloat(pieces)) || 1;
+    addItem(product, qty * packageSize, location, price ? parseFloat(price) : undefined, store, tags, photoUrl ?? undefined, expires || undefined);
     recordAdded();
     setAdded(true);
     setTimeout(onClose, 1000);
