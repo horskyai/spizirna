@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Utensils, ShoppingCart, Package, ClipboardList, FileSpreadsheet, Menu } from "lucide-react";
 import { useUIStore, type Tab, type ProvozSubTab } from "@/store/uiStore";
 import { useShoppingStore } from "@/store/shoppingStore";
@@ -73,8 +74,18 @@ export function TabBar() {
       ? [...TABS_DOMACNOST.slice(0, -1), FOOD_TAB, TABS_DOMACNOST[TABS_DOMACNOST.length - 1]]
       : TABS_DOMACNOST;
 
+  // Skutečná výška lišty (včetně safe-area) jako CSS proměnná na <html> —
+  // fixní panely nad ní (např. košík v Kase) podle ní odsadí spodek, ať ji
+  // nepřekryjí. Změří se po každém renderu, ať sedí i po změně obsahu tabů.
+  const navRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    if (!navRef.current) return;
+    document.documentElement.style.setProperty("--tabbar-height", `${navRef.current.offsetHeight}px`);
+  });
+
   return (
     <nav
+      ref={navRef}
       style={{
         background: "white",
         borderTop: "1px solid var(--border)",

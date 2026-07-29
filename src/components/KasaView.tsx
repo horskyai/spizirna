@@ -1322,13 +1322,14 @@ export function KasaView() {
 
       </div>{/* konec kasa-main */}
 
-      {/* Košík. Na mobilu fixní panel dole, na PC pravý sloupec (viz CSS). */}
+      {/* Košík. Na mobilu fixní panel dole NAD spodní lištou (viz --tabbar-height
+          v TabBar.tsx — bez toho by košík lištu celou překryl a nešlo by
+          se z rozpracovaného účtu nikam jinam přepnout). Na PC pravý sloupec (viz CSS). */}
       {cartPocet > 0 && (
         <div className="kasa-cart" style={{
-          position: "fixed", left: 0, right: 0, bottom: 0, zIndex: 90,
+          position: "fixed", left: 0, right: 0, bottom: "var(--tabbar-height, 84px)", zIndex: 90,
           background: "var(--bg-primary)", borderTop: "1px solid var(--border)",
-          padding: "12px 20px", paddingBottom: "max(16px, env(safe-area-inset-bottom, 16px))",
-          boxShadow: "0 -4px 20px rgba(0,0,0,0.12)",
+          padding: "12px 20px 16px", boxShadow: "0 -4px 20px rgba(0,0,0,0.12)",
         }}>
           <div style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
           <div style={{ maxHeight: 140, overflowY: "auto", marginBottom: 10 }}>
