@@ -419,6 +419,19 @@ const TAG_SK: Record<string, string> = {
   "velkoobjem": "veľkoobjem",
   "vietnamská kuchyně": "vietnamská kuchyňa",
   "várnice": "várnica",
+  "bobaľky": "bobaľky",
+  "dušené maso": "dusené mäso",
+  "makový závin": "makový závin",
+  "oštiepok": "oštiepok",
+  "parené buchty": "parené buchty",
+  "perkelt": "perkelt",
+  "pečené maso": "pečené mäso",
+  "skopové": "skopové",
+  "sladké pečivo": "sladké pečivo",
+  "slavnostní jídlo": "slávnostné jedlo",
+  "strapačky": "strapačky",
+  "velkovýroba": "veľkovýroba",
+  "švestky": "slivky",
 };
 
 export function translateTag(tag: string): string {
