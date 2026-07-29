@@ -78,3 +78,23 @@ export const useRecipeStore = create<RecipeStore>()(
     }
   )
 );
+
+// Persist middleware ukládá do localStorage jen při set() z akce (add/
+// update/deleteRecipe) — čerstvě seedovaná výchozí data (a migrace v
+// onRehydrateStorage výše) by se tak jinak NIKDY nezapsala. Při každém
+// dalším otevření appky by se recepty vygenerovaly znovu s novými
+// náhodnými ID, což potichu rozbije cokoliv, co si ID receptu ukládá
+// (např. napojení položky nabídky v Kase provozu na recept — odečet
+// surovin by přestal fungovat po restartu appky). Vynutíme jeden zápis
+// hned po dokončení hydratace, ať jsou ID od teď stabilní.
+// (Musí to být SAMOSTATNÝ příkaz PO přiřazení useRecipeStore, ne odkaz na
+// useRecipeStore zevnitř jeho vlastní inicializace — to by za určitého
+// časování hydratace spadlo na "Cannot access before initialization".)
+// Hydratace bývá (i asynchronně) hotová dřív, než sem execution dorazí —
+// proto nejdřív zkontrolovat hasHydrated() a případně zapsat rovnou, jinak
+// se přihlásit na dokončení (kryje oba možné časování).
+if (useRecipeStore.persist.hasHydrated()) {
+  useRecipeStore.setState({});
+} else {
+  useRecipeStore.persist.onFinishHydration(() => useRecipeStore.setState({}));
+}
