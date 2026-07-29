@@ -485,6 +485,21 @@ const TAG_SK: Record<string, string> = {
   "taco": "taco",
   "toustový bar": "toastový bar",
   "uzeniny": "údeniny",
+  "anglická kuchyně": "anglická kuchyňa",
+  "brunč": "brunch",
+  "burrito": "burrito",
+  "croissant": "croissant",
+  "granola": "granola",
+  "jogurt": "jogurt",
+  "kaše": "kaša",
+  "ovesná kaše": "ovsená kaša",
+  "palačinky": "palacinky",
+  "rychlé občerstvení": "rýchle občerstvenie",
+  "self-service": "self-service",
+  "studená snídaně": "studené raňajky",
+  "teplá snídaně": "teplé raňajky",
+  "toust": "hrianka",
+  "zdravá výživa": "zdravá výživa",
 };
 
 export function translateTag(tag: string): string {
