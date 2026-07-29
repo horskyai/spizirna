@@ -451,6 +451,15 @@ const TAG_SK: Record<string, string> = {
   "fondue": "fondue",
   "plněná zelenina": "plnená zelenina",
   "quiche": "quiche",
+  "buddha bowl": "buddha bowl",
+  "chilli": "čili",
+  "falafel": "falafel",
+  "gastronádoba": "gastronádoba",
+  "humus": "hummus",
+  "jackfruit": "jackfruit",
+  "moussaka": "musaka",
+  "papriky": "papriky",
+  "seitan": "seitan",
 };
 
 export function translateTag(tag: string): string {
