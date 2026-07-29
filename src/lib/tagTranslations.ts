@@ -447,6 +447,10 @@ const TAG_SK: Record<string, string> = {
   "obědové menu": "obedové menu",
   "pánev": "panvica",
   "středomořská": "stredomorská",
+  "bez masa": "bez mäsa",
+  "fondue": "fondue",
+  "plněná zelenina": "plnená zelenina",
+  "quiche": "quiche",
 };
 
 export function translateTag(tag: string): string {
