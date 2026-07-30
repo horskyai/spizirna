@@ -583,7 +583,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
 
           {/* ── Plán ── info o plánu; platby (změna/zrušení) až s Play Billing.
               Trial JEN pro provoz (14 dní zdarma); domácnost trial nemá (má
-              model 50 položek zdarma / 149 Kč). Odznak se ukazuje jen v provozu
+              model 20 položek zdarma / 149 Kč). Odznak se ukazuje jen v provozu
               a jen dokud zkušebka běží. */}
           <Section icon={<Crown size={15} />} title={t("settings.plan")}>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 2px 10px" }}>

@@ -2,9 +2,9 @@
 // k předplatnému. Měkký limit — položky se přidávají dál, jen se varuje.
 // Provozovna limit nemá (má vlastní placený model).
 
-export const FREE_LIMIT = 50;
+export const FREE_LIMIT = 20;
 // Od kolika položek začneme nenápadně upozorňovat, že se blíží limit.
-export const WARN_FROM = 45;
+export const WARN_FROM = 18;
 
 export type LimitState = "ok" | "near" | "over";
 

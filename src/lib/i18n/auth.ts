@@ -51,8 +51,8 @@ export const auth: Record<string, Translation> = {
   "auth.trialDays": { cs: "14 dní zdarma", sk: "14 dní zadarmo" },
   // planNote se liší podle režimu (domácnost má limit zdarma, provoz je placený).
   "auth.planNoteDomacnost": {
-    cs: "Domácnost je zdarma do 50 položek, poté 149 Kč/měsíc.",
-    sk: "Domácnosť je zadarmo do 50 položiek, potom 6,90 €/mesiac.",
+    cs: "Domácnost je zdarma do 20 položek, poté 149 Kč/měsíc.",
+    sk: "Domácnosť je zadarmo do 20 položiek, potom 6,90 €/mesiac.",
   },
   "auth.planNoteProvoz": {
     cs: "Provozovna 299 Kč/měsíc.",

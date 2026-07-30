@@ -336,7 +336,7 @@ export function AuthScreen() {
         {mode === "signup" && (
           <p className="text-xs text-center px-4" style={{ color: "var(--text-tertiary)" }}>
             {/* 14denní zkušebka je JEN pro provoz. Domácnost má model
-                50 položek zdarma / 149 Kč → tam trial text neukazujeme. */}
+                20 položek zdarma / 149 Kč → tam trial text neukazujeme. */}
             {getCurrentMode() === "provoz" ? (
               <>
                 {t("auth.trialNote")} <b>{t("auth.trialDays")}</b>.<br />

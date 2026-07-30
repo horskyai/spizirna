@@ -28,7 +28,7 @@ export const settings: Record<string, Translation> = {
 
   // ── Plán / předplatné ──
   "settings.plan": { cs: "Plán", sk: "Plán" },
-  "settings.planInfo": { cs: "Domácnost je zdarma do 50 položek. Přechod na neomezené předplatné bude dostupný v mobilní aplikaci.", sk: "Domácnosť je zdarma do 50 položiek. Prechod na neobmedzené predplatné bude dostupný v mobilnej aplikácii." },
+  "settings.planInfo": { cs: "Domácnost je zdarma do 20 položek. Přechod na neomezené předplatné bude dostupný v mobilní aplikaci.", sk: "Domácnosť je zdarma do 20 položiek. Prechod na neobmedzené predplatné bude dostupný v mobilnej aplikácii." },
   // Plán odpovídá režimu: domácnost je zdarma, provoz je placený.
   "settings.planDomacnostFree": { cs: "Domácnost · Zdarma", sk: "Domácnosť · Zadarmo" },
   "settings.planProvozPaid": { cs: "Provozovna · 299 Kč/měs", sk: "Prevádzka · 13,90 €/mes" },
