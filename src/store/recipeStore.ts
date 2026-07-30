@@ -93,8 +93,13 @@ export const useRecipeStore = create<RecipeStore>()(
 // Hydratace bývá (i asynchronně) hotová dřív, než sem execution dorazí —
 // proto nejdřív zkontrolovat hasHydrated() a případně zapsat rovnou, jinak
 // se přihlásit na dokončení (kryje oba možné časování).
-if (useRecipeStore.persist.hasHydrated()) {
-  useRecipeStore.setState({});
-} else {
-  useRecipeStore.persist.onFinishHydration(() => useRecipeStore.setState({}));
+// POZOR: na serveru (SSR) neexistuje localStorage, takže persist middleware
+// tam `api.persist` vůbec nenastaví — bez týhle podmínky appka na serveru
+// spadne s "Cannot read properties of undefined (reading 'hasHydrated')".
+if (typeof window !== "undefined") {
+  if (useRecipeStore.persist.hasHydrated()) {
+    useRecipeStore.setState({});
+  } else {
+    useRecipeStore.persist.onFinishHydration(() => useRecipeStore.setState({}));
+  }
 }
