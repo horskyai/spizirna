@@ -15,8 +15,13 @@ export const useModeStore = create<ModeStore>()(
       setMode: (mode) => {
         const prev = get().mode;
         set({ mode });
-        // Při přepnutí módu reload — každý store musí načíst svá data
-        if (prev !== null && prev !== mode && typeof window !== "undefined") {
+        // Reload i při PRVNÍM výběru (prev === null): recipeStore/priceStore/
+        // gamificationStore čtou getCurrentMode() jen jednou při načtení modulu
+        // (persist klíč i seed dat), takže bez reloadu by zůstaly navždy
+        // omylem naseedované podle výchozího módu "domácnost" — typicky se tak
+        // novému provozu (restaurace/obchod) omylem nabídnou domácí recepty
+        // místo gastro receptáře, dokud uživatel appku ručně neobnoví.
+        if (prev !== mode && typeof window !== "undefined") {
           window.location.reload();
         }
       },
