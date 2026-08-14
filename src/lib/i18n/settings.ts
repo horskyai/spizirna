@@ -46,6 +46,7 @@ export const settings: Record<string, Translation> = {
   },
 
   // ── Název provozovny (jen provoz) ──
+  "settings.provozovna": { cs: "Provozovna", sk: "Prevádzka" },
   "settings.businessName": { cs: "Název provozovny", sk: "Názov prevádzky" },
   "settings.businessNamePlaceholder": { cs: "Např. Kavárna U Lípy", sk: "Napr. Kaviareň U Lipy" },
   // Údaje firmy pro účtenku / doklady
@@ -174,6 +175,7 @@ export const settings: Record<string, Translation> = {
   "settings.version": { cs: "Verze", sk: "Verzia" },
 
   // ── Statistiky domácnosti ──
+  "settings.activity": { cs: "Aktivita", sk: "Aktivita" },
   "settings.stats": { cs: "Moje statistiky", sk: "Moje štatistiky" },
   "settings.statsToggle": { cs: "Sledovat statistiky", sk: "Sledovať štatistiky" },
   "settings.statsOpen": { cs: "Zobrazit statistiky", sk: "Zobraziť štatistiky" },

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { X, User, LogOut, Crown, Info, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus, Download, BarChart3, Lock, Users, Copy, Check, Sparkles, Wrench, Languages } from "lucide-react";
+import { X, User, LogOut, Target, Bell, Trash2, ChevronRight, LifeBuoy, Shield, FileText, HelpCircle, Store, Award, Flame, Smartphone, Plus, Download, BarChart3, Lock, Users, Copy, Check, Sparkles, Wrench, Languages } from "lucide-react";
 import { useNotifPrefsStore, NOTIF_META, NotifType } from "@/store/notifPrefsStore";
 import { exportHouseholdJSON, exportPantryCSV } from "@/lib/exportData";
 import { StatsModal } from "@/components/StatsModal";
@@ -165,7 +165,7 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
 
         <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 16px", display: "flex", flexDirection: "column", gap: 14 }}>
 
-          {/* ── Účet ── */}
+          {/* ── Účet (+ Plán, dřív samostatná sekce) ── */}
           <Section icon={<User size={15} />} title={t("settings.account")}>
             <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "4px 2px 10px" }}>
               <div style={{ width: 44, height: 44, borderRadius: "50%", background: "var(--green-light)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -173,11 +173,23 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                   {displayName.charAt(0).toUpperCase()}
                 </span>
               </div>
-              <div style={{ minWidth: 0 }}>
+              <div style={{ minWidth: 0, flex: 1 }}>
                 <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)", margin: 0 }}>{displayName}</p>
                 <p style={{ fontSize: 12, color: "var(--text-secondary)", margin: "1px 0 0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{email}</p>
               </div>
             </div>
+
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "8px 2px", borderTop: "1px solid var(--border)", marginTop: 2 }}>
+              <span style={{ fontSize: 13, fontWeight: 700, color: "var(--text-primary)" }}>{planLabel}</span>
+              {mode === "provoz" && isTrialActive() && profile?.trial_ends_at && (
+                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green-dark)", background: "var(--green-light)", padding: "4px 10px", borderRadius: 99 }}>
+                  {t("settings.trialEnds").replace("{date}", formatDateShort(profile.trial_ends_at))}
+                </span>
+              )}
+            </div>
+            <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "0 2px 10px", lineHeight: 1.4 }}>
+              {t("settings.planInfo")}
+            </p>
 
             {!confirmSignOut ? (
               <button
@@ -296,9 +308,11 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
           </Section>
           )}
 
-          {/* ── Název provozovny ── jen v provozu */}
+          {/* ── Provozovna ── jen v provozu. Sloučeno z "Název provozovny" +
+              "Typ provozu" — dvě sekce s jedním řádkem obsahu každá. */}
           {mode === "provoz" && (
-          <Section icon={<Store size={15} />} title={t("settings.businessName")}>
+          <Section icon={<Store size={15} />} title={t("settings.provozovna")}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", display: "block", marginBottom: 4 }}>{t("settings.businessName")}</label>
             <input
               type="text"
               value={businessName}
@@ -306,32 +320,32 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
               placeholder={t("settings.businessNamePlaceholder")}
               style={{ width: "100%", background: "var(--bg-primary)", borderRadius: 12, padding: "12px 14px", border: "1.5px solid var(--border)", outline: "none", fontSize: 15, color: "var(--text-primary)" }}
             />
-          </Section>
-          )}
 
-          {/* ── Typ provozu ── jen v provozu; změna je zamčená přes potvrzení ── */}
-          {mode === "provoz" && typProvozu && (
-          <Section icon={<Store size={15} />} title={t("settings.typProvozu")}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
-                {typProvozu === "obchod" ? t("settings.typObchod") : t("settings.typRestaurace")}
-              </span>
-              <button
-                onClick={() => {
-                  const cil = typProvozu === "obchod" ? "restaurace" : "obchod";
-                  const cilLabel = cil === "obchod" ? t("settings.typObchod") : t("settings.typRestaurace");
-                  if (confirm(t("settings.typZmenaQ").replace("{typ}", cilLabel))) {
-                    setTypProvozu(cil);
-                  }
-                }}
-                style={{ fontSize: 13, fontWeight: 600, color: "var(--green-primary)", background: "var(--green-light)", border: "none", borderRadius: 10, padding: "8px 14px" }}
-              >
-                {t("settings.typZmenit")}
-              </button>
-            </div>
-            <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>
-              {t("settings.typHint")}
-            </p>
+            {typProvozu && (
+              <div style={{ marginTop: 14 }}>
+                <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)", display: "block", marginBottom: 4 }}>{t("settings.typProvozu")}</label>
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+                  <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>
+                    {typProvozu === "obchod" ? t("settings.typObchod") : t("settings.typRestaurace")}
+                  </span>
+                  <button
+                    onClick={() => {
+                      const cil = typProvozu === "obchod" ? "restaurace" : "obchod";
+                      const cilLabel = cil === "obchod" ? t("settings.typObchod") : t("settings.typRestaurace");
+                      if (confirm(t("settings.typZmenaQ").replace("{typ}", cilLabel))) {
+                        setTypProvozu(cil);
+                      }
+                    }}
+                    style={{ fontSize: 13, fontWeight: 600, color: "var(--green-primary)", background: "var(--green-light)", border: "none", borderRadius: 10, padding: "8px 14px" }}
+                  >
+                    {t("settings.typZmenit")}
+                  </button>
+                </div>
+                <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>
+                  {t("settings.typHint")}
+                </p>
+              </div>
+            )}
           </Section>
           )}
 
@@ -497,16 +511,11 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             </Section>
           )}
 
-          {/* ── Odznaky ── jen v domácnosti (gamifikace běží zatím tam) */}
+          {/* ── Aktivita ── jen domácnost. Sloučeno z dřívějších 3 sekcí
+              (Odznaky / Moje statistiky / Ceny) — spolu patří, je to
+              "co jsem dokázal a co mě to stálo". */}
           {mode !== "provoz" && (
-            <Section icon={<Award size={15} />} title={t("game.badges.title")}>
-              <BadgesSection badges={badges} t={t} />
-            </Section>
-          )}
-
-          {/* ── Moje statistiky ── jen domácnost. Přepínač + (když zapnuto) otevření přehledu. */}
-          {mode !== "provoz" && (
-            <Section icon={<BarChart3 size={15} />} title={t("settings.stats")}>
+            <Section icon={<Award size={15} />} title={t("settings.activity")}>
               <button
                 onClick={() => setShowStatsFeature(!showStatsFeature)}
                 style={{ display: "flex", alignItems: "center", justifyContent: "space-between", width: "100%", padding: "2px", background: "transparent" }}
@@ -522,91 +531,58 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
                   }} />
                 </span>
               </button>
+              <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 10px", lineHeight: 1.4 }}>{t("settings.statsHint")}</p>
+
               {showStatsFeature && (
-                <button onClick={() => setShowStats(true)} style={{ ...rowBtn("var(--green-light)", "var(--green-dark)"), marginTop: 10 }}>
+                <button onClick={() => setShowStats(true)} style={{ ...rowBtn("var(--green-light)", "var(--green-dark)"), marginBottom: 8 }}>
                   <BarChart3 size={15} /> {t("settings.statsOpen")}
                 </button>
               )}
-              <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.statsHint")}</p>
-            </Section>
-          )}
-
-          {/* ── Ceny ── jen domácnost. Data se sbírají automaticky při skenování
-              (viz ProductSheet), tohle je jediné místo, kde je jde zobrazit. */}
-          {mode !== "provoz" && (
-            <Section icon={<BarChart3 size={15} />} title={t("settings.prices")}>
-              <button onClick={() => setShowPrices(true)} style={rowBtn("var(--green-light)", "var(--green-dark)")}>
+              <button onClick={() => setShowPrices(true)} style={{ ...rowBtn("var(--green-light)", "var(--green-dark)"), marginBottom: 12 }}>
                 <BarChart3 size={15} /> {t("settings.pricesOpen")}
               </button>
-              <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.pricesHint")}</p>
+
+              <BadgesSection badges={badges} t={t} />
             </Section>
           )}
 
-          {/* ── Export dat ── jen domácnost (provoz exportuje ze své záložky). GDPR přenositelnost. */}
-          {mode !== "provoz" && (
-            <Section icon={<Download size={15} />} title={t("settings.export")}>
-              <button
-                onClick={exportHouseholdJSON}
-                style={rowBtn("var(--green-light)", "var(--green-dark)")}
-              >
-                <Download size={15} /> {t("settings.exportJson")}
-              </button>
-              <button
-                onClick={() => exportPantryCSV({
-                  name: t("settings.export.name"),
-                  brand: t("settings.export.brand"),
-                  quantity: t("settings.export.quantity"),
-                  unit: t("settings.export.unit"),
-                  location: t("settings.export.location"),
-                  purchased: t("settings.export.purchased"),
-                  expires: t("settings.export.expires"),
-                  price: t("settings.export.price"),
-                  store: t("settings.export.store"),
-                })}
-                style={{ ...rowBtn("var(--bg-primary)", "var(--text-secondary)"), marginTop: 8, border: "1.5px solid var(--border)" }}
-              >
-                <FileText size={15} /> {t("settings.exportCsv")}
-              </button>
-              <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.exportHint")}</p>
-            </Section>
-          )}
+          {/* ── Data ── export (jen domácnost) + reset (obě). Sloučeno
+              z dřívějších 2 sekcí "Export dat" a "Správa dat". */}
+          <Section icon={<Download size={15} />} title={t("settings.data")}>
+            {mode !== "provoz" && (
+              <>
+                <button
+                  onClick={exportHouseholdJSON}
+                  style={rowBtn("var(--green-light)", "var(--green-dark)")}
+                >
+                  <Download size={15} /> {t("settings.exportJson")}
+                </button>
+                <button
+                  onClick={() => exportPantryCSV({
+                    name: t("settings.export.name"),
+                    brand: t("settings.export.brand"),
+                    quantity: t("settings.export.quantity"),
+                    unit: t("settings.export.unit"),
+                    location: t("settings.export.location"),
+                    purchased: t("settings.export.purchased"),
+                    expires: t("settings.export.expires"),
+                    price: t("settings.export.price"),
+                    store: t("settings.export.store"),
+                  })}
+                  style={{ ...rowBtn("var(--bg-primary)", "var(--text-secondary)"), marginTop: 8, border: "1.5px solid var(--border)" }}
+                >
+                  <FileText size={15} /> {t("settings.exportCsv")}
+                </button>
+                <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.exportHint")}</p>
+              </>
+            )}
 
-          {/* ══ ÚČET & PLÁN ══ méně časté ══ */}
-
-          {/* ── Moje zařízení ── jen v PROVOZU (víc zaměstnaneckých zařízení).
-              V domácnosti sdílení řeší Rodina. */}
-          {mode === "provoz" && (
-            <Section icon={<Smartphone size={15} />} title={t("device.settingsTitle")}>
-              <DevicesSection t={t} />
-            </Section>
-          )}
-
-          {/* ── Plán ── info o plánu; platby (změna/zrušení) až s Play Billing.
-              Trial JEN pro provoz (14 dní zdarma); domácnost trial nemá (má
-              model 20 položek zdarma / 149 Kč). Odznak se ukazuje jen v provozu
-              a jen dokud zkušebka běží. */}
-          <Section icon={<Crown size={15} />} title={t("settings.plan")}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px 2px 10px" }}>
-              <span style={{ fontSize: 14, fontWeight: 700, color: "var(--text-primary)" }}>{planLabel}</span>
-              {mode === "provoz" && isTrialActive() && profile?.trial_ends_at && (
-                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--green-dark)", background: "var(--green-light)", padding: "4px 10px", borderRadius: 99 }}>
-                  {t("settings.trialEnds").replace("{date}", formatDateShort(profile.trial_ends_at))}
-                </span>
-              )}
-            </div>
-            <p style={{ fontSize: 12, color: "var(--text-tertiary)", lineHeight: 1.4, margin: "2px 2px 0" }}>
-              {t("settings.planInfo")}
-            </p>
-          </Section>
-
-          {/* ── Správa dat ── */}
-          <Section icon={<Trash2 size={15} />} title={t("settings.data")}>
             {!confirmReset ? (
-              <button onClick={() => setConfirmReset(true)} style={rowBtn("#FDE8E8", "#C0392B")}>
+              <button onClick={() => setConfirmReset(true)} style={{ ...rowBtn("#FDE8E8", "#C0392B"), marginTop: mode !== "provoz" ? 12 : 0 }}>
                 <Trash2 size={15} /> {t("settings.resetData")}
               </button>
             ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: mode !== "provoz" ? 12 : 0 }}>
                 <p style={{ fontSize: 13, color: "var(--text-secondary)", textAlign: "center", margin: "4px 0", lineHeight: 1.4 }}>{t("settings.resetDataConfirm")}</p>
                 <div style={{ display: "flex", gap: 8 }}>
                   <button onClick={() => setConfirmReset(false)} style={{ ...rowBtn("var(--bg-primary)", "var(--text-secondary)"), flex: 1, border: "1.5px solid var(--border)" }}>
@@ -620,6 +596,16 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             )}
             <p style={{ fontSize: 11, color: "var(--text-tertiary)", margin: "8px 2px 0", lineHeight: 1.4 }}>{t("settings.dataHint")}</p>
           </Section>
+
+          {/* ══ ÚČET & PLÁN ══ méně časté ══ */}
+
+          {/* ── Moje zařízení ── jen v PROVOZU (víc zaměstnaneckých zařízení).
+              V domácnosti sdílení řeší Rodina. */}
+          {mode === "provoz" && (
+            <Section icon={<Smartphone size={15} />} title={t("device.settingsTitle")}>
+              <DevicesSection t={t} />
+            </Section>
+          )}
 
           {/* ── Smazat účet ── nevratné, GDPR. Volá Edge Function delete-account. */}
           <Section icon={<Trash2 size={15} />} title={t("settings.deleteAccount")}>
@@ -653,6 +639,11 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             <LinkRow icon={<LifeBuoy size={16} />} label={t("settings.support")} href={supportHref} />
             <LinkRow icon={<Shield size={16} />} label={t("settings.privacy")} href="/soukromi" />
             <LinkRow icon={<FileText size={16} />} label={t("settings.terms")} href="/podminky" last />
+            {/* Verze appky — dřív vlastní sekce "O aplikaci" jen s tímhle řádkem. */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 2px 2px", borderTop: "1px solid var(--border)", marginTop: 4 }}>
+              <span style={{ fontSize: 12, color: "var(--text-tertiary)" }}>{t("settings.version")}</span>
+              <span style={{ fontSize: 12, fontWeight: 600, color: "var(--text-tertiary)" }}>{APP_VERSION}</span>
+            </div>
           </Section>
 
           {/* ── DEV: přepínač režimu (jen vývojářský účet) ── */}
@@ -684,13 +675,6 @@ export function SettingsModal({ onClose }: { onClose: () => void }) {
             </Section>
           )}
 
-          {/* ── O aplikaci ── */}
-          <Section icon={<Info size={15} />} title={t("settings.about")}>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "2px" }}>
-              <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t("settings.version")}</span>
-              <span style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{APP_VERSION}</span>
-            </div>
-          </Section>
         </div>
       </div>
 
