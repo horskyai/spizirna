@@ -105,9 +105,66 @@ const lidlAdapter: RetailerAdapter = {
   },
 };
 
+// ── Billa (taky Publitas, ale na view.publitas.com/billa-cz/… místo vlastní
+//    domény) — discover() je dvoufázový: nejdřív najdi na billa.cz podstránky
+//    letáků (přes jejich vlastní CMS content API), pak z KAŽDÉ vytáhni
+//    aktuální Publitas slug. slug uložený v naší DB je billa-cz/{...}, aby
+//    šel přímo použít i pro fetchMeta.
+const BILLA_CONTENT_API = "https://www.billa.cz/api/content/page?slug=";
+
+async function findPublitasSlugOnBillaPage(pageSlug: string): Promise<string | null> {
+  const res = await fetch(`${BILLA_CONTENT_API}${encodeURIComponent(pageSlug)}`, { headers: UA });
+  if (!res.ok) return null;
+  const text = await res.text();
+  const m = /billa-cz\/([a-z0-9-]+)/.exec(text);
+  return m ? `billa-cz/${m[1]}` : null;
+}
+
+const billaAdapter: RetailerAdapter = {
+  async discover() {
+    const slugs = new Set<string>();
+
+    // "Velký leták" a "malý leták" žijí jako dvě záložky na jedné stránce —
+    // najdi VŠECHNY výskyty (findPublitasSlugOnBillaPage níže vrací jen první).
+    const mainRes = await fetch(`${BILLA_CONTENT_API}letaky-billa`, { headers: UA });
+    if (mainRes.ok) {
+      const text = await mainRes.text();
+      const re = /billa-cz\/([a-z0-9-]+)/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(text))) slugs.add(`billa-cz/${m[1]}`);
+    }
+
+    // Ostatní letáky/katalogy jsou samostatné podstránky pod /akcni-letaky/*.
+    const indexRes = await fetch(`${BILLA_CONTENT_API}akcni-letaky`, { headers: UA });
+    if (indexRes.ok) {
+      const text = await indexRes.text();
+      const subSlugs = new Set<string>();
+      const re = /akcni-letaky\/([a-z0-9-]+)/g;
+      let m: RegExpExecArray | null;
+      while ((m = re.exec(text))) subSlugs.add(m[1]);
+      for (const sub of subSlugs) {
+        const found = await findPublitasSlugOnBillaPage(`akcni-letaky/${sub}`);
+        if (found) slugs.add(found);
+      }
+    }
+
+    return [...slugs].map((slug) => ({ retailer: "billa", slug }));
+  },
+  async fetchMeta(slug) {
+    // slug má tvar "billa-cz/nazev-letaku" — Publitas cesta je view.publitas.com/{slug}/data.json.
+    const res = await fetch(`https://view.publitas.com/${slug}/data.json`, { headers: UA });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data?.config?.downloadPdfUrl || !data?.numPages) return null;
+    const niceName = (data?.config?.publicationTitle ?? slug.split("/")[1] ?? slug).replace(/^BILLA(\.cz)?\s*-\s*/i, "");
+    return { pdfUrl: data.config.downloadPdfUrl, numPages: data.numPages, sourceId: String(data.id), title: niceName };
+  },
+};
+
 const ADAPTERS: Record<string, RetailerAdapter> = {
   albert: albertAdapter,
   lidl: lidlAdapter,
+  billa: billaAdapter,
 };
 
 type LeafletOutcome = "done" | "progressed" | "unchanged" | "skipped";
