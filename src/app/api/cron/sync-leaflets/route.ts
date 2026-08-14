@@ -35,22 +35,57 @@ const SYNC_KEY = process.env.CRON_SECRET;
 const TIME_BUDGET_MS = 25_000;
 const UA = { "User-Agent": "Mozilla/5.0 (compatible; SpizirnaLeafletSync/1.0)" };
 
-// Skutečná příčina FUNCTION_INVOCATION_TIMEOUT: obyčejný fetch() nemá žádný
-// timeout, a některé adaptéry (hlavně Billa) dělají desítky sekvenčních
-// volání na cizí servery — jeden pomalý/zaseklý dotaz dokázal spolykat celý
-// zbytek 60s stropu, aniž by na to interní časový rozpočet vůbec stačil
-// reagovat (kontroluje se jen MEZI kroky, ne UVNITŘ jednoho await fetch()).
-// Každý síťový dotaz na cizí server proto jde přes tohle — max 8s a je to.
-async function fetchWithTimeout(url: string, opts: RequestInit = {}, timeoutMs = 8_000): Promise<Response | null> {
+// Skutečná příčina FUNCTION_INVOCATION_TIMEOUT (dvě vrstvy):
+// 1) Obyčejný fetch() nemá žádný timeout a některé adaptéry (hlavně Billa)
+//    dělají desítky volání na cizí servery.
+// 2) I s AbortController na fetch() samotném zůstávalo čtení TĚLA odpovědi
+//    (.text()/.json()) mimo ochranu, pokud se timeout zrušil hned po
+//    přijetí hlaviček — u Billy z Vercelu (na rozdíl od lokálního běhu)
+//    tělo evidentně přichází velmi pomalu/přerušovaně a čtení viselo bez
+//    limitu dál. Timeout proto musí krýt CELOU operaci včetně čtení těla.
+async function withTimeout<T>(timeoutMs: number, work: (signal: AbortSignal) => Promise<T>): Promise<T | null> {
   const abort = new AbortController();
   const timeout = setTimeout(() => abort.abort(), timeoutMs);
   try {
-    return await fetch(url, { ...opts, signal: abort.signal });
+    return await work(abort.signal);
   } catch {
     return null;
   } finally {
     clearTimeout(timeout);
   }
+}
+
+async function fetchTextWithTimeout(url: string, opts: RequestInit = {}, timeoutMs = 8_000): Promise<string | null> {
+  return withTimeout(timeoutMs, async (signal) => {
+    const res = await fetch(url, { ...opts, signal });
+    if (!res.ok) throw new Error(`http ${res.status}`);
+    return res.text();
+  });
+}
+
+async function fetchJsonWithTimeout<T = unknown>(url: string, opts: RequestInit = {}, timeoutMs = 8_000): Promise<T | null> {
+  return withTimeout(timeoutMs, async (signal) => {
+    const res = await fetch(url, { ...opts, signal });
+    if (!res.ok) throw new Error(`http ${res.status}`);
+    return (await res.json()) as T;
+  });
+}
+
+async function headOkWithTimeout(url: string, opts: RequestInit = {}, timeoutMs = 5_000): Promise<boolean> {
+  const ok = await withTimeout(timeoutMs, async (signal) => {
+    const res = await fetch(url, { ...opts, method: "HEAD", signal });
+    return res.ok;
+  });
+  return !!ok;
+}
+
+async function fetchBufferWithTimeout(url: string, opts: RequestInit = {}, timeoutMs = 8_000): Promise<{ buf: Uint8Array; contentType: string } | null> {
+  return withTimeout(timeoutMs, async (signal) => {
+    const res = await fetch(url, { ...opts, signal });
+    if (!res.ok) throw new Error(`http ${res.status}`);
+    const buf = new Uint8Array(await res.arrayBuffer());
+    return { buf, contentType: res.headers.get("content-type") || "" };
+  });
 }
 
 interface RetailerLeaflet {
@@ -80,9 +115,8 @@ function humanTitleAlbert(slug: string): string {
 
 const albertAdapter: RetailerAdapter = {
   async discover() {
-    const res = await fetchWithTimeout("https://www.albert.cz/aktualni-letaky", { headers: UA });
-    if (!res || !res.ok) return [];
-    const html = await res.text();
+    const html = await fetchTextWithTimeout("https://www.albert.cz/aktualni-letaky", { headers: UA });
+    if (!html) return [];
     const slugs = new Set<string>();
     const re = /letaky\.albert\.cz\/([a-z0-9_]+)\//g;
     let m: RegExpExecArray | null;
@@ -90,9 +124,8 @@ const albertAdapter: RetailerAdapter = {
     return [...slugs].map((slug) => ({ retailer: "albert", slug }));
   },
   async fetchMeta(slug) {
-    const res = await fetchWithTimeout(`https://letaky.albert.cz/${slug}/data.json`, { headers: UA });
-    if (!res || !res.ok) return null;
-    const data = await res.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await fetchJsonWithTimeout<any>(`https://letaky.albert.cz/${slug}/data.json`, { headers: UA });
     if (!data?.config?.downloadPdfUrl || !data?.numPages) return null;
     return { kind: "pdf", pdfUrl: data.config.downloadPdfUrl, numPages: data.numPages, sourceId: String(data.id), title: humanTitleAlbert(slug) };
   },
@@ -106,9 +139,8 @@ const LIDL_WIDGET_ID = "1ab29c9b-5237-11ee-9b1d-fa163f6db1d0";
 
 const lidlAdapter: RetailerAdapter = {
   async discover() {
-    const res = await fetchWithTimeout(`https://endpoints.leaflets.schwarz/v4/widget?widget_id=${LIDL_WIDGET_ID}&store_id=0&region_id=0`, { headers: UA });
-    if (!res || !res.ok) return [];
-    const data = await res.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await fetchJsonWithTimeout<any>(`https://endpoints.leaflets.schwarz/v4/widget?widget_id=${LIDL_WIDGET_ID}&store_id=0&region_id=0`, { headers: UA });
     const flyers: { url: string }[] = data?.widget?.flyers ?? [];
     const slugs = new Set<string>();
     for (const f of flyers) {
@@ -118,9 +150,8 @@ const lidlAdapter: RetailerAdapter = {
     return [...slugs].map((slug) => ({ retailer: "lidl", slug }));
   },
   async fetchMeta(slug) {
-    const res = await fetchWithTimeout(`https://endpoints.leaflets.schwarz/v4/flyer?flyer_identifier=${slug}`, { headers: UA });
-    if (!res || !res.ok) return null;
-    const data = await res.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await fetchJsonWithTimeout<any>(`https://endpoints.leaflets.schwarz/v4/flyer?flyer_identifier=${slug}`, { headers: UA });
     const flyer = data?.flyer;
     if (!flyer?.pdfUrl || !Array.isArray(flyer?.pages)) return null;
     return { kind: "pdf", pdfUrl: flyer.pdfUrl, numPages: flyer.pages.length, sourceId: String(flyer.id), title: `${flyer.name} (${flyer.title})`.trim() };
@@ -135,9 +166,8 @@ const lidlAdapter: RetailerAdapter = {
 const BILLA_CONTENT_API = "https://www.billa.cz/api/content/page?slug=";
 
 async function findPublitasSlugOnBillaPage(pageSlug: string): Promise<string | null> {
-  const res = await fetchWithTimeout(`${BILLA_CONTENT_API}${encodeURIComponent(pageSlug)}`, { headers: UA });
-  if (!res || !res.ok) return null;
-  const text = await res.text();
+  const text = await fetchTextWithTimeout(`${BILLA_CONTENT_API}${encodeURIComponent(pageSlug)}`, { headers: UA });
+  if (!text) return null;
   const m = /billa-cz\/([a-z0-9-]+)/.exec(text);
   return m ? `billa-cz/${m[1]}` : null;
 }
@@ -148,22 +178,20 @@ const billaAdapter: RetailerAdapter = {
 
     // "Velký leták" a "malý leták" žijí jako dvě záložky na jedné stránce —
     // najdi VŠECHNY výskyty (findPublitasSlugOnBillaPage níže vrací jen první).
-    const mainRes = await fetchWithTimeout(`${BILLA_CONTENT_API}letaky-billa`, { headers: UA });
-    if (mainRes && mainRes.ok) {
-      const text = await mainRes.text();
+    const mainText = await fetchTextWithTimeout(`${BILLA_CONTENT_API}letaky-billa`, { headers: UA });
+    if (mainText) {
       const re = /billa-cz\/([a-z0-9-]+)/g;
       let m: RegExpExecArray | null;
-      while ((m = re.exec(text))) slugs.add(`billa-cz/${m[1]}`);
+      while ((m = re.exec(mainText))) slugs.add(`billa-cz/${m[1]}`);
     }
 
     // Ostatní letáky/katalogy jsou samostatné podstránky pod /akcni-letaky/*.
-    const indexRes = await fetchWithTimeout(`${BILLA_CONTENT_API}akcni-letaky`, { headers: UA });
-    if (indexRes && indexRes.ok) {
-      const text = await indexRes.text();
+    const indexText = await fetchTextWithTimeout(`${BILLA_CONTENT_API}akcni-letaky`, { headers: UA });
+    if (indexText) {
       const subSlugs = new Set<string>();
       const re = /akcni-letaky\/([a-z0-9-]+)/g;
       let m: RegExpExecArray | null;
-      while ((m = re.exec(text))) subSlugs.add(m[1]);
+      while ((m = re.exec(indexText))) subSlugs.add(m[1]);
       // Paralelně, ne sekvenčně — jinak by devět dotazů po 8s timeoutu mohlo
       // v nejhorším případě trvat přes minutu místo pár sekund.
       const found = await Promise.all([...subSlugs].map((sub) => findPublitasSlugOnBillaPage(`akcni-letaky/${sub}`)));
@@ -174,9 +202,8 @@ const billaAdapter: RetailerAdapter = {
   },
   async fetchMeta(slug) {
     // slug má tvar "billa-cz/nazev-letaku" — Publitas cesta je view.publitas.com/{slug}/data.json.
-    const res = await fetchWithTimeout(`https://view.publitas.com/${slug}/data.json`, { headers: UA });
-    if (!res || !res.ok) return null;
-    const data = await res.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = await fetchJsonWithTimeout<any>(`https://view.publitas.com/${slug}/data.json`, { headers: UA });
     if (!data?.config?.downloadPdfUrl || !data?.numPages) return null;
     const niceName = (data?.config?.publicationTitle ?? slug.split("/")[1] ?? slug).replace(/^BILLA(\.cz)?\s*-\s*/i, "");
     return { kind: "pdf", pdfUrl: data.config.downloadPdfUrl, numPages: data.numPages, sourceId: String(data.id), title: niceName };
@@ -192,8 +219,7 @@ const PENNY_BASE = "https://files.rewe.co.at/PennyIntLeaflet/CZ";
 
 async function pennyPageExists(slug: string, page: number): Promise<boolean> {
   const url = `${PENNY_BASE}/${slug}/files/assets/common/page-html5-substrates/page${String(page).padStart(4, "0")}_2.jpg`;
-  const res = await fetchWithTimeout(url, { method: "HEAD", headers: UA }, 5_000);
-  return !!res?.ok;
+  return headOkWithTimeout(url, { headers: UA }, 5_000);
 }
 
 // Exponenciální + binární hledání poslední existující stránky (řádově log2(n)
@@ -214,9 +240,8 @@ async function pennyPageCount(slug: string): Promise<number> {
 
 const pennyAdapter: RetailerAdapter = {
   async discover() {
-    const res = await fetchWithTimeout("https://www.penny.cz/letaky", { headers: UA });
-    if (!res || !res.ok) return [];
-    const html = await res.text();
+    const html = await fetchTextWithTimeout("https://www.penny.cz/letaky", { headers: UA });
+    if (!html) return [];
     const slugs = new Set<string>();
     const re = /PennyIntLeaflet\/CZ\/([a-zA-Z0-9_]+)/g;
     let m: RegExpExecArray | null;
@@ -363,14 +388,12 @@ async function syncOneLeaflet(
     // jen je zkopírujeme — žádný PDF render potřeba.
     for (; pageNum <= numPages; pageNum++) {
       if (Date.now() >= deadline) break;
-      const imgRes = await fetchWithTimeout(meta.pageImageUrl(pageNum), { headers: UA });
-      if (!imgRes || !imgRes.ok) {
+      const img = await fetchBufferWithTimeout(meta.pageImageUrl(pageNum), { headers: UA });
+      if (!img) {
         log.push(`[${item.retailer}/${item.slug}] stránka ${pageNum} se nepodařila stáhnout`);
         continue;
       }
-      const buf = new Uint8Array(await imgRes.arrayBuffer());
-      const ct = imgRes.headers.get("content-type") || "image/jpeg";
-      if (await savePage(pageNum, buf, ct.includes("png") ? "image/png" : "image/jpeg")) renderedNow++;
+      if (await savePage(pageNum, img.buf, img.contentType.includes("png") ? "image/png" : "image/jpeg")) renderedNow++;
     }
   }
 
