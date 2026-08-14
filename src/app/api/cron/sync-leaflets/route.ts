@@ -10,6 +10,10 @@
 // průběžně je rovnou ukládá. Příští běh (další den cronu, nebo ruční volání)
 // pozná podle počtu už uložených stránek u letáku, kde skončil, a pokračuje
 // odtud — žádný leták se nerenderuje od začátku znovu zbytečně.
+//
+// PODPOROVANÍ ŘETĚZCI: každý má vlastní "adapter" (discover + fetchMeta), ale
+// všichni vrací stejný tvar { pdfUrl, numPages, sourceId, title } — samotné
+// stažení PDF + render stránek + upload je pak společné, viz syncOneLeaflet.
 export const runtime = "nodejs";
 export const maxDuration = 60; // strop na Vercel Hobby plánu
 
@@ -25,49 +29,86 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 const SYNC_KEY = process.env.CRON_SECRET;
 
 const TIME_BUDGET_MS = 45_000; // bezpečná rezerva pod maxDuration (studený start, upload…)
+const UA = { "User-Agent": "Mozilla/5.0 (compatible; SpizirnaLeafletSync/1.0)" };
 
 interface RetailerLeaflet {
   retailer: string;
   slug: string;
 }
 
-// Publitas vrací jako "title" jen datum vygenerování publikace (např. "August
-// 07, 2026 13:24") — appce se hodí spíš lidsky čitelný název podle slugu.
-function humanTitle(slug: string): string {
+interface LeafletMeta {
+  pdfUrl: string;
+  numPages: number;
+  sourceId: string;
+  title: string;
+}
+
+interface RetailerAdapter {
+  discover(): Promise<RetailerLeaflet[]>;
+  fetchMeta(slug: string): Promise<LeafletMeta | null>;
+}
+
+// ── Albert (Publitas, vlastní doména letaky.albert.cz) ──────────────────────
+function humanTitleAlbert(slug: string): string {
   if (slug.includes("_katalog_")) return slug.includes("hm") ? "Katalog (hypermarket)" : "Katalog (supermarket)";
   if (slug.includes("hm")) return "Akční leták — hypermarket";
   if (slug.includes("sm")) return "Akční leták — supermarket";
   return "Akční leták";
 }
 
-// ── Albert: seznam aktuálních letáků + jejich data (Publitas) ──────────────
-async function discoverAlbertLeaflets(): Promise<RetailerLeaflet[]> {
-  const res = await fetch("https://www.albert.cz/aktualni-letaky", {
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; SpizirnaLeafletSync/1.0)" },
-  });
-  if (!res.ok) return [];
-  const html = await res.text();
-  const slugs = new Set<string>();
-  const re = /letaky\.albert\.cz\/([a-z0-9_]+)\//g;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(html))) slugs.add(m[1]);
-  return [...slugs].map((slug) => ({ retailer: "albert", slug }));
-}
+const albertAdapter: RetailerAdapter = {
+  async discover() {
+    const res = await fetch("https://www.albert.cz/aktualni-letaky", { headers: UA });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const slugs = new Set<string>();
+    const re = /letaky\.albert\.cz\/([a-z0-9_]+)\//g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(html))) slugs.add(m[1]);
+    return [...slugs].map((slug) => ({ retailer: "albert", slug }));
+  },
+  async fetchMeta(slug) {
+    const res = await fetch(`https://letaky.albert.cz/${slug}/data.json`, { headers: UA });
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!data?.config?.downloadPdfUrl || !data?.numPages) return null;
+    return { pdfUrl: data.config.downloadPdfUrl, numPages: data.numPages, sourceId: String(data.id), title: humanTitleAlbert(slug) };
+  },
+};
 
-interface PublitasData {
-  id: number;
-  numPages: number;
-  sourceDocumentTitle?: string;
-  config: { downloadPdfUrl: string };
-}
+// ── Lidl (vlastní platforma leaflets.schwarz, sdílená se Schwarz Group) ─────
+// Widget na hlavní stránce s letáky vrací JSON se seznamem všech aktuálních
+// letáků (id widgetu je pevně dané, viz nález v konverzaci — kdyby ho Lidl
+// změnil, discover() prostě vrátí 0 letáků a sync tenhle řetězec jen přeskočí).
+const LIDL_WIDGET_ID = "1ab29c9b-5237-11ee-9b1d-fa163f6db1d0";
 
-async function fetchPublitasData(slug: string): Promise<PublitasData | null> {
-  const res = await fetch(`https://letaky.albert.cz/${slug}/data.json`, {
-    headers: { "User-Agent": "Mozilla/5.0 (compatible; SpizirnaLeafletSync/1.0)" },
-  });
-  if (!res.ok) return null;
-  return res.json();
-}
+const lidlAdapter: RetailerAdapter = {
+  async discover() {
+    const res = await fetch(`https://endpoints.leaflets.schwarz/v4/widget?widget_id=${LIDL_WIDGET_ID}&store_id=0&region_id=0`, { headers: UA });
+    if (!res.ok) return [];
+    const data = await res.json();
+    const flyers: { url: string }[] = data?.widget?.flyers ?? [];
+    const slugs = new Set<string>();
+    for (const f of flyers) {
+      const m = /\/letak\/([a-z0-9-]+)\//.exec(f.url ?? "");
+      if (m) slugs.add(m[1]);
+    }
+    return [...slugs].map((slug) => ({ retailer: "lidl", slug }));
+  },
+  async fetchMeta(slug) {
+    const res = await fetch(`https://endpoints.leaflets.schwarz/v4/flyer?flyer_identifier=${slug}`, { headers: UA });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const flyer = data?.flyer;
+    if (!flyer?.pdfUrl || !Array.isArray(flyer?.pages)) return null;
+    return { pdfUrl: flyer.pdfUrl, numPages: flyer.pages.length, sourceId: String(flyer.id), title: `${flyer.name} (${flyer.title})`.trim() };
+  },
+};
+
+const ADAPTERS: Record<string, RetailerAdapter> = {
+  albert: albertAdapter,
+  lidl: lidlAdapter,
+};
 
 type LeafletOutcome = "done" | "progressed" | "unchanged" | "skipped";
 
@@ -77,16 +118,11 @@ async function syncOneLeaflet(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   item: RetailerLeaflet,
+  meta: LeafletMeta,
   deadline: number,
   log: string[],
 ): Promise<LeafletOutcome> {
-  const data = await fetchPublitasData(item.slug);
-  if (!data || !data.config?.downloadPdfUrl || !data.numPages) {
-    log.push(`[${item.slug}] přeskočeno — chybí data.json / PDF odkaz`);
-    return "skipped";
-  }
-  const sourceId = String(data.id);
-  const numPages = data.numPages;
+  const { pdfUrl, numPages, sourceId, title } = meta;
 
   const { data: existing } = await supabase
     .from("leaflets")
@@ -113,14 +149,14 @@ async function syncOneLeaflet(
     const { data: upserted } = await supabase
       .from("leaflets")
       .upsert(
-        { retailer: item.retailer, slug: item.slug, source_id: sourceId, title: humanTitle(item.slug), num_pages: numPages, updated_at: new Date().toISOString() },
+        { retailer: item.retailer, slug: item.slug, source_id: sourceId, title, num_pages: numPages, updated_at: new Date().toISOString() },
         { onConflict: "retailer,slug" },
       )
       .select("id")
       .single();
     leafletId = upserted?.id;
     if (!leafletId) {
-      log.push(`[${item.slug}] nepodařilo se založit/najít řádek v leaflets`);
+      log.push(`[${item.retailer}/${item.slug}] nepodařilo se založit/najít řádek v leaflets`);
       return "skipped";
     }
     await supabase.from("leaflet_pages").delete().eq("leaflet_id", leafletId);
@@ -128,13 +164,27 @@ async function syncOneLeaflet(
   }
 
   // Stáhni PDF (i při navazování — nic si mezi běhy neukládáme, je to jednodušší
-  // a stažení+rozparsování je oproti renderu stránek rychlé).
-  const pdfRes = await fetch(data.config.downloadPdfUrl);
-  if (!pdfRes.ok) {
-    log.push(`[${item.slug}] stažení PDF selhalo (${pdfRes.status})`);
+  // a stažení+rozparsování je u většiny letáků oproti renderu stránek rychlé).
+  // Některé PDF (viděno u Lidlu — 50+ MB) se ale samotné stáhnou déle, než má
+  // celý běh k dispozici. Stahování proto časově omezíme zvlášť, ať takový
+  // leták nezablokuje i ostatní — příště dostane zase celý čerstvý rozpočet.
+  const downloadBudgetMs = Math.min(25_000, Math.max(5_000, deadline - Date.now() - 3_000));
+  const abort = new AbortController();
+  const timeout = setTimeout(() => abort.abort(), downloadBudgetMs);
+  let pdfBuf: Uint8Array;
+  try {
+    const pdfRes = await fetch(pdfUrl, { signal: abort.signal });
+    if (!pdfRes.ok) {
+      log.push(`[${item.retailer}/${item.slug}] stažení PDF selhalo (${pdfRes.status})`);
+      return "skipped";
+    }
+    pdfBuf = new Uint8Array(await pdfRes.arrayBuffer());
+  } catch (e) {
+    log.push(`[${item.retailer}/${item.slug}] PDF se nestihlo stáhnout do ${downloadBudgetMs}ms (velký soubor?) — zkusí se příště: ${e instanceof Error ? e.message : String(e)}`);
     return "skipped";
+  } finally {
+    clearTimeout(timeout);
   }
-  const pdfBuf = new Uint8Array(await pdfRes.arrayBuffer());
   const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const doc = await pdfjsLib.getDocument({ data: pdfBuf }).promise;
 
@@ -155,7 +205,7 @@ async function syncOneLeaflet(
       .from("leaflet-pages")
       .upload(path, buf, { contentType: "image/jpeg", upsert: true });
     if (uploadErr) {
-      log.push(`[${item.slug}] upload stránky ${pageNum} selhal: ${uploadErr.message}`);
+      log.push(`[${item.retailer}/${item.slug}] upload stránky ${pageNum} selhal: ${uploadErr.message}`);
       continue;
     }
     const { data: pub } = supabase.storage.from("leaflet-pages").getPublicUrl(path);
@@ -169,7 +219,7 @@ async function syncOneLeaflet(
   }
 
   const doneUpTo = pageNum - 1;
-  log.push(`[${item.slug}] stránky ${startPage}–${doneUpTo} z ${numPages} (${renderedNow} nově v tomto běhu)`);
+  log.push(`[${item.retailer}/${item.slug}] stránky ${startPage}–${doneUpTo} z ${numPages} (${renderedNow} nově v tomto běhu)`);
   return doneUpTo >= numPages ? "done" : "progressed";
 }
 
@@ -184,34 +234,51 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "missing_supabase_env" }, { status: 500 });
   }
 
+  // Volitelně omez na jeden řetězec: ?retailer=lidl (hodí se pro ruční test).
+  const onlyRetailer = req.nextUrl.searchParams.get("retailer");
+  const retailers = onlyRetailer ? [onlyRetailer] : Object.keys(ADAPTERS);
+
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const startedAt = Date.now();
   const deadline = startedAt + TIME_BUDGET_MS;
   const log: string[] = [];
   const result = { done: [] as string[], progressed: [] as string[], unchanged: [] as string[], skipped: [] as string[], notReached: [] as string[] };
 
-  const targets = await discoverAlbertLeaflets();
-  log.push(`Nalezeno ${targets.length} letáků k prověření (Albert).`);
+  const targets: RetailerLeaflet[] = [];
+  for (const retailer of retailers) {
+    const adapter = ADAPTERS[retailer];
+    if (!adapter) { log.push(`Neznámý řetězec "${retailer}", přeskočeno.`); continue; }
+    const found = await adapter.discover();
+    log.push(`${retailer}: nalezeno ${found.length} letáků k prověření.`);
+    targets.push(...found);
+  }
 
   for (let i = 0; i < targets.length; i++) {
     if (Date.now() >= deadline) {
-      result.notReached = targets.slice(i).map((t) => t.slug);
+      result.notReached = targets.slice(i).map((t) => `${t.retailer}/${t.slug}`);
       log.push(`Časový rozpočet vyčerpán, na tenhle běh se nedostalo: ${result.notReached.join(", ")}`);
       break;
     }
     const item = targets[i];
+    const key = `${item.retailer}/${item.slug}`;
     try {
-      const outcome = await syncOneLeaflet(supabase, item, deadline, log);
-      result[outcome].push(item.slug);
+      const meta = await ADAPTERS[item.retailer].fetchMeta(item.slug);
+      if (!meta) {
+        log.push(`[${key}] přeskočeno — chybí metadata (PDF odkaz / počet stránek)`);
+        result.skipped.push(key);
+        continue;
+      }
+      const outcome = await syncOneLeaflet(supabase, item, meta, deadline, log);
+      result[outcome].push(key);
       // Progresivní leták spotřeboval celý rozpočet — další v pořadí by stejně
       // hned narazil na deadline, tak nemá cenu dál zkoušet v tomhle běhu.
       if (outcome === "progressed") {
-        result.notReached = targets.slice(i + 1).map((t) => t.slug);
+        result.notReached = targets.slice(i + 1).map((t) => `${t.retailer}/${t.slug}`);
         break;
       }
     } catch (e) {
-      log.push(`[${item.slug}] chyba: ${e instanceof Error ? e.message : String(e)}`);
-      result.skipped.push(item.slug);
+      log.push(`[${key}] chyba: ${e instanceof Error ? e.message : String(e)}`);
+      result.skipped.push(key);
     }
   }
 

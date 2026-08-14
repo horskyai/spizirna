@@ -14,4 +14,5 @@ export const leaflets: Record<string, Translation> = {
   "leaflets.addModal.namePlaceholder": { cs: "Co jsi na letáku viděl/a?", sk: "Čo si na letáku videl/a?" },
   "leaflets.addModal.added": { cs: "Přidáno na nákupní seznam", sk: "Pridané do nákupného zoznamu" },
   "leaflets.retailer.albert": { cs: "Albert", sk: "Albert" },
+  "leaflets.retailer.lidl": { cs: "Lidl", sk: "Lidl" },
 };
