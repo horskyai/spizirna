@@ -168,7 +168,7 @@ async function syncOneLeaflet(
   // Některé PDF (viděno u Lidlu — 50+ MB) se ale samotné stáhnou déle, než má
   // celý běh k dispozici. Stahování proto časově omezíme zvlášť, ať takový
   // leták nezablokuje i ostatní — příště dostane zase celý čerstvý rozpočet.
-  const downloadBudgetMs = Math.min(25_000, Math.max(5_000, deadline - Date.now() - 3_000));
+  const downloadBudgetMs = Math.min(10_000, Math.max(5_000, deadline - Date.now() - 3_000));
   const abort = new AbortController();
   const timeout = setTimeout(() => abort.abort(), downloadBudgetMs);
   let pdfBuf: Uint8Array;
