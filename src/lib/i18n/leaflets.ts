@@ -16,4 +16,5 @@ export const leaflets: Record<string, Translation> = {
   "leaflets.retailer.albert": { cs: "Albert", sk: "Albert" },
   "leaflets.retailer.lidl": { cs: "Lidl", sk: "Lidl" },
   "leaflets.retailer.billa": { cs: "Billa", sk: "Billa" },
+  "leaflets.retailer.penny": { cs: "Penny", sk: "Penny" },
 };

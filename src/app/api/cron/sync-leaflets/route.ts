@@ -36,12 +36,12 @@ interface RetailerLeaflet {
   slug: string;
 }
 
-interface LeafletMeta {
-  pdfUrl: string;
-  numPages: number;
-  sourceId: string;
-  title: string;
-}
+// Dva zdrojové tvary: většina řetězců dává PDF, které si musíme sami
+// rozřezat na stránky (pdfjs + canvas). FlippingBook (Penny) ale stránky
+// nabízí rovnou jako hotové obrázky — tam se jen zkopírují, bez PDF renderu.
+type LeafletMeta =
+  | { kind: "pdf"; pdfUrl: string; numPages: number; sourceId: string; title: string }
+  | { kind: "images"; pageImageUrl: (page: number) => string; numPages: number; sourceId: string; title: string };
 
 interface RetailerAdapter {
   discover(): Promise<RetailerLeaflet[]>;
@@ -72,7 +72,7 @@ const albertAdapter: RetailerAdapter = {
     if (!res.ok) return null;
     const data = await res.json();
     if (!data?.config?.downloadPdfUrl || !data?.numPages) return null;
-    return { pdfUrl: data.config.downloadPdfUrl, numPages: data.numPages, sourceId: String(data.id), title: humanTitleAlbert(slug) };
+    return { kind: "pdf", pdfUrl: data.config.downloadPdfUrl, numPages: data.numPages, sourceId: String(data.id), title: humanTitleAlbert(slug) };
   },
 };
 
@@ -101,7 +101,7 @@ const lidlAdapter: RetailerAdapter = {
     const data = await res.json();
     const flyer = data?.flyer;
     if (!flyer?.pdfUrl || !Array.isArray(flyer?.pages)) return null;
-    return { pdfUrl: flyer.pdfUrl, numPages: flyer.pages.length, sourceId: String(flyer.id), title: `${flyer.name} (${flyer.title})`.trim() };
+    return { kind: "pdf", pdfUrl: flyer.pdfUrl, numPages: flyer.pages.length, sourceId: String(flyer.id), title: `${flyer.name} (${flyer.title})`.trim() };
   },
 };
 
@@ -157,7 +157,61 @@ const billaAdapter: RetailerAdapter = {
     const data = await res.json();
     if (!data?.config?.downloadPdfUrl || !data?.numPages) return null;
     const niceName = (data?.config?.publicationTitle ?? slug.split("/")[1] ?? slug).replace(/^BILLA(\.cz)?\s*-\s*/i, "");
-    return { pdfUrl: data.config.downloadPdfUrl, numPages: data.numPages, sourceId: String(data.id), title: niceName };
+    return { kind: "pdf", pdfUrl: data.config.downloadPdfUrl, numPages: data.numPages, sourceId: String(data.id), title: niceName };
+  },
+};
+
+// ── Penny (FlippingBook, hostováno na REWE — files.rewe.co.at) ──────────────
+// Stránky jsou statické, nepodepsané obrázky na předvídatelné cestě — žádné
+// PDF, žádné API s počtem stránek, tak se prostě zkusí, kam až existují
+// (HEAD dotazy, levné). Slug je datem kódovaná složka (mění se při každém
+// novém letáku), takže sourceId může být klidně jen slug sám.
+const PENNY_BASE = "https://files.rewe.co.at/PennyIntLeaflet/CZ";
+
+async function pennyPageExists(slug: string, page: number): Promise<boolean> {
+  const url = `${PENNY_BASE}/${slug}/files/assets/common/page-html5-substrates/page${String(page).padStart(4, "0")}_2.jpg`;
+  const res = await fetch(url, { method: "HEAD", headers: UA }).catch(() => null);
+  return !!res?.ok;
+}
+
+// Exponenciální + binární hledání poslední existující stránky (řádově log2(n)
+// dotazů místo lineárního zkoušení každé stránky zvlášť — pro leták s 60
+// stránkami je to ~7 dotazů místo 60).
+async function pennyPageCount(slug: string): Promise<number> {
+  if (!(await pennyPageExists(slug, 1))) return 0;
+  let lo = 1;
+  let hi = 2;
+  while (hi <= 128 && (await pennyPageExists(slug, hi))) { lo = hi; hi *= 2; }
+  hi = Math.min(hi, 128);
+  while (lo + 1 < hi) {
+    const mid = Math.floor((lo + hi) / 2);
+    if (await pennyPageExists(slug, mid)) lo = mid; else hi = mid;
+  }
+  return lo;
+}
+
+const pennyAdapter: RetailerAdapter = {
+  async discover() {
+    const res = await fetch("https://www.penny.cz/letaky", { headers: UA });
+    if (!res.ok) return [];
+    const html = await res.text();
+    const slugs = new Set<string>();
+    const re = /PennyIntLeaflet\/CZ\/([a-zA-Z0-9_]+)/g;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(html))) slugs.add(m[1]);
+    return [...slugs].map((slug) => ({ retailer: "penny", slug }));
+  },
+  async fetchMeta(slug) {
+    const numPages = await pennyPageCount(slug);
+    if (numPages === 0) return null;
+    const title = slug.includes("katalog") ? "Katalog" : "Akční leták";
+    return {
+      kind: "images",
+      pageImageUrl: (page: number) => `${PENNY_BASE}/${slug}/files/assets/common/page-html5-substrates/page${String(page).padStart(4, "0")}_2.jpg`,
+      numPages,
+      sourceId: slug,
+      title,
+    };
   },
 };
 
@@ -165,6 +219,7 @@ const ADAPTERS: Record<string, RetailerAdapter> = {
   albert: albertAdapter,
   lidl: lidlAdapter,
   billa: billaAdapter,
+  penny: pennyAdapter,
 };
 
 type LeafletOutcome = "done" | "progressed" | "unchanged" | "skipped";
@@ -179,7 +234,7 @@ async function syncOneLeaflet(
   deadline: number,
   log: string[],
 ): Promise<LeafletOutcome> {
-  const { pdfUrl, numPages, sourceId, title } = meta;
+  const { numPages, sourceId, title } = meta;
 
   const { data: existing } = await supabase
     .from("leaflets")
@@ -220,50 +275,15 @@ async function syncOneLeaflet(
     startPage = 1;
   }
 
-  // Stáhni PDF (i při navazování — nic si mezi běhy neukládáme, je to jednodušší
-  // a stažení+rozparsování je u většiny letáků oproti renderu stránek rychlé).
-  // Některé PDF (viděno u Lidlu — 50+ MB) se ale samotné stáhnou déle, než má
-  // celý běh k dispozici. Stahování proto časově omezíme zvlášť, ať takový
-  // leták nezablokuje i ostatní — příště dostane zase celý čerstvý rozpočet.
-  const downloadBudgetMs = Math.min(10_000, Math.max(5_000, deadline - Date.now() - 3_000));
-  const abort = new AbortController();
-  const timeout = setTimeout(() => abort.abort(), downloadBudgetMs);
-  let pdfBuf: Uint8Array;
-  try {
-    const pdfRes = await fetch(pdfUrl, { signal: abort.signal });
-    if (!pdfRes.ok) {
-      log.push(`[${item.retailer}/${item.slug}] stažení PDF selhalo (${pdfRes.status})`);
-      return "skipped";
-    }
-    pdfBuf = new Uint8Array(await pdfRes.arrayBuffer());
-  } catch (e) {
-    log.push(`[${item.retailer}/${item.slug}] PDF se nestihlo stáhnout do ${downloadBudgetMs}ms (velký soubor?) — zkusí se příště: ${e instanceof Error ? e.message : String(e)}`);
-    return "skipped";
-  } finally {
-    clearTimeout(timeout);
-  }
-  const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
-  const doc = await pdfjsLib.getDocument({ data: pdfBuf }).promise;
-
-  let renderedNow = 0;
-  let pageNum = startPage;
-  for (; pageNum <= numPages; pageNum++) {
-    if (Date.now() >= deadline) break;
-    const page = await doc.getPage(pageNum);
-    const viewport = page.getViewport({ scale: 1.5 });
-    const canvas = createCanvas(viewport.width, viewport.height);
-    const ctx = canvas.getContext("2d");
-    // @ts-expect-error — @napi-rs/canvas kontext je API-kompatibilní s tím, co pdf.js očekává.
-    await page.render({ canvasContext: ctx, viewport, canvas }).promise;
-    const buf = canvas.toBuffer("image/jpeg", 80);
-
-    const path = `${item.retailer}/${item.slug}/${pageNum}.jpg`;
+  const savePage = async (pageNum: number, buf: Uint8Array, contentType: string) => {
+    const ext = contentType === "image/jpeg" ? "jpg" : "png";
+    const path = `${item.retailer}/${item.slug}/${pageNum}.${ext}`;
     const { error: uploadErr } = await supabase.storage
       .from("leaflet-pages")
-      .upload(path, buf, { contentType: "image/jpeg", upsert: true });
+      .upload(path, buf, { contentType, upsert: true });
     if (uploadErr) {
       log.push(`[${item.retailer}/${item.slug}] upload stránky ${pageNum} selhal: ${uploadErr.message}`);
-      continue;
+      return false;
     }
     const { data: pub } = supabase.storage.from("leaflet-pages").getPublicUrl(path);
     // Ukládáme rovnou po jedné stránce — když čas dojde uprostřed, hotové
@@ -272,7 +292,64 @@ async function syncOneLeaflet(
       { leaflet_id: leafletId, page_number: pageNum, image_url: pub.publicUrl },
       { onConflict: "leaflet_id,page_number" },
     );
-    renderedNow++;
+    return true;
+  };
+
+  let renderedNow = 0;
+  let pageNum = startPage;
+
+  if (meta.kind === "pdf") {
+    // Stáhni PDF (i při navazování — nic si mezi běhy neukládáme, je to
+    // jednodušší a stažení+rozparsování je u většiny letáků oproti renderu
+    // stránek rychlé). Některé PDF (viděno u Lidlu — 50+ MB) se ale samotné
+    // stáhnou déle, než má celý běh k dispozici. Stahování proto časově
+    // omezíme zvlášť, ať takový leták nezablokuje i ostatní — příště dostane
+    // zase celý čerstvý rozpočet.
+    const downloadBudgetMs = Math.min(10_000, Math.max(5_000, deadline - Date.now() - 3_000));
+    const abort = new AbortController();
+    const timeout = setTimeout(() => abort.abort(), downloadBudgetMs);
+    let pdfBuf: Uint8Array;
+    try {
+      const pdfRes = await fetch(meta.pdfUrl, { signal: abort.signal });
+      if (!pdfRes.ok) {
+        log.push(`[${item.retailer}/${item.slug}] stažení PDF selhalo (${pdfRes.status})`);
+        return "skipped";
+      }
+      pdfBuf = new Uint8Array(await pdfRes.arrayBuffer());
+    } catch (e) {
+      log.push(`[${item.retailer}/${item.slug}] PDF se nestihlo stáhnout do ${downloadBudgetMs}ms (velký soubor?) — zkusí se příště: ${e instanceof Error ? e.message : String(e)}`);
+      return "skipped";
+    } finally {
+      clearTimeout(timeout);
+    }
+    const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
+    const doc = await pdfjsLib.getDocument({ data: pdfBuf }).promise;
+
+    for (; pageNum <= numPages; pageNum++) {
+      if (Date.now() >= deadline) break;
+      const page = await doc.getPage(pageNum);
+      const viewport = page.getViewport({ scale: 1.5 });
+      const canvas = createCanvas(viewport.width, viewport.height);
+      const ctx = canvas.getContext("2d");
+      // @ts-expect-error — @napi-rs/canvas kontext je API-kompatibilní s tím, co pdf.js očekává.
+      await page.render({ canvasContext: ctx, viewport, canvas }).promise;
+      const buf = canvas.toBuffer("image/jpeg", 80);
+      if (await savePage(pageNum, buf, "image/jpeg")) renderedNow++;
+    }
+  } else {
+    // FlippingBook (Penny): stránky jsou už hotové obrázky na jejich serveru,
+    // jen je zkopírujeme — žádný PDF render potřeba.
+    for (; pageNum <= numPages; pageNum++) {
+      if (Date.now() >= deadline) break;
+      const imgRes = await fetch(meta.pageImageUrl(pageNum), { headers: UA }).catch(() => null);
+      if (!imgRes || !imgRes.ok) {
+        log.push(`[${item.retailer}/${item.slug}] stránka ${pageNum} se nepodařila stáhnout`);
+        continue;
+      }
+      const buf = new Uint8Array(await imgRes.arrayBuffer());
+      const ct = imgRes.headers.get("content-type") || "image/jpeg";
+      if (await savePage(pageNum, buf, ct.includes("png") ? "image/png" : "image/jpeg")) renderedNow++;
+    }
   }
 
   const doneUpTo = pageNum - 1;
