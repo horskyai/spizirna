@@ -28,7 +28,11 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 // v vercel.json. ?key= navíc zůstává pro ruční/lokální test přes curl.
 const SYNC_KEY = process.env.CRON_SECRET;
 
-const TIME_BUDGET_MS = 45_000; // bezpečná rezerva pod maxDuration (studený start, upload…)
+// Vercel Hobby maxDuration=60 se v praxi ukázal jako tvrdě vynucený —
+// FUNCTION_INVOCATION_TIMEOUT přišel i s vnitřním rozpočtem 45s, protože
+// fáze "objevování letáků" (discover přes všechny řetězce, viz níž) žádný
+// časový strop neměla. Rozpočet je teď nižší a hlídá se i tam.
+const TIME_BUDGET_MS = 25_000;
 const UA = { "User-Agent": "Mozilla/5.0 (compatible; SpizirnaLeafletSync/1.0)" };
 
 interface RetailerLeaflet {
@@ -380,11 +384,19 @@ export async function GET(req: NextRequest) {
 
   const targets: RetailerLeaflet[] = [];
   for (const retailer of retailers) {
+    if (Date.now() >= deadline) {
+      log.push(`Časový rozpočet vyčerpán už při objevování letáků, "${retailer}" (a případně další) se na tenhle běh nedostal.`);
+      break;
+    }
     const adapter = ADAPTERS[retailer];
     if (!adapter) { log.push(`Neznámý řetězec "${retailer}", přeskočeno.`); continue; }
-    const found = await adapter.discover();
-    log.push(`${retailer}: nalezeno ${found.length} letáků k prověření.`);
-    targets.push(...found);
+    try {
+      const found = await adapter.discover();
+      log.push(`${retailer}: nalezeno ${found.length} letáků k prověření.`);
+      targets.push(...found);
+    } catch (e) {
+      log.push(`${retailer}: objevování letáků selhalo: ${e instanceof Error ? e.message : String(e)}`);
+    }
   }
 
   for (let i = 0; i < targets.length; i++) {
