@@ -43,6 +43,20 @@ const UA = { "User-Agent": "Mozilla/5.0 (compatible; SpizirnaLeafletSync/1.0)" }
 //    přijetí hlaviček — u Billy z Vercelu (na rozdíl od lokálního běhu)
 //    tělo evidentně přichází velmi pomalu/přerušovaně a čtení viselo bez
 //    limitu dál. Timeout proto musí krýt CELOU operaci včetně čtení těla.
+// Poslední záchranná pojistka: AbortController spolehlivě přeruší fetch(),
+// dokud věc visí NA ÚROVNI HTTP (pomalé/přerušované tělo apod.) — ale když
+// je spojení tiše blokované/zahazované už na síťové vrstvě (typicky WAF/CDN
+// specificky pro datacentrové IP, jak se ukázalo u Billy z Vercelu), umí se
+// stát, že se ani AbortSignal ke slovu nedostane a promise visí navždy.
+// raceTimeout garantuje návrat bez ohledu na to, co dělá vnitřek — zaseklá
+// promise se prostě opustí (appka stejně za chvíli vrací odpověď).
+function raceTimeout<T>(promise: Promise<T>, ms: number, fallback: T): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms)),
+  ]);
+}
+
 async function withTimeout<T>(timeoutMs: number, work: (signal: AbortSignal) => Promise<T>): Promise<T | null> {
   const abort = new AbortController();
   const timeout = setTimeout(() => abort.abort(), timeoutMs);
@@ -432,7 +446,8 @@ export async function GET(req: NextRequest) {
     const adapter = ADAPTERS[retailer];
     if (!adapter) { log.push(`Neznámý řetězec "${retailer}", přeskočeno.`); continue; }
     try {
-      const found = await adapter.discover();
+      const remaining = Math.max(3_000, deadline - Date.now());
+      const found = await raceTimeout(adapter.discover(), Math.min(10_000, remaining), []);
       log.push(`${retailer}: nalezeno ${found.length} letáků k prověření.`);
       targets.push(...found);
     } catch (e) {
@@ -449,13 +464,18 @@ export async function GET(req: NextRequest) {
     const item = targets[i];
     const key = `${item.retailer}/${item.slug}`;
     try {
-      const meta = await ADAPTERS[item.retailer].fetchMeta(item.slug);
+      const metaRemaining = Math.max(3_000, deadline - Date.now());
+      const meta = await raceTimeout(ADAPTERS[item.retailer].fetchMeta(item.slug), Math.min(10_000, metaRemaining), null);
       if (!meta) {
-        log.push(`[${key}] přeskočeno — chybí metadata (PDF odkaz / počet stránek)`);
+        log.push(`[${key}] přeskočeno — chybí metadata (PDF odkaz / počet stránek, nebo to nestihlo odpovědět)`);
         result.skipped.push(key);
         continue;
       }
-      const outcome = await syncOneLeaflet(supabase, item, meta, deadline, log);
+      // +10s rezerva nad deadline: syncOneLeaflet svůj vlastní čas hlídá sám
+      // (viz downloadBudgetMs uvnitř), tohle je jen krajní pojistka pro
+      // případ, že by přece jen něco viselo úplně mimo jeho vlastní kontrolu.
+      const syncRemaining = Math.max(3_000, deadline - Date.now() + 10_000);
+      const outcome = await raceTimeout(syncOneLeaflet(supabase, item, meta, deadline, log), syncRemaining, "skipped" as LeafletOutcome);
       result[outcome].push(key);
       // Progresivní leták spotřeboval celý rozpočet — další v pořadí by stejně
       // hned narazil na deadline, tak nemá cenu dál zkoušet v tomhle běhu.
