@@ -1,11 +1,17 @@
 // Cron route: stáhne aktuální PDF letáky podporovaných řetězců, rozřeže je na
 // obrázky stránek a uloží do Supabase (tabulky leaflets/leaflet_pages + Storage
 // bucket "leaflet-pages"). Volá se přes Vercel Cron (viz vercel.json), chráněno
-// sdíleným tajemstvím v ?key=.
+// sdíleným tajemstvím v ?key= nebo hlavičkou Authorization.
 //
 // Běží na Node.js runtime (ne Edge) — @napi-rs/canvas potřebuje nativní binárku.
+//
+// DÁVKOVÉ ZPRACOVÁNÍ (kvůli limitu 60s na Vercel Hobby plánu): jeden běh
+// vyrenderuje jen tolik stránek, kolik se vejde do časového rozpočtu, a
+// průběžně je rovnou ukládá. Příští běh (další den cronu, nebo ruční volání)
+// pozná podle počtu už uložených stránek u letáku, kde skončil, a pokračuje
+// odtud — žádný leták se nerenderuje od začátku znovu zbytečně.
 export const runtime = "nodejs";
-export const maxDuration = 300; // vyžaduje Vercel Pro; na Hobby se ořízne na 60s
+export const maxDuration = 60; // strop na Vercel Hobby plánu
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
@@ -18,7 +24,7 @@ const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY!;
 // v vercel.json. ?key= navíc zůstává pro ruční/lokální test přes curl.
 const SYNC_KEY = process.env.CRON_SECRET;
 
-const TIME_BUDGET_MS = 250_000; // bezpečná rezerva pod maxDuration
+const TIME_BUDGET_MS = 45_000; // bezpečná rezerva pod maxDuration (studený start, upload…)
 
 interface RetailerLeaflet {
   retailer: string;
@@ -63,18 +69,24 @@ async function fetchPublitasData(slug: string): Promise<PublitasData | null> {
   return res.json();
 }
 
+type LeafletOutcome = "done" | "progressed" | "unchanged" | "skipped";
+
+// Zpracuje JEDEN leták — max do vyčerpání zbývajícího časového rozpočtu.
+// Vrátí "progressed", pokud stihl jen část stránek (další běh naváže).
 async function syncOneLeaflet(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   item: RetailerLeaflet,
+  deadline: number,
   log: string[],
-): Promise<"synced" | "unchanged" | "skipped"> {
+): Promise<LeafletOutcome> {
   const data = await fetchPublitasData(item.slug);
   if (!data || !data.config?.downloadPdfUrl || !data.numPages) {
     log.push(`[${item.slug}] přeskočeno — chybí data.json / PDF odkaz`);
     return "skipped";
   }
   const sourceId = String(data.id);
+  const numPages = data.numPages;
 
   const { data: existing } = await supabase
     .from("leaflets")
@@ -83,52 +95,53 @@ async function syncOneLeaflet(
     .eq("slug", item.slug)
     .maybeSingle();
 
+  let leafletId: string | undefined = existing?.id;
+  let startPage = 1;
+
   if (existing && existing.source_id === sourceId) {
-    return "unchanged";
+    // Stejné vydání jako minule — zjisti, kolik stránek už máme hotovo.
+    const { count } = await supabase
+      .from("leaflet_pages")
+      .select("id", { count: "exact", head: true })
+      .eq("leaflet_id", leafletId);
+    const already = count ?? 0;
+    if (already >= numPages) return "unchanged";
+    startPage = already + 1;
+  } else {
+    // Nový leták nebo nové vydání (jiné source_id) — založ/aktualizuj řádek
+    // a smaž případné staré stránky, ať se nemíchají dvě vydání dohromady.
+    const { data: upserted } = await supabase
+      .from("leaflets")
+      .upsert(
+        { retailer: item.retailer, slug: item.slug, source_id: sourceId, title: humanTitle(item.slug), num_pages: numPages, updated_at: new Date().toISOString() },
+        { onConflict: "retailer,slug" },
+      )
+      .select("id")
+      .single();
+    leafletId = upserted?.id;
+    if (!leafletId) {
+      log.push(`[${item.slug}] nepodařilo se založit/najít řádek v leaflets`);
+      return "skipped";
+    }
+    await supabase.from("leaflet_pages").delete().eq("leaflet_id", leafletId);
+    startPage = 1;
   }
 
-  // Stáhni PDF.
+  // Stáhni PDF (i při navazování — nic si mezi běhy neukládáme, je to jednodušší
+  // a stažení+rozparsování je oproti renderu stránek rychlé).
   const pdfRes = await fetch(data.config.downloadPdfUrl);
   if (!pdfRes.ok) {
     log.push(`[${item.slug}] stažení PDF selhalo (${pdfRes.status})`);
     return "skipped";
   }
   const pdfBuf = new Uint8Array(await pdfRes.arrayBuffer());
-
-  // Vyrenderuj stránky (dynamický import — legacy build funguje v Node.js bez DOM).
   const pdfjsLib = await import("pdfjs-dist/legacy/build/pdf.mjs");
   const doc = await pdfjsLib.getDocument({ data: pdfBuf }).promise;
-  const numPages = doc.numPages;
 
-  const leafletId =
-    existing?.id ??
-    (
-      await supabase
-        .from("leaflets")
-        .upsert(
-          { retailer: item.retailer, slug: item.slug, source_id: sourceId, title: humanTitle(item.slug), num_pages: numPages, updated_at: new Date().toISOString() },
-          { onConflict: "retailer,slug" },
-        )
-        .select("id")
-        .single()
-    ).data?.id;
-
-  if (!leafletId) {
-    log.push(`[${item.slug}] nepodařilo se založit/najít řádek v leaflets`);
-    return "skipped";
-  }
-
-  // Update metadat (pro případ, že řádek už existoval).
-  await supabase
-    .from("leaflets")
-    .update({ source_id: sourceId, title: humanTitle(item.slug), num_pages: numPages, updated_at: new Date().toISOString() })
-    .eq("id", leafletId);
-
-  // Smaž staré stránky (počet stránek se může mezi vydáními lišit).
-  await supabase.from("leaflet_pages").delete().eq("leaflet_id", leafletId);
-
-  const pageRows: { leaflet_id: string; page_number: number; image_url: string }[] = [];
-  for (let pageNum = 1; pageNum <= numPages; pageNum++) {
+  let renderedNow = 0;
+  let pageNum = startPage;
+  for (; pageNum <= numPages; pageNum++) {
+    if (Date.now() >= deadline) break;
     const page = await doc.getPage(pageNum);
     const viewport = page.getViewport({ scale: 1.5 });
     const canvas = createCanvas(viewport.width, viewport.height);
@@ -146,15 +159,18 @@ async function syncOneLeaflet(
       continue;
     }
     const { data: pub } = supabase.storage.from("leaflet-pages").getPublicUrl(path);
-    pageRows.push({ leaflet_id: String(leafletId), page_number: pageNum, image_url: pub.publicUrl });
+    // Ukládáme rovnou po jedné stránce — když čas dojde uprostřed, hotové
+    // stránky zůstanou uložené a příští běh nezačíná od nuly.
+    await supabase.from("leaflet_pages").upsert(
+      { leaflet_id: leafletId, page_number: pageNum, image_url: pub.publicUrl },
+      { onConflict: "leaflet_id,page_number" },
+    );
+    renderedNow++;
   }
 
-  if (pageRows.length > 0) {
-    await supabase.from("leaflet_pages").insert(pageRows);
-  }
-
-  log.push(`[${item.slug}] hotovo — ${pageRows.length}/${numPages} stránek`);
-  return "synced";
+  const doneUpTo = pageNum - 1;
+  log.push(`[${item.slug}] stránky ${startPage}–${doneUpTo} z ${numPages} (${renderedNow} nově v tomto běhu)`);
+  return doneUpTo >= numPages ? "done" : "progressed";
 }
 
 export async function GET(req: NextRequest) {
@@ -170,22 +186,29 @@ export async function GET(req: NextRequest) {
 
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const startedAt = Date.now();
+  const deadline = startedAt + TIME_BUDGET_MS;
   const log: string[] = [];
-  const result = { synced: [] as string[], unchanged: [] as string[], skipped: [] as string[], remaining: [] as string[] };
+  const result = { done: [] as string[], progressed: [] as string[], unchanged: [] as string[], skipped: [] as string[], notReached: [] as string[] };
 
   const targets = await discoverAlbertLeaflets();
   log.push(`Nalezeno ${targets.length} letáků k prověření (Albert).`);
 
   for (let i = 0; i < targets.length; i++) {
-    if (Date.now() - startedAt > TIME_BUDGET_MS) {
-      result.remaining = targets.slice(i).map((t) => t.slug);
-      log.push(`Časový rozpočet vyčerpán, zbývá ${result.remaining.length} letáků na příští běh.`);
+    if (Date.now() >= deadline) {
+      result.notReached = targets.slice(i).map((t) => t.slug);
+      log.push(`Časový rozpočet vyčerpán, na tenhle běh se nedostalo: ${result.notReached.join(", ")}`);
       break;
     }
     const item = targets[i];
     try {
-      const outcome = await syncOneLeaflet(supabase, item, log);
+      const outcome = await syncOneLeaflet(supabase, item, deadline, log);
       result[outcome].push(item.slug);
+      // Progresivní leták spotřeboval celý rozpočet — další v pořadí by stejně
+      // hned narazil na deadline, tak nemá cenu dál zkoušet v tomhle běhu.
+      if (outcome === "progressed") {
+        result.notReached = targets.slice(i + 1).map((t) => t.slug);
+        break;
+      }
     } catch (e) {
       log.push(`[${item.slug}] chyba: ${e instanceof Error ? e.message : String(e)}`);
       result.skipped.push(item.slug);
