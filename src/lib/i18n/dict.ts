@@ -25,6 +25,7 @@ import { game } from "./game";
 import { wheel } from "./wheel";
 import { kasa } from "./kasa";
 import { ucetnictvi } from "./ucetnictvi";
+import { leaflets } from "./leaflets";
 
 export interface Translation {
   cs: string;
@@ -54,4 +55,5 @@ export const DICT: Record<string, Translation> = {
   ...kasa,
   ...ucetnictvi,
   ...wheel,
+  ...leaflets,
 };

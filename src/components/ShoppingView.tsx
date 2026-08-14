@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useRef } from "react";
-import { Plus, Check, ShoppingCart, X, Share2, Lightbulb, ChevronDown, ChevronUp, Mic, MicOff, Loader, Search } from "lucide-react";
+import { Plus, Check, ShoppingCart, X, Share2, Lightbulb, ChevronDown, ChevronUp, Mic, MicOff, Loader, Search, Tag, ChevronRight as ChevronRightIcon } from "lucide-react";
 import { useShoppingStore, ShoppingMode } from "@/store/shoppingStore";
 import { usePantryStore } from "@/store/pantryStore";
 import { useProvozStore } from "@/store/provozStore";
@@ -13,6 +13,7 @@ import { ProductInfo } from "@/types";
 import { VoiceInput, parseSpokenText, ParsedItem } from "@/components/VoiceInput";
 import { guessCategory } from "@/lib/guessCategory";
 import { useT, useLocale } from "@/lib/i18n";
+import { LeafletsView } from "@/components/LeafletsView";
 
 const CATEGORIES = [
   { id: "ovoce-zelenina", labelKey: "shopping.cat.ovoce-zelenina", emoji: "🥦" },
@@ -521,6 +522,27 @@ function SmartSuggestionsWidget({ mode }: { mode: ShoppingMode }) {
   );
 }
 
+// Vstupní banner do Akčních letáků — jen v domácnosti (viz LeafletsView).
+function LeafletsBanner({ onOpen }: { onOpen: () => void }) {
+  const t = useT();
+  return (
+    <button
+      onClick={onOpen}
+      className="w-full flex items-center gap-3 mb-4"
+      style={{ background: "white", borderRadius: 16, padding: "12px 14px", boxShadow: "var(--shadow)", textAlign: "left" }}
+    >
+      <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: "var(--green-light)" }}>
+        <Tag size={16} style={{ color: "var(--green-primary)" }} />
+      </div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold" style={{ color: "var(--text-primary)" }}>{t("leaflets.entryBanner")}</p>
+        <p className="text-xs" style={{ color: "var(--text-secondary)" }}>{t("leaflets.entryBannerDesc")}</p>
+      </div>
+      <ChevronRightIcon size={17} style={{ color: "var(--text-tertiary)", flexShrink: 0 }} />
+    </button>
+  );
+}
+
 export function ShoppingView() {
   const t = useT();
   const appMode = useModeStore((s) => s.mode);
@@ -534,6 +556,7 @@ export function ShoppingView() {
   const addToPantry = usePantryStore((s) => s.addItem);
   const prijemNaSklad = useProvozStore((s) => s.prijemNaSklad);
   const [showAdd, setShowAdd] = useState(false);
+  const [showLeaflets, setShowLeaflets] = useState(false);
   const [view, setView] = useState<"vse" | "kategorie">("vse");
   const [search, setSearch] = useState("");
   const [toast, setToast] = useState<string | null>(null);
@@ -620,6 +643,7 @@ export function ShoppingView() {
       <div className="relative flex-1 overflow-y-auto">
         <div className="px-5 pt-2 pb-24">
           <SmartSuggestionsWidget mode={mode} />
+          {mode === "domacnost" && <LeafletsBanner onOpen={() => setShowLeaflets(true)} />}
           <div className="flex flex-col items-center justify-center gap-5 py-12">
             <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
               <ShoppingCart size={32} strokeWidth={1.5} style={{ color: "var(--green-primary)" }} />
@@ -644,6 +668,7 @@ export function ShoppingView() {
 
         {showAdd && <AddItemModal onClose={() => setShowAdd(false)} mode={mode} />}
       {editItem && <EditItemModal item={editItem} mode={mode} onClose={() => setEditItem(null)} />}
+      {showLeaflets && <LeafletsView onClose={() => setShowLeaflets(false)} />}
       </div>
     );
   }
@@ -652,6 +677,7 @@ export function ShoppingView() {
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-2 pb-24 space-y-4">
         <SmartSuggestionsWidget mode={mode} />
+        {mode === "domacnost" && <LeafletsBanner onOpen={() => setShowLeaflets(true)} />}
 
         {/* Hledání */}
         <div
@@ -815,6 +841,7 @@ export function ShoppingView() {
 
       {showAdd && <AddItemModal onClose={() => setShowAdd(false)} mode={mode} />}
       {editItem && <EditItemModal item={editItem} mode={mode} onClose={() => setEditItem(null)} />}
+      {showLeaflets && <LeafletsView onClose={() => setShowLeaflets(false)} />}
 
       {toast && (
         <div
