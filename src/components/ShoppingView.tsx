@@ -15,6 +15,12 @@ import { guessCategory } from "@/lib/guessCategory";
 import { useT, useLocale } from "@/lib/i18n";
 import { LeafletsView } from "@/components/LeafletsView";
 
+// Dočasně vypnuto — čekáme na odpověď řetězců na žádost o oficiální
+// spolupráci/API, ať to není venku bez jejich vědomí, než se ozvou.
+// Zpátky stačí přepnout na true, backend (sync-leaflets, tabulky, Storage)
+// zůstává celou dobu funkční a naplněný.
+const LEAFLETS_FEATURE_ENABLED = false;
+
 const CATEGORIES = [
   { id: "ovoce-zelenina", labelKey: "shopping.cat.ovoce-zelenina", emoji: "🥦" },
   { id: "maso-ryby", labelKey: "shopping.cat.maso-ryby", emoji: "🥩" },
@@ -643,7 +649,7 @@ export function ShoppingView() {
       <div className="relative flex-1 overflow-y-auto">
         <div className="px-5 pt-2 pb-24">
           <SmartSuggestionsWidget mode={mode} />
-          {mode === "domacnost" && <LeafletsBanner onOpen={() => setShowLeaflets(true)} />}
+          {LEAFLETS_FEATURE_ENABLED && mode === "domacnost" && <LeafletsBanner onOpen={() => setShowLeaflets(true)} />}
           <div className="flex flex-col items-center justify-center gap-5 py-12">
             <div className="w-20 h-20 rounded-full flex items-center justify-center" style={{ background: "var(--green-light)" }}>
               <ShoppingCart size={32} strokeWidth={1.5} style={{ color: "var(--green-primary)" }} />
@@ -677,7 +683,7 @@ export function ShoppingView() {
     <div className="relative flex-1 overflow-y-auto">
       <div className="px-5 pt-2 pb-24 space-y-4">
         <SmartSuggestionsWidget mode={mode} />
-        {mode === "domacnost" && <LeafletsBanner onOpen={() => setShowLeaflets(true)} />}
+        {LEAFLETS_FEATURE_ENABLED && mode === "domacnost" && <LeafletsBanner onOpen={() => setShowLeaflets(true)} />}
 
         {/* Hledání */}
         <div
