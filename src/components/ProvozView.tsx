@@ -2238,7 +2238,7 @@ export function ProvozView() {
   if (zamestnanec) {
     return (
       <div className="relative flex-1 overflow-y-auto">
-        <div className="px-5 pt-2 pb-24" style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
+        <div className="px-5 pt-2" style={{ maxWidth: 720, margin: "0 auto", width: "100%", paddingBottom: "calc(var(--tabbar-height, 84px) + 24px)" }}>
           <KasaView />
         </div>
       </div>
@@ -2247,7 +2247,7 @@ export function ProvozView() {
 
   return (
     <div className="relative flex-1 overflow-y-auto provoz-scroll">
-      <div className={`px-5 pt-2 pb-24 provoz-inner provoz-tab-${tab}`} style={{ maxWidth: 720, margin: "0 auto", width: "100%" }}>
+      <div className={`px-5 pt-2 provoz-inner provoz-tab-${tab}`} style={{ maxWidth: 720, margin: "0 auto", width: "100%", paddingBottom: "calc(var(--tabbar-height, 84px) + 24px)" }}>
 
         {/* Hlavní 4 záložky (Kasa/Sklad/Inventura/Účto) se ovládají spodní lištou,
             takže tady horní navigaci NEukazujeme. „Víc" sekce (Recepty/Dodavatelé/
